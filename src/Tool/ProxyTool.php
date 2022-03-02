@@ -5,6 +5,7 @@ namespace DDT\Tool;
 use DDT\CLI;
 use DDT\Config\ProxyConfig;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
+use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Network\Proxy;
 use DDT\Text\Table;
@@ -188,7 +189,12 @@ class ProxyTool extends Tool
         ]);
 
         foreach($this->proxy->getNetworks(true) as $network){
-            $containerList = $this->proxy->getContainersOnNetwork($network);
+            try{
+                $containerList = $this->proxy->getContainersOnNetwork($network);
+            }catch(DockerNetworkNotFoundException $e){
+                $this->cli->debug("{red}[PROXY]{end}: Network '$network' was not found\n");
+                $containerList = [];
+            }
 
             if(empty($containerList)){
                 $table->addRow([$network, "{yel}There are no containers{end}"]);
