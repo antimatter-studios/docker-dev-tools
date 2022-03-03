@@ -22,6 +22,7 @@ class DockerContainer
         ?array $options = [], 
         ?array $env = [], 
         ?array $ports = [],
+        ?array $labels = [],
         ?bool $background = false
     ){
         $this->docker = $docker;
@@ -35,7 +36,7 @@ class DockerContainer
                 throw $e;
             }
 
-            $this->run($image, $name, $command, $volumes, $options, $env, $ports, $background);
+            $this->run($image, $name, $command, $volumes, $options, $env, $ports, $labels, $background);
 
             $this->id = $this->getId();
         }
@@ -46,8 +47,14 @@ class DockerContainer
         return container(DockerContainer::class, ['name' => $name]);
     }
 
-    static public function foreground(string $name, ?string $command = '', ?string $image = null, ?array $volumes = [], ?array $options = [], ?array $env = []): void
-    {
+    static public function foreground(
+        string $name, 
+        ?string $command = '', 
+        ?string $image = null, 
+        ?array $volumes = [], 
+        ?array $options = [], 
+        ?array $env = []
+    ): void {
         try{
             container(DockerContainer::class, [
                 'name' => $name,
@@ -62,8 +69,16 @@ class DockerContainer
         }
     }
 
-    static public function background(string $name, ?string $command = '', ?string $image = null, ?array $volumes = [], ?array $options = [], ?array $env = [], ?array $ports = []): DockerContainer
-    {
+    static public function background(
+        string $name, 
+        ?string $command = '', 
+        ?string $image = null, 
+        ?array $volumes = [], 
+        ?array $options = [], 
+        ?array $env = [], 
+        ?array $ports = [], 
+        ?array $labels = []
+    ): DockerContainer {
         return container(DockerContainer::class, [
             'name' => $name,
             'command' => $command,
@@ -72,6 +87,7 @@ class DockerContainer
             'options' => $options,
             'env' => $env,
             'ports' => $ports,
+            'labels' => $labels,
             'background' => true,
         ]);
     }
@@ -92,6 +108,11 @@ class DockerContainer
         }catch(\Exception $e){
             throw new DockerContainerNotFoundException($this->name);
         }
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
     }
 
     public function isRunning(): bool
@@ -124,6 +145,11 @@ class DockerContainer
         }, []);
     }
 
+    public function listLabels(): array
+    {
+        return $this->docker->inspect('container', $this->name, '.Config.Labels');
+    }
+
     public function getIpAddress(string $network): string
     {
         $ipAddress = $this->docker->inspect('container', $this->name, ".NetworkSettings.Networks.{$network}.IPAddress");
@@ -131,7 +157,7 @@ class DockerContainer
         return current($ipAddress);
     }
 
-    public function run(string $image, string $name, string $command = '', array $volumes = [], array $options = [], array $env = [], array $ports = [], bool $background=false): int
+    public function run(string $image, string $name, string $command = '', array $volumes = [], array $options = [], array $env = [], array $ports = [], array $labels = [], bool $background=false): int
 	{
 		$exec = ["run"];
 
@@ -146,12 +172,16 @@ class DockerContainer
 		}
 
 		foreach($env as $e){
-			$exec[] = "-e $e";
+			$exec[] = "-e \"$e\"";
 		}
 
 		foreach($ports as $p){
 			$exec[] = "-p $p";
 		}
+
+        foreach($labels as $l){
+            $exec[] = "-l \"$l\"";
+        }
 
 		$exec = array_merge($exec, $options);
 
