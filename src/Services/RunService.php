@@ -118,10 +118,29 @@ class RunService
 		}
 
 		foreach($command as $commandLine){
+			// If we find a parameterised command line, try to follow it
+			[$commandLine, $extraArgs] = $this->buildCommandLine($commandLine, $extraArgs);
+			
 			// TODO: how to handle when a script fails?
 			// TODO: how to handle when a script returns important information?
 			$this->cli->passthru("cd $path; $commandLine $extraArgs");
 		}
+	}
+
+	private function buildCommandLine(string $commandLine, string $extraArgs): array
+	{
+		$index = 1;
+		$extraArgs = explode(' ', $extraArgs);
+
+		while(strpos($commandLine, '$'.$index) !== false) {
+			$commandLine = str_replace('$'.$index, array_shift($extraArgs) ?? '', $commandLine);
+			$index++;
+		}
+
+		// reimplode the rest of the args into a string to append afterwards
+		$extraArgs = implode(' ', $extraArgs);
+
+		return [$commandLine, $extraArgs];
 	}
 
 	public function runDependencies(StandardProjectConfig $projectConfig, string $script, ?ArgumentList $extraArgs=null): bool
