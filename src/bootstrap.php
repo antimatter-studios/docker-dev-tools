@@ -83,7 +83,7 @@ try{
 	// But this just seems to be a nice place since you're also setting up the rest of the di-container
 	// TODO: This is already stored in the default.ddt-system.json file and should be used instead of duplicating this here
 	$container->singleton('defaults.ip_address',			'10.254.254.254');
-	$container->singleton('defaults.proxy.docker_image',	'christhomas/nginx-proxy:alpine');
+	$container->singleton('defaults.proxy.docker_image',	'antimatter-studios/docker-proxy:latest');
 	$container->singleton('defaults.proxy.container_name',	'ddt-proxy');
 	$container->singleton('defaults.proxy.network',			['ddt-proxy']);
 	$container->singleton('defaults.dns.docker_image',		'christhomas/supervisord-dnsmasq');

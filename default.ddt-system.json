@@ -4,11 +4,17 @@
   "version": "1.0",
   "ip_address": "10.254.254.254",
   "dns": {
-    "docker_image": "christhomas/supervisord-dnsmasq",
-    "container_name": "ddt-dnsmasq"
+    "docker_image": "antimatter-studios/docker-dns:latest",
+    "container_name": "ddt-dns"
   },
   "proxy": {
-    "docker_image": "christhomas/nginx-proxy:alpine",
-    "container_name": "ddt-proxy"
+    "docker_image": "antimatter-studios/docker-proxy:latest",
+    "container_name": "ddt-proxy",
+    "network": []
+  },
+  "config_gen": {
+    "docker_image": "antimatter-studios/config-gen:latest",
+    "container_name": "ddt-config-gen",
+    "network": []
   }
 }

@@ -2,15 +2,15 @@
 
 namespace DDT\Config;
 
-class ProxyConfig
+class ConfigGeneratorConfig
 {
 	/** @var SystemConfig */
 	private $config;
 
 	private $keys = [
-		'docker_image'		=> 'proxy.docker_image',
-		'container_name'	=> 'proxy.container_name',
-		'network'			=> 'proxy.network',
+		'docker_image'		=> 'config_gen.docker_image',
+		'container_name'	=> 'config_gen.container_name',
+		'network'			=> 'config_gen.network',
 	];
 
     public function __construct(SystemConfig $config, DefaultConfig $defaults)
@@ -28,17 +28,7 @@ class ProxyConfig
 		if($this->config->getKey($this->keys['network']) === null){
 			$this->setNetworkList($defaults->getKey($this->keys['network']));
 		}
-
-		// TODO: remove after 01/07/2022
-		if(strpos($this->getDockerImage(), 'christhomas') !== false){
-			$this->setDockerImage($defaults->getKey($this->keys['docker_image']));
-		}
     }
-
-	public function getToolsPath(?string $subpath=''): string
-	{
-		return $this->config->getPath('tools', $subpath);
-	}
 
 	public function getDockerImage(): string
 	{
@@ -70,7 +60,7 @@ class ProxyConfig
 
 	public function listNetworks(): array
 	{
-		return $this->config->getKey($this->keys['network']);
+		return $this->config->getKey($this->keys['network']) ?? [];
 	}
 
 	public function setNetworkList(array $list): bool
