@@ -88,7 +88,9 @@ try{
 	$container->singleton('defaults.proxy.network',			['ddt-proxy']);
 	$container->singleton('defaults.dns.docker_image',		'christhomas/supervisord-dnsmasq');
 	$container->singleton('defaults.dns.container_name',	'ddt-dnsmasq');
-	// Set these two important locations for either the system configuration
+	
+	// Set these important values for the system configuration
+	$container->singleton('config.tools.path', __DIR__ . '/..');
 	// This is the default system configuration that is the basic template for any new installation
 	$container->singleton('config.file.default', __DIR__ . '/../default.ddt-system.json');
 	// This is the currently installed system configuration
