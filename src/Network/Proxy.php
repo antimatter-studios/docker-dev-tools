@@ -216,16 +216,21 @@ class Proxy
 				'',
 				$image, 
 				[
-					"ddt_proxy_certs:/etc/nginx/certs",
-					"ddt_proxy_vhost:/etc/nginx/vhost.d",
-					"ddt_proxy_html:/usr/share/nginx/html",
-					"/var/run/docker.sock:/tmp/docker.sock:ro",
-					"$path/proxy-config/global.conf:/etc/nginx/conf.d/global.conf",
-					"$path/proxy-config/nginx-proxy.conf:/etc/nginx/proxy.conf",
+					'ddt_proxy_certs:/etc/nginx/certs',
+					'ddt_proxy_vhost:/etc/nginx/vhost.d',
+					'ddt_proxy_html:/usr/share/nginx/html',
+					'ddt_config_gen:/config',
+					$path . '/proxy-config/global.conf:/etc/nginx/conf.d/global.conf',
+					$path . '/proxy-config/nginx-proxy.conf:/etc/nginx/proxy.conf',
 				],
-				[],
-				[],
+				[], // options
+				['NGINX_CONF=/config/docker-proxy/nginx.conf'],
 				['80:80', '443:443'],
+				[
+					'docker-config-gen.input=/docker-proxy/nginx.tmpl',
+					'docker-config-gen.output=/docker-proxy/nginx.conf',
+					'docker-config-gen.exec="/app/reload.sh"',
+				]
 			);
 
 			$id = $container->getId();

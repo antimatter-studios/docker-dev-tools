@@ -8,6 +8,7 @@ use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Network\Proxy;
+use DDT\Services\ConfigGeneratorService;
 use DDT\Text\Table;
 
 class ProxyTool extends Tool
@@ -18,12 +19,16 @@ class ProxyTool extends Tool
     /** @var Proxy */
     private $proxy;
 
-    public function __construct(CLI $cli, ProxyConfig $config, Proxy $proxy)
+    /** @var ConfigGeneratorService */
+    private $configGeneratorService;
+
+    public function __construct(CLI $cli, ProxyConfig $config, Proxy $proxy, ConfigGeneratorService $configGeneratorService)
     {
         parent::__construct('proxy', $cli);
 
         $this->config = $config;
         $this->proxy = $proxy;
+        $this->configGeneratorService = $configGeneratorService;
 
         foreach([
             'start', 'stop', 'restart', 'reload',
@@ -82,6 +87,7 @@ class ProxyTool extends Tool
     public function start()
     {
         $this->cli->print("{blu}Starting the Frontend Proxy:{end} ".$this->dockerImage()."\n");
+        $this->configGeneratorService->start();
         $this->proxy->start();
 
         // FIXME: perhaps this should call the docker object to do this
@@ -94,6 +100,9 @@ class ProxyTool extends Tool
         try{
             $this->cli->print("{blu}Stopping the Frontend Proxy:{end} ".$this->dockerImage()."\n");
             $this->proxy->stop();
+            // TODO: should I stop this when I stop the proxy?
+            // TODO: what if it's used by another service?
+            $this->configGeneratorService->stop();
 
             // FIXME: perhaps this should call the docker object to do this
             $this->cli->print("{blu}Running Containers:{end}\n");
