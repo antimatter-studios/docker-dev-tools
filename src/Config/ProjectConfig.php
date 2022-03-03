@@ -5,11 +5,12 @@ namespace DDT\Config;
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
+use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 
-class ProjectGroupConfig
+class ProjectConfig
 {
-	private $key = 'projects';
+	private $key = 'projects-v2';
 
 	/** @var SystemConfig $config */
 	private $config;
@@ -18,9 +19,8 @@ class ProjectGroupConfig
 	{
 		$this->config = $config;
 
-		// NOTE: Don't use listGroup() here, we must ensure it's never null in the first place
 		if($this->config->getKey($this->key) === null){
-			$this->config->setKey($this->key, []);
+			throw new ProjectConfigUpgradeException('upgrade-projects');
 		}
 	}
 

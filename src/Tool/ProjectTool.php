@@ -2,23 +2,23 @@
 
 namespace DDT\Tool;
 
-use DDT\Config\ProjectGroupConfig;
 use DDT\CLI;
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
+use DDT\Config\ProjectConfig;
 use DDT\Services\GitService;
 use DDT\Text\Table;
 
 class ProjectTool extends Tool
 {
-    /** @var \DDT\Config\ProjectGroupConfig  */
+    /** @var \DDT\Config\ProjectConfig  */
     private $config;
 
     /** @var \DDT\Services\GitService */
     private $repoService;
 
-    public function __construct(CLI $cli, ProjectGroupConfig $config, GitService $repoService)
+    public function __construct(CLI $cli, ProjectConfig $config, GitService $repoService)
     {
     	parent::__construct('project', $cli);
 
@@ -143,6 +143,8 @@ class ProjectTool extends Tool
         return $type;
     }
 
+    public function addProjectNew(string $path, string $group){}
+
     public function addProject(string $group, string $path, ?string $name=null, ?string $type=null, ?string $git=null, ?string $remote='origin'): void
     {
         $this->cli->print("{blu}Adding project{end}\n");
@@ -152,7 +154,7 @@ class ProjectTool extends Tool
         }
 
         if($this->isProjectType($type) === false){
-            $this->cli->print("{red}The type '$type' is not a recognised value, see help for options{end}\n");
+            $this->cli->print("{red}The project type '$type' given or auto-detected, can not be recognised. See help for options{end}\n");
             return;
         }
 

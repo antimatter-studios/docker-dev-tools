@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
-use DDT\Config\ProjectGroupConfig;
+use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Services\RunService;
 use DDT\Text\Table;
@@ -41,7 +41,7 @@ class RunTool extends Tool
         ];
     }
 
-    public function list(ProjectGroupConfig $config): void
+    public function list(ProjectConfig $config): void
     {
         /* @var Table $table */
         $table = container(Table::class);
@@ -64,7 +64,7 @@ class RunTool extends Tool
         $this->cli->print("{grn}* A sequence is a set of command names which are run in sequence{end}\n");
     }
 
-    public function script(ProjectGroupConfig $config, RunService $runService, string $script, string $group, ?string $project=null): void
+    public function script(ProjectConfig $config, RunService $runService, string $script, string $group, ?string $project=null): void
     {
         try{
             // Ignore the first three arguments, they would be script, group, project

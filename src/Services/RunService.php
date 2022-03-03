@@ -4,7 +4,7 @@ namespace DDT\Services;
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
 use DDT\Config\External\StandardProjectConfig;
-use DDT\Config\ProjectGroupConfig;
+use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Project\ProjectScriptInvalidException;
 
 class RunService
@@ -12,16 +12,16 @@ class RunService
 	/** @var CLI */
 	private $cli;
 
-	/** @var ProjectGroupConfig */
-	private $projectGroupConfig;
+	/** @var ProjectConfig */
+	private $projectConfig;
 
 	/** @var array The stack of scripts running and used to detect circular dependencies */
 	private $stack;
 
-	public function __construct(CLI $cli, ProjectGroupConfig $config)
+	public function __construct(CLI $cli, ProjectConfig $config)
 	{
 		$this->cli = $cli;
-		$this->projectGroupConfig = $config;
+		$this->projectConfig = $config;
 	}
 
 	public function reset(): void
@@ -58,7 +58,7 @@ class RunService
 	public function getProject(string $group, string $project): StandardProjectConfig
 	{
 		//	TODO: how to handle when a project is not found, it'll throw exceptions?
-		return $this->projectGroupConfig->getProjectConfig($group, $project);
+		return $this->projectConfig->getProjectConfig($group, $project);
 	}
 
 	public function run(string $script, string $group, ?string $project=null, ?ArgumentList $extraArgs=null)

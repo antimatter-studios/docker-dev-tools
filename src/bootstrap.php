@@ -14,6 +14,7 @@ use DDT\Contract\DnsServiceInterface;
 use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Container\ContainerNotInstantiatedException;
+use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Tool\ToolCommandNotFoundException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
 use DDT\Exceptions\Tool\ToolNotSpecifiedException;
@@ -149,6 +150,11 @@ try{
 	$cli->failure($text->box($e->getMessage(), "wht", "red"));
 }catch(ToolCommandNotFoundException $e){
 	$cli->failure($text->box($e->getMessage(), "wht", "red"));
+}catch(ProjectConfigUpgradeException $e){
+	$cli->failure($text->box($e->getMessage(), "wht", "red"));
 }catch(Exception $e){
+	if(Debug::$enabled){
+		$cli->print($e->getTraceAsString());
+	}
 	$cli->failure($text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), "wht", "red"));
 }

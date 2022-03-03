@@ -5,6 +5,8 @@ namespace DDT\Tool;
 use Exception;
 use DDT\Autowire;
 use DDT\CLI;
+use DDT\Exceptions\Project\ProjectConfigUpgradeException;
+use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Exceptions\Tool\ToolCommandInvalidException;
 use DDT\Exceptions\Tool\ToolCommandNotFoundException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
@@ -151,20 +153,15 @@ abstract class Tool
 
     public function getTool(string $name): Tool
     {
-        try{
-            if(empty($name)) throw new Exception('Tool name cannot be empty');
-            
-            $name = strtolower($name);
-            $name = explode("-", $name);
-            $name = implode(" ", $name);
-            $name = ucwords($name);
-            $name = str_replace(" ", "", $name);
+        if(empty($name)) throw new Exception('Tool name cannot be empty');
+        
+        $name = strtolower($name);
+        $name = explode("-", $name);
+        $name = implode(" ", $name);
+        $name = ucwords($name);
+        $name = str_replace(" ", "", $name);
 
-            return container('DDT\\Tool\\'.$name.'Tool');
-        }catch(Exception $e){
-            $this->cli->debug("{red}".$e->getMessage()."{end}");
-            throw new ToolNotFoundException($name, 0, $e);
-        }
+        return container('DDT\\Tool\\'.$name.'Tool');
     }
 
     public function getToolMetadata(): array

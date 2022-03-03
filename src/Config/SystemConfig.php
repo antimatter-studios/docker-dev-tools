@@ -8,9 +8,6 @@ class SystemConfig extends BaseConfig
 {
 	const defaultFilename = '.ddt-system.json';
 
-    private $extensions;
-	private $projects;
-
 	static public function instance(?string $filename=null, ?bool $readonly=false): SystemConfig
 	{
 		/** @var SystemConfig */
