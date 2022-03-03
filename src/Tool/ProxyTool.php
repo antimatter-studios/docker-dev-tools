@@ -210,8 +210,22 @@ class ProxyTool extends Tool
             }
 
             foreach($containerList as $container){
-                $env = $this->proxy->getContainerProxyEnv($container['name']);
-                $table->addRow([$network, $container['name'], $env['host'], $env['port'], $env['path'], $container['nginx_status']]);
+                try{
+                    $configurations = $this->proxy->getContainerProxyEnv($container['name']);
+                    foreach($configurations as $config){
+                        $tag = array_key_exists('tag', $config) ? "(tag: {$config['tag']})" : "";
+                        $table->addRow([
+                            $network, 
+                            $container['name'] . " $tag", 
+                            $config['proto'].'://'.$config['host'], 
+                            $config['port'], 
+                            $config['path'], 
+                            $container['nginx_status']]
+                        );
+                    }
+                }catch(\Exception $e){
+                    $this->cli->debug("{red}[PROXY]{end}: Could not read proxy config for container '{$container['name']}'\n");
+                }
             }
         }
 

@@ -127,7 +127,7 @@ class Proxy
 		$ip_address = preg_quote($container['ip_address']);
 		$port = $container['port'];
 
-		preg_match_all("/upstream\s(?P<upstream>".$name.")\s{(?P<config>[^}]*)}/m", $nginxConfig, $upstreams);
+		preg_match_all("/upstream\s(?P<upstream>".$name."-".$port.")\s{(?P<config>[^}]*)}/m", $nginxConfig, $upstreams);
 		// group all results by index
 		$upstreams = array_map(null, $upstreams['upstream'], $upstreams['config']);
 		// remap them into associative array
@@ -141,7 +141,6 @@ class Proxy
 		$feedback = array_map(function($u) use ($name, $network, $ip_address, $port) {
 			preg_match(
 				"/##\sCan be connected with \"(?P<network>".$network.")\" network\s*".
-				"#\s(?P<name>".$name.")\s*".
 				"server\s(?P<ip_address>".$ip_address.")\:(?P<port>".$port.")\;/m", $u, $feedback);
 
 			return array_intersect_key($feedback, array_flip(['name', 'network', 'ip_address', 'port']));
@@ -158,25 +157,46 @@ class Proxy
 
 	public function getContainerProxyEnv(string $container): array
 	{
-		$list = ['host' => '', 'port' => '80', 'path' => ''];
+		$configurations = [];
 
-		try{
-			$container = DockerContainer::get($container);
-			$env = $container->listEnvParams();
-			if(array_key_exists('VIRTUAL_HOST', $env)){
-				$list['host'] = $env['VIRTUAL_HOST'];
-			}
-			if(array_key_exists('VIRTUAL_PORT', $env)){
-				$list['port'] = $env['VIRTUAL_PORT'];
-			}
-			if(array_key_exists('VIRTUAL_PATH', $env)){
-				$list['path'] = $env['VIRTUAL_PATH'];
-			}
-		}catch(Exception $e){
-			// TODO: What should I do when something went wrong?
+		$container = DockerContainer::get($container);
+		$env = $container->listEnvParams();
+		$config = ['proto' => 'http', 'port' => '80'];
+		if(array_key_exists('VIRTUAL_PROTO', $env)){
+			$config['proto'] = $env['VIRTUAL_PROTO'];
+		}
+		if(array_key_exists('VIRTUAL_HOST', $env)){
+			$config['host'] = $env['VIRTUAL_HOST'];
+		}
+		if(array_key_exists('VIRTUAL_PORT', $env)){
+			$config['port'] = $env['VIRTUAL_PORT'];
+		}
+		if(array_key_exists('VIRTUAL_PATH', $env)){
+			$config['path'] = $env['VIRTUAL_PATH'];
 		}
 
-		return $list;
+		// We require the host at the very minimum
+		if(array_key_exists('host', $config)){
+			$configurations[] = $config;
+		}
+
+		$labels = $container->listLabels();
+		$labels = array_filter($labels, function($key){ 
+			return strpos($key, 'docker-proxy') !== false; 
+		}, ARRAY_FILTER_USE_KEY);
+		
+		$labelGroups = array_reduce(array_keys($labels), function($group, $value) use ($labels) {
+			[$project, $name, $field] = explode('.', $value);
+			if(!array_key_exists($name, $group)) $group[$name] = [];
+			$group[$name][$field] = $labels[$value];
+			return $group;
+		}, []);
+
+		foreach($labelGroups as $tag => $config){
+			$configurations[] = ['tag' => $tag, 'proto' => 'http', 'port' => '80', ...$config];
+		}
+
+		return $configurations;
 	}
 
 	public function start(?array $networkList=null): bool
