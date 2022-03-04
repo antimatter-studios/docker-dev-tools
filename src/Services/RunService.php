@@ -43,6 +43,22 @@ class RunService
 		return in_array($key, $this->stack);
 	}
 
+	private function buildCommandLine(string $commandLine, string $extraArgs): array
+	{
+		$index = 1;
+		$extraArgs = explode(' ', $extraArgs);
+
+		while(strpos($commandLine, '$'.$index) !== false) {
+			$commandLine = str_replace('$'.$index, array_shift($extraArgs) ?? '', $commandLine);
+			$index++;
+		}
+
+		// reimplode the rest of the args into a string to append afterwards
+		$extraArgs = implode(' ', $extraArgs);
+
+		return [$commandLine, $extraArgs];
+	}
+
 	private function pushJob(StandardProjectConfig $projectConfig, string $script): bool
 	{
 		// if not, add it to the stack and return true;
@@ -55,18 +71,19 @@ class RunService
 		return true;
 	}
 
+	// FIXME: I don't know why I have this function and i only use it in one place
 	public function getProject(string $group, string $project): StandardProjectConfig
 	{
 		//	TODO: how to handle when a project is not found, it'll throw exceptions?
 		return $this->projectConfig->getProjectConfig($project);
 	}
 
-	public function run(string $script, string $group, ?string $project=null, ?ArgumentList $extraArgs=null)
+	public function run(string $script, string $project, ?string $group=null, ?ArgumentList $extraArgs=null)
 	{
 		try{
-			$this->cli->debug("{red}[RUNSERVICE]:{end} Running: $group, $project, $script\n");
+			$this->cli->debug("{red}[RUNSERVICE]:{end} Running: '$script', '$project', '$group'\n");
 			// Obtain the project configuration
-			$projectConfig = $this->getProject($group, $project);
+			$projectConfig = $this->getProject('', $project);
 		
 			// Check if script is already running, we refuse to run scripts if 
 			// it's already run since it might lead to infinite loops
@@ -109,15 +126,10 @@ class RunService
 		// Otherwise, cd into the project path and run the script as specified
 		$this->cli->print("\n{blu}Run Script:{end} group: {yel}$group{end}, project: {yel}$project{end}, script: {yel}$script{end}, extra args: {yel}'$extraArgs'{end}\n");
 
-		if(is_string($command)){
-			$command = [$command];
-		}else{
-			$command = array_map(function($c) use ($projectConfig) {
-				return $projectConfig->getScript($c);
-			}, $command);
-		}
+		$command = $this->resolveCommandList($command, $projectConfig);
 
 		foreach($command as $commandLine){
+			var_dump($commandLine);
 			// If we find a parameterised command line, try to follow it
 			[$commandLine, $extraArgs] = $this->buildCommandLine($commandLine, $extraArgs);
 			
@@ -127,20 +139,21 @@ class RunService
 		}
 	}
 
-	private function buildCommandLine(string $commandLine, string $extraArgs): array
+	private function resolveCommandList($command, StandardProjectConfig $projectConfig)
 	{
-		$index = 1;
-		$extraArgs = explode(' ', $extraArgs);
+		$output = [];
 
-		while(strpos($commandLine, '$'.$index) !== false) {
-			$commandLine = str_replace('$'.$index, array_shift($extraArgs) ?? '', $commandLine);
-			$index++;
+		if(is_string($command)){
+			$output[] = $command;
+		}else if(is_array($command)){
+			foreach($command as $script){
+				$script = $projectConfig->getScript($script);
+				$commandList = $this->resolveCommandList($script, $projectConfig);
+				$output = array_merge($output, $commandList);
+			}
 		}
 
-		// reimplode the rest of the args into a string to append afterwards
-		$extraArgs = implode(' ', $extraArgs);
-
-		return [$commandLine, $extraArgs];
+		return $output;
 	}
 
 	public function runDependencies(StandardProjectConfig $projectConfig, string $script, ?ArgumentList $extraArgs=null): bool

@@ -33,8 +33,15 @@ class ProjectConfig
 
 	public function listProjectsInGroup(string $group): array
 	{
-		return array_filter($this->listProjects(), function($v) use ($group) {
-			return in_array($group, $v['group']);
+		return array_filter($this->listProjects(), function($config) use ($group) {
+			return in_array($group, $config['group']);
+		});
+	}
+
+	public function listProjectsByName(string $project): array
+	{
+		return array_filter($this->listProjects(), function($config) use ($project) {
+			return $project === $config['name'];
 		});
 	}
 
@@ -220,6 +227,10 @@ class ProjectConfig
 
 		if(count($filteredList) > 1){
 			throw new ProjectFoundMultipleException($project);
+		}
+
+		if(count($filteredList) === 0){
+			throw new ProjectNotFoundException($project);
 		}
 
 		$first = array_shift($filteredList);

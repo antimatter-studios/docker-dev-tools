@@ -5,9 +5,12 @@ namespace DDT\Tool;
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
+use DDT\Exceptions\CLI\ArgumentException;
 use DDT\Exceptions\Config\ConfigMissingException;
+use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use DDT\Services\RunService;
 use DDT\Text\Table;
+use PDO;
 
 class RunTool extends Tool
 {
@@ -34,10 +37,20 @@ class RunTool extends Tool
             ],
             'examples' => [
                 "{yel}{$this->getEntrypoint()} run{end}: This help",
-                "{yel}{$this->getEntrypoint()} run --script=start --group=mycompany --project=backendapi{end}: Run the 'start' script from the 'backendapi' project in the 'mycompany' group",
+                "{yel}{$this->getEntrypoint()} run start backendapi mycompany{end}: Run the 'start' script from the 'backendapi' project in the 'mycompany' group",
+                "{yel}{$this->getEntrypoint()} run start -- mycompany{end}: Run the 'start' script from the ALL the projects in the 'mycompany' group",
                 "{yel}{$this->getEntrypoint()} run start mycompany api-project{end}: The same command as above, but using anonymous parameters",
                 "{yel}{$this->getEntrypoint()} run --list{end}: Will output all the possible scripts that it's possible to run",
             ],
+            'notes' => [
+                "- You can not use * as a wildcard, just in case you are wondering why, because",
+                "\tof shell expansion, when you use *, your shell environment passes instead a",
+                "\thuge list of files and directories that are in your current directory, so",
+                "\tinstead we will use -- which is easy enough to type",
+                "- You can use -- as a wildcard as a placeholder for the project name, but in",
+                "\tthis case, you must provide the group name as it's meaning it 'every project'",
+                "- You can not use -- as a wildcard as a placeholder for the group name",
+            ]
         ];
     }
 
@@ -62,7 +75,7 @@ class RunTool extends Tool
         $this->cli->print("{grn}* A sequence is a set of command names which are run in sequence{end}\n");
     }
 
-    public function script(ProjectConfig $config, RunService $runService, string $script, string $group, ?string $project=null): void
+    public function script(ProjectConfig $config, RunService $runService, string $script, string $project, ?string $group=null): void
     {
         try{
             // Ignore the first three arguments, they would be script, group, project
@@ -72,15 +85,31 @@ class RunTool extends Tool
 
             $runService->reset();
 
-            if($project === null){
+            $wildcard = '--';
+
+            if($project === $wildcard && $group !== null){
                 $projectList = $config->listProjectsInGroup($group);
-                $project = array_map(function($v){ return $v['name']; }, $projectList);
+                $projectList = array_map(function($v){ return $v['name']; }, $projectList);
+            }else if($project === $wildcard){
+                throw new ArgumentException("The project parameter cannot be '$wildcard' when the group is not given or specified");
+            }else if(!empty($project) && $group === null){
+                $projectList = $config->listProjectsByName($project);
+                if(count($projectList) > 1){
+                    throw new ProjectFoundMultipleException($project);
+                }
+                $config = array_shift($projectList);
+                $group = array_shift($config['group']);
+                $projectList = [$project];
             }else{
-                $project = [$project];
+                throw new ArgumentException("The project or group parameters did not seem to match any workable situation");
             }
 
-            foreach($project as $projectName){
-                $runService->run($script, $group, $projectName, $arguments);
+            if(empty($projectList)){
+                $this->cli->failure("The project '$project' was not found");
+            }
+
+            foreach($projectList as $projectName){
+                $runService->run($script, $projectName, $group, $arguments);
             }
         }catch(ConfigMissingException $exception){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
