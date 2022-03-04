@@ -141,10 +141,10 @@ class Proxy
 	
 			if(empty($upstreams)) return $container;
 	
-			$feedback = array_map(function($u) use ($name, $network, $ip_address, $port) {
+			$feedback = array_map(function($u) use ($name, $network, $ip_address, $portNumber) {
 				preg_match(
 					"/##\sCan be connected with \"(?P<network>".$network.")\" network\s*".
-					"server\s(?P<ip_address>".$ip_address.")\:(?P<port>".$port.")\;/m", $u, $feedback);
+					"server\s(?P<ip_address>".$ip_address.")\:(?P<port>".$portNumber.")\;/m", $u, $feedback);
 	
 				return array_intersect_key($feedback, array_flip(['name', 'network', 'ip_address', 'port']));
 			}, $upstreams);

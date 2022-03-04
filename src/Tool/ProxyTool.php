@@ -214,14 +214,16 @@ class ProxyTool extends Tool
                     $configurations = $this->proxy->getContainerProxyEnv($container['name']);
                     foreach($configurations as $config){
                         $tag = array_key_exists('tag', $config) ? "(tag: {$config['tag']})" : "";
+                        $nginxStatus = $container['nginx_status'][$config['port']];
+
                         $table->addRow([
                             $network, 
                             $container['name'] . " $tag", 
                             $config['proto'].'://'.$config['host'], 
                             $config['port'], 
-                            $config['path'], 
-                            $container['nginx_status']]
-                        );
+                            array_key_exists('path', $config) ? ['path'] : '/', 
+                            $nginxStatus,
+                        ]);
                     }
                 }catch(\Exception $e){
                     $this->cli->debug("{red}[PROXY]{end}: Could not read proxy config for container '{$container['name']}'\n");
