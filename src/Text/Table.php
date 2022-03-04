@@ -61,7 +61,10 @@ class Table
 			$this->numColumns = count($data);
 		}
 
-		$this->data[] = $data;
+		// Replace all special codes with shell script codes
+		$this->data[] = array_map(function($text) {
+			return $this->renderText($text);
+		}, $data);
 	}
 
 	public function setRightPadding(int $padding = 0)
@@ -108,11 +111,6 @@ class Table
 		$columns = array_map(function($text) {
 			$replace = str_pad("", $this->tabWidth, $this->space);
 			return str_replace("\t", $replace, $text ?? '');
-		}, $columns);
-
-		// Replace all special codes with shell script codes
-		$columns = array_map(function($text) {
-			return $this->renderText($text);
 		}, $columns);
 
 		// Find the printing character widths for every column
