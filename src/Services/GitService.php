@@ -4,6 +4,7 @@ namespace DDT\Services;
 use DDT\CLI;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
+use DDT\Exceptions\Git\GitNotARepositoryException;
 use InvalidArgumentException;
 
 class GitService
@@ -26,9 +27,15 @@ class GitService
 		}
 	}
 
-	public function getRemote(string $dir, string $remote): string
+	public function getRemote(string $path, string $remote): string
 	{
-		return implode("\n", $this->cli->exec("git -C $dir remote get-url origin"));
+		try{
+			return implode("\n", $this->cli->exec("git -C $path remote get-url $remote"));
+		}catch(\Exception $e){
+			if(strpos($e->getMessage(), "not a git repository") !== false){
+				throw new GitNotARepositoryException($path);
+			}
+		}
 	}
 
 	/**
