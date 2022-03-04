@@ -58,7 +58,7 @@ class RunService
 	public function getProject(string $group, string $project): StandardProjectConfig
 	{
 		//	TODO: how to handle when a project is not found, it'll throw exceptions?
-		return $this->projectConfig->getProjectConfig($group, $project);
+		return $this->projectConfig->getProjectConfig($project);
 	}
 
 	public function run(string $script, string $group, ?string $project=null, ?ArgumentList $extraArgs=null)
