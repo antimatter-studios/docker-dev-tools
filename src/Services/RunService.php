@@ -161,7 +161,9 @@ class RunService
 			$depScript = $script;
 
 			// Make some debugging text easier to read like this
-			$t = array_map(function($k, $v) { return $k===$v ? $k : "$k=$v"; }, array_keys($d['scripts']), array_values($d['scripts']));
+			$t = array_map(function($k, $v) { 
+				return $k===($v=implode(', ', is_array($v) ? $v : [$v])) ? $k : "$k=($v)"; 
+			}, array_keys($d['scripts']), array_values($d['scripts']));
 			$this->cli->debug("{red}[RUNSERVICE]{end}: Dependencies($project@$depGroup): [".implode(",", $t)."]\n");
 
 			// Does this dependency overload the script with an alternative script name?
