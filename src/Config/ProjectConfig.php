@@ -189,7 +189,7 @@ class ProjectConfig
 		return $this->removeProject($project, $first['path']);
 	}
 
-	public function getProjectConfig(string $project, ?string $path=null): StandardProjectConfig
+	public function getProjectConfig(string $project, ?string $path=null, ?string $group=null): StandardProjectConfig
 	{
 		$projectList = $this->listProjects();
 
@@ -199,11 +199,8 @@ class ProjectConfig
 					throw new ProjectNotFoundException($project);
 				}
 					
-				// FIXME: what would be the group here??
-				$group = "MONKEY";
-
 				$type = $projectList[$path]['type'];
-				$args = ['filename' => $path, 'group' => $group, 'project' => $project];
+				$args = ['filename' => $path, 'project' => $project, 'group' => $group];
 
 				if($type === 'ddt'){
 					return container(StandardProjectConfig::class, $args);
@@ -235,6 +232,6 @@ class ProjectConfig
 
 		$first = array_shift($filteredList);
 
-		return $this->getProjectConfig($project, $first['path']);
+		return $this->getProjectConfig($project, $first['path'], $group);
 	}
 }

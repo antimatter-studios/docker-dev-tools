@@ -18,7 +18,7 @@ class StandardProjectConfig extends BaseConfig
 	/** @var string The name of this project */
 	private $project;
 
-	public function __construct(string $filename, string $group, string $project)
+	public function __construct(string $filename, string $project, ?string $group=null)
 	{
 		parent::__construct($filename);
 
@@ -29,7 +29,7 @@ class StandardProjectConfig extends BaseConfig
 		$this->project = $project;
 	}
 
-	public function getGroup(): string
+	public function getGroup(): ?string
 	{
 		return $this->group;
 	}
