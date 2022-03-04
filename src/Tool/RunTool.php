@@ -73,7 +73,12 @@ class RunTool extends Tool
         }
         
         $this->cli->print($table->render());
-        $this->cli->print("{grn}* A sequence is a set of command names which are run in sequence{end}\n");
+        $this->cli->print(implode("\n", [
+            "{yel}Notes{end}:",
+            "- {grn}* A sequence is a set of command names which are run in sequence{end}",
+            "- If the script takes extra parameters, it's required to pass the group parameter",
+            "\tas the script engine can't tell whether one string is an argument or a group name\n",
+        ]));
     }
 
     public function script(ProjectConfig $config, RunService $runService, string $script, string $project, ?string $group=null): void
