@@ -45,18 +45,16 @@ class RunTool extends Tool
     {
         /* @var Table $table */
         $table = container(Table::class);
-        $table->addRow(["{yel}Group{end}", "{yel}Project{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
+        $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
-        foreach($config->listGroup() as $group => $groupList){
-            foreach($groupList as $project => $projectList){
-                $projectConfig = $config->getProjectConfig($group, $project);
-                foreach($projectConfig->listScripts() as $script => $scriptCommand){
-                    if(is_array($scriptCommand)) {
-                        $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
-                    }
-
-                    $table->addRow([$group, $project, $script, $scriptCommand]);
+        foreach($config->listProjects() as $path => $project){
+            $projectConfig = $config->getProjectConfig($project['name'], $path);
+            foreach($projectConfig->listScripts() as $script => $scriptCommand){
+                if(is_array($scriptCommand)) {
+                    $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
                 }
+
+                $table->addRow([$project['name'], implode(', ', $project['group']), $script, $scriptCommand]);
             }
         }
         
