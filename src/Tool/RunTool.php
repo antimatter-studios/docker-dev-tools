@@ -8,6 +8,7 @@ use DDT\Config\ProjectConfig;
 use DDT\Exceptions\CLI\ArgumentException;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
+use DDT\Exceptions\Project\ProjectFoundWrongGroupException;
 use DDT\Services\RunService;
 use DDT\Text\Table;
 use PDO;
@@ -87,23 +88,47 @@ class RunTool extends Tool
 
             $wildcard = '--';
 
+            // No project, no script to run
+            if(empty($project)){
+                throw new ArgumentException("The project parameter cannot be empty under any circumstances");
+            }
+
+            // You can't use the wildcard, when the group is valid, it doesn't make any sense
+            if($project === $wildcard && $group === null){
+                throw new ArgumentException("The project parameter cannot be '$wildcard' when the group is not given or specified");
+            }
+
+            // Make the project list from every project inside a particular group
             if($project === $wildcard && $group !== null){
                 $projectList = $config->listProjectsInGroup($group);
                 $projectList = array_map(function($v){ return $v['name']; }, $projectList);
-            }else if($project === $wildcard){
-                throw new ArgumentException("The project parameter cannot be '$wildcard' when the group is not given or specified");
-            }else if(!empty($project) && $group === null){
+            }
+
+            // Find a project that is only registered once in any group
+            if($project !== $wildcard && $group === null){
                 $projectList = $config->listProjectsByName($project);
                 if(count($projectList) > 1){
                     throw new ProjectFoundMultipleException($project);
                 }
-                $config = array_shift($projectList);
-                $group = array_shift($config['group']);
+                $data = array_shift($projectList);
+                $group = array_shift($data['group']);
                 $projectList = [$project];
-            }else{
-                throw new ArgumentException("The project or group parameters did not seem to match any workable situation");
             }
 
+            // Find a project which is registered in a particular group
+            if($project !== $wildcard && $group !== null){
+                $projectList = $config->listProjectsByName($project);
+                if(count($projectList) > 1){
+                    throw new ProjectFoundMultipleException($project);
+                }
+                $data = array_shift($projectList);
+                if(!in_array($group, $data['group'])){
+                    throw new ProjectFoundWrongGroupException($project, $group);
+                }
+                $projectList = [$project];
+            }
+
+            // Couldn't find anything, time to die!
             if(empty($projectList)){
                 $this->cli->failure("The project '$project' was not found");
             }
