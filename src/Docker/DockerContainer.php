@@ -157,6 +157,17 @@ class DockerContainer
         return current($ipAddress);
     }
 
+    public function getPorts(): array
+    {
+        $ports = $this->docker->inspect('container', $this->name, ".NetworkSettings.Ports");
+
+        return array_reduce(array_keys($ports), function($result, $key) use ($ports) {
+            [$port, $protocol] = explode('/', $key);
+            $result[] = ['port' => $port, 'protocol' => $protocol, 'data' => $ports[$key]];
+            return $result;
+        }, []);
+    }
+
     public function run(string $image, string $name, string $command = '', array $volumes = [], array $options = [], array $env = [], array $ports = [], array $labels = [], bool $background=false): int
 	{
 		$exec = ["run"];

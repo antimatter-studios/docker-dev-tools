@@ -94,11 +94,12 @@ class Proxy
 
 		$list = array_map(function($c) use ($network) {
 			$container = DockerContainer::get($c);
+			$ports = $container->getPorts();
 			return [
 				'name' => $c,
 				'network' => $network->getName(),
 				'ip_address' => $container->getIpAddress($network->getName()),
-				'port' => 80,
+				'port' => array_column($ports, 'port'),
 			];
 		}, $list);
 
@@ -127,30 +128,33 @@ class Proxy
 		$ip_address = preg_quote($container['ip_address']);
 		$port = $container['port'];
 
-		preg_match_all("/upstream\s(?P<upstream>".$name."-".$port.")\s{(?P<config>[^}]*)}/m", $nginxConfig, $upstreams);
-		// group all results by index
-		$upstreams = array_map(null, $upstreams['upstream'], $upstreams['config']);
-		// remap them into associative array
-		$upstreams = array_reduce($upstreams, function($a, $c){
-			$a[array_shift($c)] = array_shift($c);
-			return $a;
-		}, []);
+		foreach($port as $portNumber){
+			preg_match_all("/upstream\s(?P<upstream>".$name."-".$portNumber.")\s{(?P<config>[^}]*)}/m", $nginxConfig, $upstreams);
 
-		if(empty($upstreams)) return $container;
-
-		$feedback = array_map(function($u) use ($name, $network, $ip_address, $port) {
-			preg_match(
-				"/##\sCan be connected with \"(?P<network>".$network.")\" network\s*".
-				"server\s(?P<ip_address>".$ip_address.")\:(?P<port>".$port.")\;/m", $u, $feedback);
-
-			return array_intersect_key($feedback, array_flip(['name', 'network', 'ip_address', 'port']));
-		}, $upstreams);
-
-		if(empty($feedback)) return $container;
-
-		// TODO: What other feedback do I want to do here?
-
-		$container['nginx_status'] = '{grn}passed{end}';
+			// group all results by index
+			$upstreams = array_map(null, $upstreams['upstream'], $upstreams['config']);
+			// remap them into associative array
+			$upstreams = array_reduce($upstreams, function($a, $c){
+				$a[array_shift($c)] = array_shift($c);
+				return $a;
+			}, []);
+	
+			if(empty($upstreams)) return $container;
+	
+			$feedback = array_map(function($u) use ($name, $network, $ip_address, $port) {
+				preg_match(
+					"/##\sCan be connected with \"(?P<network>".$network.")\" network\s*".
+					"server\s(?P<ip_address>".$ip_address.")\:(?P<port>".$port.")\;/m", $u, $feedback);
+	
+				return array_intersect_key($feedback, array_flip(['name', 'network', 'ip_address', 'port']));
+			}, $upstreams);
+	
+			if(empty($feedback)) return $container;
+	
+			// TODO: What other feedback do I want to do here?
+	
+			$container['nginx_status'][$portNumber] = '{grn}passed{end}';
+		}
 
 		return $container;
 	}
