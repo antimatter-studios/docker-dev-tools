@@ -7,6 +7,7 @@ use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
 use DDT\Config\ProjectConfig;
+use DDT\Exceptions\Git\GitNotARepositoryException;
 use DDT\Services\GitService;
 use DDT\Text\Table;
 
@@ -41,28 +42,37 @@ class ProjectTool extends Tool
                 "or scripts installed within the projects themselves",
             ],
             'options' => [
-                "{cyn}Managing Groups{end}:",
-                "\tlist: List the project groups",
-                "\tadd-group --name=group-name: Create a new project group.",
-                "\tremove-group --name=group-name: Remove a project group.\n",
+                "{cyn}General Functionality{end}:",
+                "\tlist: Will list a table with all the registered projects with their groups, paths, vcs info etc",
+                
+                "\n\t{cyn}Managing Projects{end}:",
+                "\tadd-project {yel}<path> [optional: <project-name> <type> <group> <vcs> <remote-name>]{end}: Will add a new project that already exists on the disk.",
+                "\t\t{yel}<project-name>{end}: Can be autodetected from the folder name that is given in the path",
+                "\t\t{yel}<type=node|composer|ddt>{end}: Can be autodetected from looking at the files contained in the project, if given must be one of the types defined below",
+                "\t\t{yel}<group>{end}: Can be empty, but groups may become required when two projects have the same name, or you can use path in other functionality to reduce the ambiguity",
+                "\t\t{yel}<vcs>{end}: Can be autodetected from the projects contents. But Git is only supported right now, but this is the clone url",
+                "\t\t{yel}<remote-name>{end}: Defaults to 'origin', but this is very git-centric and may change if other vcs systems are supported in the future",
+                "\tremove-project {yel}<project-name> [optional: <path>]{end}: Remove a project, path is optional because maybe there are multiple projects with the same name",
 
-                "{cyn}Adding Projects{end}:",
-                "\tadd-project --name=<project-name>: Will add a new project that already exists on the disk.",
-                "\t--group=<group>: (REQUIRED) The group to which this project will be added",
-                "\t--path=<path>: (REQUIRED) The location on the filesystem for this project",
-                "\t--type=node|composer|ddt>: (OPTIONAL: default=ddt) One of the supported project types. {yel}(See Project Type list below){end}\n",
+                "\n\t{cyn}Managing Groups{end}:",
+                "\tadd-group {yel}<project-name> <group> [optional: <path>]{end}: Add a project to a group, path is optional because if you have two projects with the same name, you can add the path to reduce the ambiguity which project to manipulate",
+                "\tremove-group {yel}<project-name> <group> [optional: <path>]{end}: Remove a project from a group, path is optional because of the same reasons as with add-project",
 
-                "{cyn}Removing Projects{end}:",
-                "\tremove-project --name=project-name: Remove the project from the group given.",
-                "\t--group: (REQUIRED) The group from which this project will be removed",
-                "\t--delete: (OPTIONAL) {red}**DANGEROUS**{end} This option will not only remove the project from a group, but delete the files from disk\n",
-
-                "{cyn}Project Types{end}:",
+                "\n\t{cyn}Project Types{end}:",
                 "\tThese just define where the configuration will be stored, it has one of the following values:\n",
                 "\tnode: This project type will use the 'package.json' file.",
                 "\tcomposer: This project type will use the 'composer.json' file.",
                 "\tddt: {yel}(default if no type given){end} This project will use the 'ddt-project.json' file",
             ],
+            'notes' => [
+                "- If adding a new project which already exists, you have to be careful that the groups over",
+                "\toverlap. As it would create a situation where you would have the same project existing in",
+                "\tmultiple groups with the same name, if you tried to operate upon it, which one would",
+                "\tyou target? Since they both have the same name, but different directories, so could have",
+                "\tdifferent code too. Hence this situation is not possible to tolerate",
+                "- If adding a new project which already exists, you cannot leave the groups empty, as again",
+                "\tit makes it hard or impossible to know how to work with it.",
+            ]
         ];
     }
 
@@ -75,50 +85,64 @@ class ProjectTool extends Tool
     {
         $this->cli->print("{blu}Project Group List:{end}\n");
 
-        $groupList = $this->config->listGroup();
+        $projectList = $this->config->listProjects();
 
         $table = container(Table::class);
-        $table->addRow(['{yel}Group{end}', '{yel}Project{end}', '{yel}Path{end}', '{yel}Type{end}', '{yel}Repository Url{end}', '{yel}Remote Name{end}']);
+        $table->setColumnMapping(['project', 'group', 'path', 'type', 'vcs', 'remote']);
+        $table->addRow(['{yel}Project{end}', '{yel}Group{end}', '{yel}Path{end}', '{yel}Type{end}', '{yel}Repository Url{end}', '{yel}Remote Name{end}']);
 
-        if(empty($groupList)){
-            $table->addRow(['There are no groups']);
+        if(empty($projectList)){
+            $table->addRow(['There are no projects']);
         }
-        
-        foreach($groupList as $group => $projectList) {
-            if(empty($projectList)){
-                $table->addRow([$group, 'There are no projects']);
+
+        foreach($projectList as $project) {
+            // To allow projects with empty group lists to display using the same logic as below
+            if(empty($project['group'])){
+                $project['group'][] = '';
             }
 
-            foreach($projectList as $project => $config) {
-                $table->addRow([$group, $project, $config['path'], $config['type'], $config['repo']['url'], $config['repo']['remote']]);
+            foreach($project['group'] as $group){
+                // If a project has multiple projects, render each as a separate empty row 
+                // (apart from group), with a little "+ next" to it
+                if(empty($project['name'])){
+                    $group = "+ $group";
+                }
+                $table->addRow([$project['name'], $group, $project['path'], $project['type'], $project['vcs'], $project['remote']]);
+                // For all extra rows created by multiple groups, leave all the other columns empty except group
+                $project = array_fill_keys(['name', 'path', 'type', 'vcs', 'remote'], null);
             }
+            
         }
 
         $this->cli->print($table->render());
     }
 
-    public function addGroup(string $name): void
+    public function addGroup(string $project, string $group, ?string $path=null): void
     {
-        $this->cli->print("{blu}Adding group '$name'{end}\n");
+        $pathText = !empty($path) ? " with given path '$path'" : "";
 
-        if($this->config->addGroup($name)){
-            $this->cli->print("{grn}Project was added, listing projects{end}...\n");
+        $this->cli->print("{blu}Adding group '$group' to project '$project' $pathText{end}\n");
+
+        if($this->config->addGroup($project, $group, $path)){
+            $this->cli->print("{grn}Group was added, listing projects{end}...\n");
 
             $this->list();
         }else{
-            $this->cli->print("{red}Adding the group '$name' has failed (maybe it already exists?){end}\n");
+            $this->cli->print("{red}Adding the group '$group' to project '$project' has failed{end}\n");
         }
     }
 
-    public function removeGroup(string $name): void
+    public function removeGroup(string $project, string $group, ?string $path=null): void
     {
-        $this->cli->print("{blu}Removing group '$name'{end}\n");
+        $pathText = !empty($path) ? " with given path '$path'" : "";
 
-        if($this->config->removeGroup($name)){
+        $this->cli->print("{blu}Removing group '$group' from project '$project' $pathText{end}\n");
+
+        if($this->config->removeGroup($project, $group, $path)){
             $this->cli->print("{grn}Project was removed, listing projects{end}...\n");
             $this->list();
         }else{
-            $this->cli->print("{red}Removing the group '$name' has failed (maybe it doesn't exist?){end}\n");
+            $this->cli->print("{red}Removing the group '$group' from project '$project' has failed{end}\n");
         }
     }
 
@@ -143,60 +167,57 @@ class ProjectTool extends Tool
         return $type;
     }
 
-    public function addProjectNew(string $path, string $group){}
-
-    public function addProject(string $group, string $path, ?string $name=null, ?string $type=null, ?string $git=null, ?string $remote='origin'): void
+    public function addProject(string $path, ?string $project=null, ?string $type=null, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): void
     {
         $this->cli->print("{blu}Adding project{end}\n");
+        
+        $updatedPath = realpath($path);
+        if(!$updatedPath){
+            $this->cli->failure("{red}The path given '$path' was not valid, please check and try again{end}\n");
+        }
+        $path = $updatedPath;
 
         if($type === null){
             $type = $this->autoDetectProjectType($path);
+            $this->cli->print("Auto-detecting project type: '$type'\n");
         }
 
         if($this->isProjectType($type) === false){
-            $this->cli->print("{red}The project type '$type' given or auto-detected, can not be recognised. See help for options{end}\n");
-            return;
+            $this->cli->failure("{red}The project type '$type' given or auto-detected, can not be recognised. See help for options{end}\n");
         }
 
-        if($name === null){
-            $name = basename($path);
+        $path = rtrim($path, '/');
+
+        if($project === null){
+            $project = basename($path);
+            $this->cli->print("No project name given, using directory name '$project'\n");
         }
 
-        if(is_dir($path)){
-            $this->cli->print("Project '$name' exists?: {grn}Yes{end}\n");
-
-            // Resolve any relative paths into absolute ones
-            $path = realpath($path);
-
+        if($vcs === null){
             try{
-                $remoteUrl = $this->repoService->getRemote($path, $remote);
-                $this->cli->print("Git Remote Url ($remote): {grn}$remoteUrl{end}\n");    
-            }catch(\Exception $e){
-                $this->cli->print("Git Remote Url ($remote): {red}Error occurred, is this a git directory? Will skip this...{end}\n");
-                // Prevent the git configuration from being saved
-                $remoteUrl = null;
+                $vcs = $this->repoService->getRemote($path, $remote);
+            }catch(GitNotARepositoryException $e){
+                // do nothing
+                $this->cli->print("No git repository was found, nor one was given through the command line\n");
             }
-            
-            if($this->config->addProject($group, $name, $path, $type, $remoteUrl, $remote)){
-                $this->cli->success("The project '$name' with type '$type' was successfully added to the group '$group'\n");
-            }else{
-                $this->cli->failure("The project '$name' failed to be added to the group '$group'\n");
-            }
-        }else if($git !== null){
-            $this->cli->print("Project '$name' exists?: {red}No{end}\n");
+        }
+
+        if($this->config->addProject($path, $project, $type, $group, $vcs, $remote)){
+            $this->cli->success("The project '$project' with type '$type' was successfully added with the path '$path'\n");
         }else{
-            $this->cli->print("{red}Project '$name' in directory '$path' does not exist, but no --git option given in order to clone it{end}\n");
+            $this->cli->failure("The project '$project' failed\n");
         }
     }
 
-    public function removeProject(string $group, string $name, ?bool $delete=false): void
+    public function removeProject(string $project, ?string $path=null, ?bool $delete=false): void
     {
         $this->cli->print("{blu}Removing Project{end}\n");
+        $this->cli->debug("{red}[PROJECT]{end}: Delete functionality is not written yet\n");
 
-        if($this->config->removeProject($group, $name)){
-            $this->cli->success("The project '$name' was successfully removed from the group '$group'\n");
+        if($this->config->removeProject($project, $path)){
+            $this->cli->success("The project '$project' was successfully removed'\n");
         }else{
-            $this->cli->failure("The project '$name' failed to be removed from the group '$group'\n");
+            $this->cli->failure("The project '$project' failed to be remove\n");
         }
     }
 }
