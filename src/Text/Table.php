@@ -14,6 +14,7 @@ class Table
 	private $rightPadding = 0;
 	private $debug = false;
 	private $callback = [];
+	private $columnMapping = [];
 
     public function __construct(Text $text, ?array $data=[], int $tabWidth=2)
     {
@@ -22,12 +23,20 @@ class Table
 		$this->tabWidth = $tabWidth;
 		$this->numColumns = 0;
 		
-		$this->setCallback('array', function($renderer, $array) { 
+		$this->setCallback('array', function(Text $renderer, array $array, string $field) { 
 			return $renderer->write(implode(', ', $array)); 
 		});
 
-		$this->setCallback('object', function($renderer, $object) { 
+		$this->setCallback('object', function(Text $renderer, object $object, string $field) { 
 			return $renderer->write(get_class($object));
+		});
+
+		$this->setCallback('text', function(Text $renderer, string $text, string $field) {
+			return $renderer->write($text);
+		});
+
+		$this->setCallback('empty', function(Text $renderer, $null, string $field) {
+			return $renderer->write('');
 		});
 	}
 
@@ -56,15 +65,22 @@ class Table
 		$this->callback[$name] = $callback;
 	}
 
+	public function setColumnMapping(array $columnMapping): void
+	{
+		$this->columnMapping = $columnMapping;
+	}
+
 	public function addRow($data) {
 		if(count($data) > $this->numColumns){
 			$this->numColumns = count($data);
 		}
 
 		// Replace all special codes with shell script codes
-		$this->data[] = array_map(function($text) {
-			return $this->renderText($text);
-		}, $data);
+		$this->data[] = array_map(function($key) use ($data) {
+			$text = $data[$key];
+			$field = array_key_exists($key, $this->columnMapping) ? $this->columnMapping[$key] : $key;
+			return $this->renderText($text, (string)$field);
+		}, array_keys($data));
 	}
 
 	public function setRightPadding(int $padding = 0)
@@ -140,18 +156,22 @@ class Table
 		return $columns;
 	}
 
-	public function renderText($text): string
+	public function renderText($text, string $field): string
 	{
 		if(is_array($text)) {
-			return $this->callback['array']($this->text, $text);
+			return $this->callback['array']($this->text, $text, $field);
 		}
 		
 		if(is_object($text)) {
-			return $this->callback['object']($this->text, $text);
+			return $this->callback['object']($this->text, $text, $field);
 		}
 		
 		if(is_string($text)) {
-			return $this->text->write($text);
+			return $this->callback['text']($this->text, $text, $field);
+		}
+
+		if(empty($text)) {
+			return $this->callback['empty']($this->text, $text, $field);
 		}
 
 		throw new \Exception("Cannot render text as it's an unrecognised format");
