@@ -75,8 +75,8 @@ class RunTool extends Tool
             $runService->reset();
 
             if($project === null){
-                $project = $config->listProject($group);
-                $project = array_keys($project);
+                $projectList = $config->listProjectsInGroup($group);
+                $project = array_map(function($v){ return $v['name']; }, $projectList);
             }else{
                 $project = [$project];
             }
