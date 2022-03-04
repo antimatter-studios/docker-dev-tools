@@ -81,8 +81,8 @@ class RunTool extends Tool
                 $project = [$project];
             }
 
-            foreach($project as $name){
-                $runService->run($script, $group, $name, $arguments);
+            foreach($project as $projectName){
+                $runService->run($script, $group, $projectName, $arguments);
             }
         }catch(ConfigMissingException $exception){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
