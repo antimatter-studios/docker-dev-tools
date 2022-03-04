@@ -13,6 +13,7 @@ class Table
 	private $space = " ";
 	private $rightPadding = 0;
 	private $debug = false;
+	private $callback = [];
 
     public function __construct(Text $text, ?array $data=[], int $tabWidth=2)
     {
@@ -20,6 +21,14 @@ class Table
 		$this->data = $data;
 		$this->tabWidth = $tabWidth;
 		$this->numColumns = 0;
+		
+		$this->setCallback('array', function($renderer, $array) { 
+			return $renderer->write(implode(', ', $array)); 
+		});
+
+		$this->setCallback('object', function($renderer, $object) { 
+			return $renderer->write(get_class($object));
+		});
 	}
 
 	public function setDebug(bool $state)
@@ -41,6 +50,11 @@ class Table
 			var_dump($data);
 		}
     }
+
+	public function setCallback(string $name, callable $callback): void
+	{
+		$this->callback[$name] = $callback;
+	}
 
 	public function addRow($data) {
 		if(count($data) > $this->numColumns){
@@ -98,7 +112,7 @@ class Table
 
 		// Replace all special codes with shell script codes
 		$columns = array_map(function($text) {
-			return $this->text->write($text);
+			return $this->renderText($text);
 		}, $columns);
 
 		// Find the printing character widths for every column
@@ -126,6 +140,23 @@ class Table
 		}, array_keys($columns), $columns);
 
 		return $columns;
+	}
+
+	public function renderText($text): string
+	{
+		if(is_array($text)) {
+			return $this->callback['array']($this->text, $text);
+		}
+		
+		if(is_object($text)) {
+			return $this->callback['object']($this->text, $text);
+		}
+		
+		if(is_string($text)) {
+			return $this->text->write($text);
+		}
+
+		throw new \Exception("Cannot render text as it's an unrecognised format");
 	}
 
 	public function render(): ?string
