@@ -221,7 +221,7 @@ class ProxyTool extends Tool
                             $container['name'] . " $tag", 
                             $config['proto'].'://'.$config['host'], 
                             $config['port'], 
-                            array_key_exists('path', $config) ? ['path'] : '/', 
+                            array_key_exists('path', $config) ? $config['path'] : '/', 
                             $nginxStatus,
                         ]);
                     }
