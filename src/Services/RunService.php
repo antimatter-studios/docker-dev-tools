@@ -72,10 +72,10 @@ class RunService
 	}
 
 	// FIXME: I don't know why I have this function and i only use it in one place
-	public function getProject(string $group, string $project): StandardProjectConfig
+	public function getProject(string $project, ?string $group=null): StandardProjectConfig
 	{
 		//	TODO: how to handle when a project is not found, it'll throw exceptions?
-		return $this->projectConfig->getProjectConfig($project);
+		return $this->projectConfig->getProjectConfig($project, null, $group);
 	}
 
 	public function run(string $script, string $project, ?string $group=null, ?ArgumentList $extraArgs=null)
@@ -83,7 +83,7 @@ class RunService
 		try{
 			$this->cli->debug("{red}[RUNSERVICE]:{end} Running: '$script', '$project', '$group'\n");
 			// Obtain the project configuration
-			$projectConfig = $this->getProject('', $project);
+			$projectConfig = $this->getProject($project, $group);
 		
 			// Check if script is already running, we refuse to run scripts if 
 			// it's already run since it might lead to infinite loops
@@ -123,13 +123,15 @@ class RunService
 			throw new ProjectScriptInvalidException($group, $project, $script);
 		}
 
+		$groupText = !empty($group) ? ", group: {yel}$group{end}" : "";
+		$extraArgsText = !empty((string)$extraArgs) ? ", extra args: {yel}'$extraArgs'{end}" : "";
+
 		// Otherwise, cd into the project path and run the script as specified
-		$this->cli->print("\n{blu}Run Script:{end} group: {yel}$group{end}, project: {yel}$project{end}, script: {yel}$script{end}, extra args: {yel}'$extraArgs'{end}\n");
+		$this->cli->print("\n{blu}Run Script:{end} script: {yel}$script{end}, project: {yel}$project{end}{$groupText}{$extraArgsText}\n");
 
 		$command = $this->resolveCommandList($command, $projectConfig);
 
 		foreach($command as $commandLine){
-			var_dump($commandLine);
 			// If we find a parameterised command line, try to follow it
 			[$commandLine, $extraArgs] = $this->buildCommandLine($commandLine, $extraArgs);
 			
