@@ -4,11 +4,14 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\SystemConfig;
+use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Autowire\CannotAutowireParameterException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
 
-class EntrypointTool extends Tool
+class EntrypointTool extends Tool implements ToolRegistryInterface
 {
+    private $tools = [];
+
     public function __construct(CLI $cli)
     {
         parent::__construct('entrypoint', $cli);
@@ -59,6 +62,7 @@ class EntrypointTool extends Tool
     {        
         try{
             $requestedCommand = null;
+            $methodName = null;
 
             // TODO: need to support ddt --version commands
             // right now the entrypoint is too linear in that it assumes everything running is
@@ -132,25 +136,27 @@ class EntrypointTool extends Tool
 
     public function getToolMetadata(): array
     {
-        $list = array_map(function($t){ 
-            return ['name' => str_replace(['tool', '.php'], '', strtolower(basename($t))), 'path' => $t];
-        }, glob(__DIR__ . "/../Tool/?*Tool.php"));
+        $list = $this->tools;
 
         $options = [];
 
-        foreach($list as $tool){
-            // Don't process 'itself' or 'entrypoint'
-            if($tool['name'] === $this->name){
-                continue;
+        foreach($this->tools as $group){
+            $options[] = "{cyn}{$group['name']}{end}";
+            foreach($group['tools'] as $tool){
+                // Don't process 'itself' or 'entrypoint'
+                if($tool['name'] === $this->name){
+                    continue;
+                }
+
+                /** @var Tool */
+                $instance = $this->getTool($tool['name']);
+
+                $metadata = $instance->getToolMetadata();
+                $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
+
+                $options[] = "\t - {yel}{$instance->getToolName()}{end}: {$shortDescription}";
             }
-
-            /** @var Tool */
-            $instance = $this->getTool($tool['name']);
-
-            $metadata = $instance->getToolMetadata();
-            $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
-            
-            $options[] = "  {yel}{$instance->getToolName()}{end}: {$shortDescription}";
+            $options[] = "";
         }
 
         return [
@@ -162,5 +168,51 @@ class EntrypointTool extends Tool
             ),
             'options' => implode("\n", $options),
         ];
+    }
+
+    public function registerTools($name, $path, $namespace)
+    {
+        $namespace = rtrim($namespace, "\\");
+
+        $tools = glob($path . "/Tool/?*Tool.php");
+        $tools = array_map(function($file) use ($namespace) {
+            return ['name' => str_replace(['tool', '.php'], '', strtolower(basename($file))), 'namespace' => $namespace, 'path' => realpath($file)];
+        }, $tools);
+
+        $this->tools[] = ['name' => $name, 'tools' => $tools];
+
+        //var_dump($this->tools);
+
+        return $this->tools;
+    }
+
+    public function listTools(): array
+    {
+        $list = array_map(function($t){ 
+            return ['name' => str_replace(['tool', '.php'], '', strtolower(basename($t))), 'path' => $t];
+        }, glob(__DIR__ . "/../Tool/?*Tool.php"));
+        
+        return [];
+    }
+
+    public function getTool(string $name): Tool
+    {
+        if(empty($name)) throw new \Exception('Tool name cannot be empty');
+
+        $name = strtolower($name);
+        $name = explode("-", $name);
+        $name = implode(" ", $name);
+        $name = ucwords($name);
+        $name = str_replace(" ", "", $name);
+
+        foreach($this->tools as $group){
+            foreach($group['tools'] as $tool){
+                if($tool['name'] === strtolower($name)){
+                    return container("{$tool['namespace']}\\{$name}Tool");
+                }
+            }
+        }
+
+        throw new ToolNotFoundException($name);
     }
 }

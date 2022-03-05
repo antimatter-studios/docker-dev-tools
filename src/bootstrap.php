@@ -11,6 +11,7 @@ use DDT\Tool\EntrypointTool;
 use DDT\Config\SystemConfig;
 use DDT\Contract\IpServiceInterface;
 use DDT\Contract\DnsServiceInterface;
+use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Container\ContainerNotInstantiatedException;
@@ -25,7 +26,11 @@ try{
 	}
 
 	spl_autoload_register(function ($fqcn) {
-		$class = implode('/', array_slice(explode('\\', $fqcn), 1));
+		if(in_array($fqcn, ['string'])) return false;
+
+		// Chop off the DDT namespace to get the right filename
+		$class = array_slice(explode('\\', $fqcn), 1);
+		$class = implode('/', $class);
 
 		$file = __DIR__ . '/' . $class . '.php';
 
@@ -133,13 +138,21 @@ try{
 		}
 	}
 
-	$tool = container(EntrypointTool::class);
+	$entrypoint = container(EntrypointTool::class);
+	$container->singleton(ToolRegistryInterface::class, $entrypoint);
+
+	$entrypoint->registerTools("Built-in Tools", __DIR__, "\\DDT\\Tool\\");
+	
+	$extensionBootstraps = glob(__DIR__ . '/../extensions/**/src/bootstrap.php');
+	foreach($extensionBootstraps as $bootstrap){
+		require_once($bootstrap);
+	}
 	
 	// Before handling the request, check to see if the timeout passes and self update
-	$tool->getTool('self-update')->run();
+	$entrypoint->getTool('self-update')->run();
 
 	// But in the end, handle the request made by the user
-	$tool->handle();
+	$entrypoint->handle();
 }catch(ConfigMissingException $e){
 	$cli->failure(get_class($e) . $text->box($e->getMessage(), "wht", "red"));
 }catch(ConfigInvalidException $e){

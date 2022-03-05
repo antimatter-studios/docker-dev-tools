@@ -4,12 +4,13 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\SystemConfig;
+use DDT\Contract\ToolRegistryInterface;
 use DDT\Text\Text;
 
 class SetupTool extends Tool
 {
-    /** @var Text */
-    private $text;
+    /** @var ToolRegistry */
+    private $toolRegistry;
 
     /** @var $home */
     private $home;
@@ -24,11 +25,11 @@ class SetupTool extends Tool
 		".zshrc",
 	];
 
-    public function __construct(CLI $cli, Text $text, ?string $home=null)
+    public function __construct(CLI $cli, ToolRegistryInterface $toolRegistry, ?string $home=null)
     {
     	parent::__construct('setup', $cli);
 
-        $this->text = $text;
+        $this->toolRegistry = $toolRegistry;
 
         $this->home = $home ?? $_SERVER['HOME'];
         $this->files = $this->getExistingFiles($this->files);
@@ -216,7 +217,7 @@ class SetupTool extends Tool
         // place. It's not optional because without it, nothing else will run
         // Use the ConfigTool to get the job done
         /** @var ConfigTool */
-        $configTool = $this->getTool('config');
+        $configTool = $this->toolRegistry->getTool('config');
         $systemConfig = SystemConfig::instance();
         
         // Whether or not to overwrite the config can be controlled by the --overwrite=(bool) flag

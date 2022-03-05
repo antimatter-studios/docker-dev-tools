@@ -5,6 +5,7 @@ namespace DDT\Tool;
 use DDT\CLI;
 use DDT\Config\ExtensionConfig;
 use DDT\Config\External\ExtensionPackageConfig;
+use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Config\ConfigWrongTypeException;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
@@ -20,12 +21,16 @@ class ExtensionTool extends Tool
     /** @var \DDT\Services\GitService $gitService The service that can handle git repositories and manage them */
     private $gitService;
 
-    public function __construct(CLI $cli, ExtensionConfig $config, GitService $gitService)
+    /** @var ToolRegistry An interface that can allow one tool to acquire another tool */
+    private $toolRegistry;
+
+    public function __construct(CLI $cli, ExtensionConfig $config, GitService $gitService, ToolRegistryInterface $toolRegistry)
     {
     	parent::__construct('extension', $cli);
 
         $this->config = $config;
         $this->gitService = $gitService;
+        $this->toolRegistry = $toolRegistry;
 
         foreach(['install', 'uninstall', 'update', 'list'] as $command){
             $this->setToolCommand($command);
@@ -95,7 +100,7 @@ class ExtensionTool extends Tool
                 $test = $extensionConfig->getTest();
 
                 /** @var SetupTool */
-                $setupTool = $this->getTool('setup');
+                $setupTool = $this->toolRegistry->getTool('setup');
                 $this->cli->print("Removing extension '$name' with path '$path' from system files\n");
                 $setupTool->add($path);
                 
@@ -127,7 +132,7 @@ class ExtensionTool extends Tool
         $test = $extension['test'];
 
         /** @var SetupTool */
-        $setupTool = $this->getTool('setup');
+        $setupTool = $this->toolRegistry->getTool('setup');
         $this->cli->print("Removing extension '$name' with path '$path' from system files\n");
         $setupTool->remove($path);
         

@@ -4,6 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\SystemConfig;
+use DDT\Contract\ToolRegistryInterface;
 use DDT\Text\Text;
 
 class StatusTool extends Tool
@@ -14,12 +15,16 @@ class StatusTool extends Tool
     /** @var SystemConfig  */
     private $config;
 
-    public function __construct(CLI $cli, Text $text, SystemConfig $config)
+    /** @var ToolRegistry */
+    private $toolRegistry;
+
+    public function __construct(CLI $cli, Text $text, SystemConfig $config, ToolRegistryInterface $toolRegistry)
     {
     	parent::__construct('status', $cli);
 
         $this->text = $text;
         $this->config = $config;
+        $this->toolRegistry = $toolRegistry;
 
         $this->setToolCommand('main', null, true);
     }
@@ -46,11 +51,11 @@ class StatusTool extends Tool
     public function main()
     {
         /** @var ProxyTool */
-        $proxy = $this->getTool('proxy');
+        $proxy = $this->toolRegistry->getTool('proxy');
         $proxy->status();
 
         /** @var DnsTool */
-        $dns = $this->getTool('dns');
+        $dns = $this->toolRegistry->getTool('dns');
         $dns->status();
     }
 }
