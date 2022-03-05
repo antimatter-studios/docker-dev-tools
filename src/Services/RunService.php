@@ -196,7 +196,7 @@ class RunService
 				foreach($depScript as $s){
 					// Run the script for this dependency
 					// TODO: how to handle a the return value from this?
-					$this->run($s, $depGroup, $project, $extraArgs);
+					$this->run($s, $project, $depGroup, $extraArgs);
 				}
 			}else{
 				$this->cli->debug("{red}[RUNSERVICE]{end}: Unexpected script configuration, must be a string|string[] value\n");
