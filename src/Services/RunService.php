@@ -16,7 +16,7 @@ class RunService
 	private $projectConfig;
 
 	/** @var array The stack of scripts running and used to detect circular dependencies */
-	private $stack;
+	private $stack = [];
 
 	public function __construct(CLI $cli, ProjectConfig $config)
 	{
