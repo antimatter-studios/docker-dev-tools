@@ -9,6 +9,7 @@ use DDT\Exceptions\CLI\ArgumentException;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use DDT\Exceptions\Project\ProjectFoundWrongGroupException;
+use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Services\RunService;
 use DDT\Text\Table;
 use PDO;
@@ -51,6 +52,7 @@ class RunTool extends Tool
                 "{yel}{$this->getEntrypoint()} run start -- mycompany{end}: Run the 'start' script from the ALL the projects in the 'mycompany' group",
                 "{yel}{$this->getEntrypoint()} run start mycompany api-project{end}: The same command as above, but using anonymous parameters",
                 "{yel}{$this->getEntrypoint()} run --list{end}: Will output all the possible scripts that it's possible to run",
+                "{yel}{$this->getEntrypoint()} run --list --group=mycompany: Will limit the output from --list to only scripts within a particular group",
             ],
             'notes' => [
                 "- You can not use * as a wildcard, just in case you are wondering why, because",
@@ -64,7 +66,7 @@ class RunTool extends Tool
         ];
     }
 
-    public function list(): void
+    public function list(?string $group=null): void
     {
         /* @var Table $table */
         $table = container(Table::class);
@@ -75,6 +77,10 @@ class RunTool extends Tool
             foreach($projectConfig->listScripts() as $script => $scriptCommand){
                 if(is_array($scriptCommand)) {
                     $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
+                }
+
+                if($group !== null && !in_array($group, $project['group'])){
+                    continue;
                 }
 
                 $table->addRow([$project['name'], implode(', ', $project['group']), $script, $scriptCommand]);
@@ -124,6 +130,9 @@ class RunTool extends Tool
                 if(count($projectList) > 1){
                     throw new ProjectFoundMultipleException($project);
                 }
+                if(empty($projectList)){
+                    throw new ProjectNotFoundException($project);
+                }
                 $data = array_shift($projectList);
                 $group = array_shift($data['group']);
                 $projectList = [$project];
@@ -150,8 +159,10 @@ class RunTool extends Tool
             foreach($projectList as $projectName){
                 $this->runService->run($script, $projectName, $group, $arguments);
             }
-        }catch(ConfigMissingException $exception){
+        }catch(ConfigMissingException $e){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
+        }catch(ProjectNotFoundException $e){
+            $this->cli->failure("The project was not found '" . $e->getProject() . "'");
         }
     }
 }
