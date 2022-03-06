@@ -33,15 +33,35 @@ class ProjectConfig
 
 	public function listProjectsInGroup(string $group): array
 	{
-		return array_filter($this->listProjects(), function($config) use ($group) {
-			return in_array($group, $config['group']);
-		});
+		return $this->listProjectsByKey('group', $group);
 	}
 
 	public function listProjectsByName(string $project): array
 	{
-		return array_filter($this->listProjects(), function($config) use ($project) {
-			return $project === $config['name'];
+		return $this->listProjectsByKey('name', $project);
+	}
+
+	public function listProjectsByKey(string $key, string $value): array
+	{
+		return $this->listProjectsByFilter([$key => $value]);
+	}
+
+	public function listProjectsByFilter(array $filter): array
+	{
+		return array_filter($this->listProjects(), function($config) use ($filter) {
+			foreach($filter as $key => $value){
+				if(!array_key_exists($key, $config)) return false;
+				
+				if($key === 'group') {
+					if(!in_array($value, $config[$key])) {
+						return false;
+					}
+				}else if($config[$key] !== $value) {
+					return false;
+				}
+			}
+
+			return true;
 		});
 	}
 
