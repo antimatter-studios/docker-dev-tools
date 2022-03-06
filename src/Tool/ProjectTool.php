@@ -167,14 +167,27 @@ class ProjectTool extends Tool
         return $type;
     }
 
-    public function addProject(string $path, ?string $project=null, ?string $type=null, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): void
+    public function addProject(string $path, ?string $project=null, ?string $type=null, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): bool
     {
         $this->cli->print("{blu}Adding project{end}\n");
         
         $updatedPath = realpath($path);
-        if(!$updatedPath){
+        
+        // Path does not exist, but vcs parameter was not specified so cannot clone into this location
+        if(!$updatedPath && $vcs === null){
             $this->cli->failure("{red}The path given '$path' was not valid, please check and try again{end}\n");
         }
+        
+        // Path does not exist, but vcs is not null, check it's valid and if so, clone project into that location
+        if(!$updatedPath && $vcs !== null){
+            if($this->repoService->exists($vcs) && $this->repoService->clone($vcs, $path)){
+                $this->cli->print("{grn}Repository cloned, continuing...{end}\n");
+                $updatedPath = realpath($path);
+            }else{
+                $this->cli->failure("{red}An attempt to clone the repository was made, but failed. See the terminal output to try to correct the problem manually\n");
+            }
+        }
+
         $path = $updatedPath;
 
         if($type === null){
