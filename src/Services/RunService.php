@@ -46,7 +46,7 @@ class RunService
 	private function buildCommandLine(string $commandLine, ?string $extraArgs=null): array
 	{
 		$index = 1;
-		$extraArgs = explode(' ', $extraArgs);
+		$extraArgs = explode(' ', $extraArgs ?? '');
 
 		while(strpos($commandLine, '$'.$index) !== false) {
 			$commandLine = str_replace('$'.$index, array_shift($extraArgs) ?? '', $commandLine);
