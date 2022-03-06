@@ -112,9 +112,14 @@ class DockerContainer
         try{
             if($this->id) return $this->id;
 
-            $id = $this->docker->inspect('container', $this->name, '.Id');
+            $id = $this->docker->inspect('container', $this->name, '{{json .Id}}');
+            $id = current($id);
 
-            return current($id);
+            if(empty($id)){
+                throw new \Exception("There was no container found");
+            }
+
+            return $id;
         }catch(\Exception $e){
             throw new DockerContainerNotFoundException($this->name);
         }
@@ -127,7 +132,7 @@ class DockerContainer
 
     public function isRunning(): bool
     {
-        $status = $this->docker->inspect('container', $this->name, '.State.Status');
+        $status = $this->docker->inspect('container', $this->name, '{{json .State.Status }}');
         $status = $status[0];
 
         return $status === 'running';
@@ -135,12 +140,12 @@ class DockerContainer
 
     public function listNetworks(): array
     {
-        return $this->docker->inspect('container', $this->name, '.NetworkSettings.Networks');
+        return $this->docker->inspect('container', $this->name, '{{json .NetworkSettings.Networks }}');
     }
 
     public function listEnvParams(): array
     {
-        $list = $this->docker->inspect('container', $this->name, '.Config.Env');
+        $list = $this->docker->inspect('container', $this->name, '{{json .Config.Env }}');
         
         return array_reduce($list, function($a, $e) {
             [$name, $value] = explode("=", $e) + [null, null];
@@ -157,19 +162,19 @@ class DockerContainer
 
     public function listLabels(): array
     {
-        return $this->docker->inspect('container', $this->name, '.Config.Labels');
+        return $this->docker->inspect('container', $this->name, '{{json .Config.Labels }}');
     }
 
     public function getIpAddress(string $network): string
     {
-        $ipAddress = $this->docker->inspect('container', $this->name, ".NetworkSettings.Networks.{$network}.IPAddress");
+        $ipAddress = $this->docker->inspect('container', $this->name, "{{json .NetworkSettings.Networks.{$network}.IPAddress }}");
 
         return current($ipAddress);
     }
 
     public function getPorts(): array
     {
-        $ports = $this->docker->inspect('container', $this->name, ".NetworkSettings.Ports");
+        $ports = $this->docker->inspect('container', $this->name, "{{json .NetworkSettings.Ports }}");
 
         return array_reduce(array_keys($ports), function($result, $key) use ($ports) {
             [$port, $protocol] = explode('/', $key);

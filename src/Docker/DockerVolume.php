@@ -84,7 +84,7 @@ class DockerVolume
     public function getId(): string
     {
         try{
-            $id = $this->docker->inspect('volume', $this->name, '.Name');
+            $id = $this->docker->inspect('volume', $this->name, '{{json .Name }}');
 
             return $id[0];
         }catch(\Exception $e){

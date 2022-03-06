@@ -192,8 +192,8 @@ class Docker
 	public function inspect(string $type, string $name, ?string $filter='.'): ?array
 	{
 		try{
-			$result = $this->exec("$type inspect $name -f '{{json $filter}}'");
-			$result = implode("\n",$result);
+			$result = $this->exec("$type inspect $name -f '$filter'");
+			$result = trim(implode("\n",$result));
 
 			// attempt to decode the result, it might fail cause some return values are not valid json
 			$r = json_decode($result, true);
