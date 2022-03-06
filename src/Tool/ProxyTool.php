@@ -197,7 +197,12 @@ class ProxyTool extends Tool
             '{yel}Nginx Status{end}',
         ]);
 
-        foreach($this->proxy->getNetworks(true) as $network){
+        $networkList = $this->proxy->getNetworks(true);
+        $networkIndex = 1;
+        $networkCount = count($networkList);
+        foreach($networkList as $network){
+            $text = "\r{yel}Scanning Network (" . $networkIndex++ . "/$networkCount){end}: '$network'";
+
             try{
                 $containerList = $this->proxy->getContainersOnNetwork($network);
             }catch(DockerNetworkNotFoundException $e){
@@ -209,7 +214,10 @@ class ProxyTool extends Tool
                 $table->addRow([$network, "{yel}There are no containers{end}"]);
             }
 
+            $containerIndex = 1;
+            $containerCount = count($containerList);
             foreach($containerList as $container){
+                $this->cli->print($text . ", reading container list (" . $containerIndex++ ."/$containerCount)...");
                 try{
                     $configurations = $this->proxy->getContainerProxyEnv($container['name']);
                     foreach($configurations as $config){
@@ -228,6 +236,12 @@ class ProxyTool extends Tool
                 }catch(\Exception $e){
                     $this->cli->debug("{red}[PROXY]{end}: Could not read proxy config for container '{$container['name']}'\n");
                 }
+            }
+            
+            if($containerCount > 0){
+                $this->cli->print("\n");
+            }else{
+                $this->cli->print($text . ", no containers\n");
             }
         }
 
