@@ -76,7 +76,6 @@ class CLI
 	{
 		if($enabled === null){
 			$enabled = function($text){
-				$text = $this->text->write($text);
 				print($text);
 				return $text;
 			};
@@ -268,10 +267,7 @@ class CLI
 
 		$this->exitCode = $code;
 
-		$debug = "{red}[EXEC]:{end} $command";
-		$debug = "$debug, {blu}Return Code:{end} $code";
-		$debug = "$debug, {blu}Error Output:{end} '".self::$stderr."'";
-		$this->debug($debug);
+		$this->debug("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
 
 		if($code !== 0 && $throw === true){
 			throw new ExecException(self::$stdout, self::$stderr, $code);
@@ -284,7 +280,7 @@ class CLI
 
 	public function passthru(string $command, bool $throw=true): int
 	{
-		$this->debug("{red}[PASSTHRU]:{end} $command");
+		$this->debug("{red}[PASSTHRU]:{end} ", [$command]);
 
 		$redirect = $this->statusChannel('debug') ? "" : "2>&1";
 
@@ -303,21 +299,24 @@ class CLI
 	{
 		if(empty($string)) return '';
 
-		return $this->writeChannel('stdout', $string);
+		return $this->writeChannel('stdout', $this->text->write($string));
 	}
 
-	public function debug(?string $string='')
+	public function debug(?string $string='', ?array $params=[])
 	{
 		if(empty($string)) return '';
 
-		return $this->writeChannel('debug', '{blu}[DEBUG]:{end} '.trim($string)."\n");
+		$string = $this->text->write('{blu}[DEBUG]:{end} ' . $string);
+		$string = trim(sprintf($string, ...$params));
+
+		return $this->writeChannel('debug', "$string\n");
 	}
 
 	public function quiet(?string $string='')
 	{
 		if(empty($string)) return '';
 
-		return $this->writeChannel('quiet', $string);
+		return $this->writeChannel('quiet', $this->text->write($string));
 	}
 
 	public function success(?string $string=null)
