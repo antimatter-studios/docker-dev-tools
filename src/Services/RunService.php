@@ -43,7 +43,7 @@ class RunService
 		return in_array($key, $this->stack);
 	}
 
-	private function buildCommandLine(string $commandLine, string $extraArgs): array
+	private function buildCommandLine(string $commandLine, ?string $extraArgs=null): array
 	{
 		$index = 1;
 		$extraArgs = explode(' ', $extraArgs);
