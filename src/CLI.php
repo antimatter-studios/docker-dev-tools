@@ -2,6 +2,7 @@
 
 namespace DDT;
 
+use DDT\Exceptions\CLI\AskResponseRejectedException;
 use Exception;
 use DDT\Text\Text;
 use DDT\Exceptions\CLI\ExecException;
@@ -59,10 +60,16 @@ class CLI
 		return $withPath ? $this->script : basename($this->script);
 	}
 
-	public function ask(string $question, array $accept): string
+	public function ask(string $question, ?array $accept=null): string
 	{
-		$responses = "(Accepts: " . implode(", ", $accept) . "): ";
-		return readline($this->text->write("{yel}$question $responses{end}"));
+		$responses = is_array($accept) ? "(Accepts: " . implode(", ", $accept) . "): " : "";
+		$answer = readline($this->text->write("{yel}$question $responses{end}"));
+
+		if(is_array($accept) && !in_array($answer, $accept)){
+			throw new AskResponseRejectedException("The answer was not one of the accepted inputs", $answer, $accept);
+		}
+
+		return $answer;
 	}
 
 	public function listenChannel(string $channel, ?bool $state=true, ?callable $enabled=null, ?callable $disabled=null)
