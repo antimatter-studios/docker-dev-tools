@@ -38,7 +38,11 @@ class DockerContainer
 
             $this->run($image, $name, $command, $volumes, $options, $env, $ports, $labels, $background);
 
-            $this->id = $this->getId();
+            if($background){
+                $this->id = $this->getId();
+            }else{
+                // We can not set the id of a foreground container, cause it ran, completed, then destroyed itself
+            }
         }
     }
 
