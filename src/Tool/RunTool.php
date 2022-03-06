@@ -15,9 +15,18 @@ use PDO;
 
 class RunTool extends Tool
 {
-    public function __construct(CLI $cli)
+    /** @var ProjectConfig */
+    private $projectConfig;
+
+    /** @var RunService */
+    private $runService;
+
+    public function __construct(CLI $cli, ProjectConfig $projectConfig, RunService $runService)
     {
     	parent::__construct('run', $cli);
+
+        $this->projectConfig = $projectConfig;
+        $this->runService = $runService;
 
         $this->setToolCommand('script', null, true);
         $this->setToolCommand('--list', 'list');
@@ -55,14 +64,14 @@ class RunTool extends Tool
         ];
     }
 
-    public function list(ProjectConfig $config): void
+    public function list(): void
     {
         /* @var Table $table */
         $table = container(Table::class);
         $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
-        foreach($config->listProjects() as $path => $project){
-            $projectConfig = $config->getProjectConfig($project['name'], $path);
+        foreach($this->projectConfig->listProjects() as $path => $project){
+            $projectConfig = $this->projectConfig->getProjectConfig($project['name'], $path);
             foreach($projectConfig->listScripts() as $script => $scriptCommand){
                 if(is_array($scriptCommand)) {
                     $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
@@ -81,7 +90,7 @@ class RunTool extends Tool
         ]));
     }
 
-    public function script(ProjectConfig $config, RunService $runService, string $script, string $project, ?string $group=null): void
+    public function script(string $script, string $project, ?string $group=null): void
     {
         try{
             // Ignore the first three arguments, they would be script, group, project
@@ -89,7 +98,7 @@ class RunTool extends Tool
             // how to differentiate between a project name and an extra argument to forward on
             $arguments = new ArgumentList($this->cli->getArgList(), 3);
 
-            $runService->reset();
+            $this->runService->reset();
 
             $wildcard = '--';
 
@@ -105,13 +114,13 @@ class RunTool extends Tool
 
             // Make the project list from every project inside a particular group
             if($project === $wildcard && $group !== null){
-                $projectList = $config->listProjectsInGroup($group);
+                $projectList = $this->projectConfig->listProjectsInGroup($group);
                 $projectList = array_map(function($v){ return $v['name']; }, $projectList);
             }
 
             // Find a project that is only registered once in any group
             if($project !== $wildcard && $group === null){
-                $projectList = $config->listProjectsByName($project);
+                $projectList = $this->projectConfig->listProjectsByName($project);
                 if(count($projectList) > 1){
                     throw new ProjectFoundMultipleException($project);
                 }
@@ -122,7 +131,7 @@ class RunTool extends Tool
 
             // Find a project which is registered in a particular group
             if($project !== $wildcard && $group !== null){
-                $projectList = $config->listProjectsByName($project);
+                $projectList = $this->projectConfig->listProjectsByName($project);
                 if(count($projectList) > 1){
                     throw new ProjectFoundMultipleException($project);
                 }
@@ -139,7 +148,7 @@ class RunTool extends Tool
             }
 
             foreach($projectList as $projectName){
-                $runService->run($script, $projectName, $group, $arguments);
+                $this->runService->run($script, $projectName, $group, $arguments);
             }
         }catch(ConfigMissingException $exception){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
