@@ -58,9 +58,9 @@ class DockerContainer
         ?array $volumes = [], 
         ?array $options = [], 
         ?array $env = []
-    ): void {
+    ): ?int {
         try{
-            container(DockerContainer::class, [
+            $container = container(DockerContainer::class, [
                 'name' => $name,
                 'command' => $command,
                 'image' => $image,
@@ -68,8 +68,14 @@ class DockerContainer
                 'options' => $options,
                 'env' => $env,
             ]);
+
+            return $container->getExitCode();
         }catch(DockerContainerNotFoundException $e){
-            // Do nothing
+            // A return of null means there was an exception instead of a normal execution
+            // A Normal execution could be a failure too, it doesn't just mean success
+            // A failure still means the command ran and gave a result, a null value means
+            // the command couldn't run at all
+            return null;
         }
     }
 
