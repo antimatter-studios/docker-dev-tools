@@ -203,21 +203,25 @@ class ProjectTool extends Tool
         }
 
         if($this->config->addProject($path, $project, $type, $group, $vcs, $remote)){
-            $this->cli->success("The project '$project' with type '$type' was successfully added with the path '$path'\n");
+            $this->cli->print("{grn}The project '$project' with type '$type' was successfully added with the path '$path'{end}\n");
+            return true;
         }else{
-            $this->cli->failure("The project '$project' failed\n");
+            $this->cli->print("{red}The project '$project' failed{end}\n");
+            return false;
         }
     }
 
-    public function removeProject(string $project, ?string $path=null, ?bool $delete=false): void
+    public function removeProject(string $project, ?string $path=null, ?bool $delete=false): bool
     {
         $this->cli->print("{blu}Removing Project{end}\n");
         $this->cli->debug("{red}[PROJECT]{end}: Delete functionality is not written yet\n");
 
         if($this->config->removeProject($project, $path)){
-            $this->cli->success("The project '$project' was successfully removed'\n");
+            $this->cli->print("{grn}The project '$project' was successfully removed'{end}\n");
+            return true;
         }else{
-            $this->cli->failure("The project '$project' failed to be remove\n");
+            $this->cli->print("{red}The project '$project' failed to be remove{end}\n");
+            return false;
         }
     }
 }
