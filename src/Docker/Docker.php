@@ -189,7 +189,7 @@ class Docker
      * @return array|null
      * @throws DockerInspectException
      */
-	public function inspect(string $type, string $name, ?string $filter='.'): ?array
+	public function inspect(string $type, string $name, ?string $filter='{{json . }}'): ?array
 	{
 		try{
 			$result = $this->exec("$type inspect $name -f '$filter'");
