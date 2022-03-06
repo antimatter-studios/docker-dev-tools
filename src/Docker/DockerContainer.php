@@ -224,7 +224,7 @@ class DockerContainer
 
     public function passthru(string $command): int
     {
-        return $this->docker->passthru("exec -it $this->id $command");
+        return $this->exitCode = $this->docker->passthru("exec -it $this->id $command");
     }
     
     public function stop(): bool
