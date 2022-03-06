@@ -218,18 +218,22 @@ class DockerContainer
         return $this->docker->passthru(implode(" ", $exec));
 	}
 
-    public function exec(string $command)
+    public function exec(string $command, ?array $params=[])
     {
-        $output = $this->docker->exec("exec -it $this->id $command");
+        $params = implode(' ', $params);
+
+        $output = $this->docker->exec("exec -it $params $this->id $command");
         
         $this->exitCode = $this->docker->getExitCode();
 
         return $output;
     }
 
-    public function passthru(string $command): int
+    public function passthru(string $command, ?array $params=[]): int
     {
-        return $this->exitCode = $this->docker->passthru("exec -it $this->id $command");
+        $params = implode(' ', $params);
+
+        return $this->exitCode = $this->docker->passthru("exec -it $params $this->id $command");
     }
     
     public function stop(): bool
