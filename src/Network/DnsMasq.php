@@ -72,7 +72,7 @@ class DnsMasq
                 continue;
             }
 
-            $contents = implode("\n", $container->exec("cat $file", true));
+            $contents = implode("\n", $container->exec("cat $file"));
             if(preg_match("/^[^\/]+\/(?P<domain>[^\/]+)\/(?P<ip_address>[^\/]+)/", $contents, $matches)){
                 $domains[] = ['domain' => $matches['domain'], 'ip_address' => $matches['ip_address']];
             }
