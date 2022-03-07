@@ -63,7 +63,7 @@ class Proxy
 		$containerId = $this->getContainerId();
 
 		try{
-			return $this->docker->exec("exec -it $containerId cat /etc/nginx/conf.d/default.conf");
+			return $this->docker->exec("exec $containerId cat /etc/nginx/conf.d/default.conf");
 		}catch(\Exception $e){
 			$this->cli->debug($e->getMessage());
 			return "";
