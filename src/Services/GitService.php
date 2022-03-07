@@ -19,18 +19,14 @@ class GitService
 
 	public function exists(string $url): bool
 	{
-		try{
-			$this->cli->exec("git ls-remote -h $url");
-			return true;
-		}catch(\Exception $e) {
-			return false;
-		}
+		$this->cli->exec("git ls-remote -h $url");
+		return $this->cli->getExitCode() === 0;	
 	}
 
 	public function getRemote(string $path, string $remote): string
 	{
 		try{
-			return implode("\n", $this->cli->exec("git -C $path remote get-url $remote"));
+			return $this->cli->exec("git -C $path remote get-url $remote");
 		}catch(\Exception $e){
 			if(strpos($e->getMessage(), "not a git repository") !== false){
 				throw new GitNotARepositoryException($path);
@@ -86,7 +82,7 @@ class GitService
 
 	public function status(string $dir): string
 	{
-		$output = implode("\n", $this->cli->exec("git -C $dir status -s"));
+		$output = $this->cli->exec("git -C $dir status -s");
 		$output = trim($output);
 
 		return $output;
@@ -94,12 +90,12 @@ class GitService
 
 	public function branch(string $dir): string
 	{
-		return $this->cli->exec("git -C $dir rev-parse --abbrev-ref HEAD", true);
+		return $this->cli->exec("git -C $dir rev-parse --abbrev-ref HEAD");
 	}
 
 	public function remote(string $dir, string $name='origin'): string
 	{
-		return $this->cli->exec("git -C $dir remote get-url $name", true);
+		return $this->cli->exec("git -C $dir remote get-url $name");
 	}
 
 	public function fetch(string $dir, bool $prune=false): bool

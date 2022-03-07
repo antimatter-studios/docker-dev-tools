@@ -248,8 +248,7 @@ class DockerContainer
 
     public function sighup(string $process): bool
     {
-        $psid = $this->exec("ps | grep '".$process."' | awk '{print \$1}'");
-        $psid = (int)current($psid);
+        $psid = (int)$this->exec("ps | grep '".$process."' | awk '{print \$1}'");
 
         if(is_int($psid) && $psid > 0){
             $this->exec("kill -s SIGHUP $psid");

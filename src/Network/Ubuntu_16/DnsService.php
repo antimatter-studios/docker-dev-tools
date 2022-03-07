@@ -61,7 +61,7 @@ class DnsService implements DnsServiceInterface
 			$this->cli->exec("sudo sed -i 's/^dns=dnsmasq/#dns=dnsmasq/i' $file");
 		}
 
-		$output = $this->cli->exec("sudo service --status-all | grep network-manager", false, false);
+		$output = explode("\n", $this->cli->exec("sudo service --status-all | grep network-manager"));
 		if(count($output) > 0){
 			$this->cli->passthru("sudo service network-manager restart");
 		}

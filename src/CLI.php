@@ -39,7 +39,7 @@ class CLI
 		$this->listenChannel('realtime_exec', false);
 		$this->listenChannel('debug', false);
 
-		$this->isRoot = $this->exec('whoami', true) === 'root';
+		$this->isRoot = $this->exec('whoami') === 'root';
 
 		// This will reset any colours bleeding over from commands by resetting the shell colour codes
 		// Don't do this! This breaks piping output to commands like jq because it'll output a shell code directly into the input of the next command
@@ -207,12 +207,8 @@ class CLI
 
 	public function isCommand(string $command): bool
 	{
-		try{
-			$this->exec("command -v $command");
-			return true;
-		}catch(Exception $e){
-			return false;
-		}
+		$this->exec("command -v $command");
+		return $this->getExitCode() === 0;
 	}
 
 	public function sudo(?string $command='echo'): CLI
@@ -236,7 +232,7 @@ class CLI
 		return $this->exitCode;
 	}
 
-	public function exec(string $command, bool $firstLine=false, bool $throw=true)
+	public function exec(string $command)
 	{
 		unset($pipes);
 		$pipes = [];
@@ -254,12 +250,13 @@ class CLI
 		$out = new StringChannel();
 		$err = new StringChannel();
 
+		// var_dump($command);
 		$debug = $this->channels['debug'];
 		$realtimeExec = $this->channels['realtime_exec'];
-		//$realtimeExec->enable(true);
+		$realtimeExec->enable(true);
 
 		$realtimeExec->write("{cyn}>>>>>>>>>>>>>>>>>>>>>> opening process($command){end}\n");
-		while (stream_select($read, $write, $except, 0, 2000000) !== 0)
+		while (true || stream_select($read, $write, $except, 0, 200000) !== 0)
 		{
 			$realtimeExec->write("{yel}reading data($command)(keys: ".implode(',', array_keys($read))."){end}\n");
 			if(array_key_exists(1, $read)){
@@ -285,28 +282,23 @@ class CLI
 			$read = $pipes;
 			$write = null;
 		}
+		$realtimeExec->write("{red}WHILE LOOP QUIT{end}\n");
+
+		$code = proc_close($proc);
+		// fclose($pipes[0]);
+		// fclose($pipes[1]);
+		// fclose($pipes[2]);
 
 		self::$stdout = trim(implode("\n", $out->history()));
 		self::$stderr = trim(implode("\n", $err->history()));
 
-		fclose($pipes[0]);
-		fclose($pipes[1]);
-		fclose($pipes[2]);
-
-		$code = proc_close($proc);
 		$realtimeExec->write("{cyn}<<<<<<<<<<<<<<<<<<<<<< closing process($command)[exit code: $code]{end}\n");
 
 		$this->exitCode = $code;
 
 		$debug->write("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
 
-		if($code !== 0 && $throw === true){
-			throw new ExecException(self::$stdout, self::$stderr, $code);
-		}
-
-		$output = empty(self::$stdout) ? [""] : explode("\n", self::$stdout);
-
-		return $firstLine ? current($output) : $output;
+		return trim(self::$stdout);
 	}
 
 	public function passthru(string $command, bool $throw=true): int

@@ -263,10 +263,10 @@ class SetupTool extends Tool
     public function test(): bool
     {
         try {
-            $this->cli->debug("{red}[PATH]:{end} " . $this->cli->exec("exec env -i bash -cl 'echo \$PATH'", true));
+            $this->cli->debug("{red}[PATH]:{end} " . $this->cli->exec("exec env -i bash -cl 'echo \$PATH'"));
 
             foreach(func_get_args() as $script){
-                $this->cli->debug("{red}[TEST RESULT]:{end} ".$this->cli->exec("exec env -i bash -cl '$script'", true));
+                $this->cli->debug("{red}[TEST RESULT]:{end} ".$this->cli->exec("exec env -i bash -cl '$script'"));
             }
 
             $this->cli->box("The path was successfully installed, you might need to open a new terminal to see the effects", "blk", "grn");

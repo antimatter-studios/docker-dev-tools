@@ -25,12 +25,12 @@ class DnsService implements DnsServiceInterface
 	{
 		$interfaces = [];
 
-        $hardwarePorts = $this->cli->exec("networksetup -listnetworkserviceorder | grep 'Hardware Port'");
+        $hardwarePorts = explode("\n", $this->cli->exec("networksetup -listnetworkserviceorder | grep 'Hardware Port'"));
 
 		foreach($hardwarePorts as $hwport){
 			if(preg_match("/Hardware Port:\s+(?P<name>[^,]+),\s+Device:\s+(?P<device>[^)]+)/", $hwport, $matches)){
 				try{
-					$dev = implode("\n", $this->cli->exec("ifconfig {$matches['device']} 2>/dev/null"));
+					$dev = $this->cli->exec("ifconfig {$matches['device']} 2>/dev/null");
 					if(strpos($dev, "status: active") !== false){
 						$interfaces[] = ['name' => $matches['name'], 'device' => $matches['device']];
 					}
@@ -62,7 +62,7 @@ class DnsService implements DnsServiceInterface
 
 	public function listIpAddress(): array
 	{
-		return $this->cli->exec("scutil --dns | grep nameserver | awk '{print $3}' | sort | uniq");
+		return explode("\n",$this->cli->exec("scutil --dns | grep nameserver | awk '{print $3}' | sort | uniq"));
 	}
 
     public function enable(string $dnsIpAddress): bool

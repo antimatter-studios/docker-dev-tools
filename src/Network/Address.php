@@ -46,7 +46,7 @@ class Address
         try{
             $count = 20;
             $delay = 0.1;
-			$result = implode("\n",$this->cli->exec("ping $this->address -c $count -i $delay 2>&1"));
+			$result = $this->cli->exec("ping $this->address -c $count -i $delay 2>&1");
 		}catch(\Exception $e){
 			$result = $e->getMessage();
 		}

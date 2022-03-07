@@ -23,7 +23,8 @@ class DistroDetect
 			return false;
 		}
 
-		$distro = $this->cli->exec('uname -o', true);
+		// FIXME: check for output on linux machine
+		$distro = $this->cli->exec('uname -o');
 
 		if(in_array($distro, ['GNU/Linux', 'Linux'])){
 			return true;
@@ -38,7 +39,8 @@ class DistroDetect
 			return false;
 		}
 
-		$lsb_output = $this->cli->exec('lsb_release -d', true);
+		// FIXME: check for output on linux machine
+		$lsb_output = $this->cli->exec('lsb_release -d');
 		list($ignore, $release) = explode(':', $lsb_output);
 		$release = trim($release);
 

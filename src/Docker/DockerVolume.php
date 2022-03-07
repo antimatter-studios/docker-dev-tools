@@ -59,9 +59,7 @@ class DockerVolume
 		}
 		
 		try{
-			$r = $this->docker->exec("volume create $name 2>&1");
-			
-			return current($r);
+			return $this->docker->exec("volume create $name 2>&1");
 		}catch(\Exception $e){
 			$this->cli->debug("The docker volume '$name' failed to create with error:\n".$e->getMessage());
 

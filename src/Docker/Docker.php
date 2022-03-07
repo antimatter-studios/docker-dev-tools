@@ -69,7 +69,7 @@ class Docker
 
 	public function getVersion(): array
     {
-        return json_decode(implode(" ", $this->exec('version --format "{{json .Client.Version}}"')), true);
+        return json_decode($this->exec('version --format "{{json .Client.Version}}"'), true);
     }
 
     public function setConfig(DockerConfig $config): void
@@ -195,7 +195,6 @@ class Docker
 	{
 		try{
 			$result = $this->exec("$type inspect $name -f '$filter'");
-			$result = trim(implode("\n",$result));
 
 			// attempt to decode the result, it might fail cause some return values are not valid json
 			$r = json_decode($result, true);

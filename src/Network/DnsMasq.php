@@ -60,9 +60,9 @@ class DnsMasq
 
         $container = $this->getContainer();
 
-        $list = $container->exec("find /etc/dnsmasq.d -name \"*.conf\" -type f");
+        $list = explode("\n", $container->exec("find /etc/dnsmasq.d -name \"*.conf\" -type f"));
         $list = array_map('trim', $list);
-        $list = array_filter($list);    
+        $list = array_filter($list);  
 
         foreach($list as $file){
             $file = trim($file);
@@ -72,7 +72,7 @@ class DnsMasq
                 continue;
             }
 
-            $contents = implode("\n", $container->exec("cat $file"));
+            $contents = $container->exec("cat $file");
             if(preg_match("/^[^\/]+\/(?P<domain>[^\/]+)\/(?P<ip_address>[^\/]+)/", $contents, $matches)){
                 $domains[] = ['domain' => $matches['domain'], 'ip_address' => $matches['ip_address']];
             }
