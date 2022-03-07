@@ -336,10 +336,13 @@ class DnsTool extends Tool
         $this->cli->print("{blu}Registered domains:{end}\n");
 
         try{
+            $this->cli->print("{yel}Searching{end}: Asking DNS for registered domains. ");
             $configDomainList = $this->dnsConfig->listDomains();
             
             $serverDomainList = $this->dnsMasq->listDomains();
-            $serverDomainList = array_reduce($serverDomainList, function($a, $d){
+            $this->cli->print("There are ".count($serverDomainList)." domains registered\n");
+
+            $ipDomainMap = array_reduce($serverDomainList, function($a, $d){
                 if(!array_key_exists($d['ip_address'], $a)){
                     $a[$d['ip_address']] = [];
                 }
@@ -348,7 +351,7 @@ class DnsTool extends Tool
                 return $a;
             }, []);
         }catch(DockerContainerNotFoundException $e){
-            $serverDomainList = [];
+            $ipDomainMap = [];
         }
 
         $table = container(Table::class);
@@ -357,13 +360,15 @@ class DnsTool extends Tool
             return "{yel}$r{end}"; 
         }, ['Domain', 'IP Address', 'Enabled', 'Status']));
 
+        $count = 1;
         foreach($configDomainList as $ipAddress => $domainList){
             foreach($domainList as $domain){
+                $this->cli->print("\r{yel}Testing{end}: ".$count++."/".count($serverDomainList));
                 $address = Address::instance($domain);
                 $address->ping();
 
-                $exists = array_key_exists($ipAddress, $serverDomainList);
-                $found = in_array($domain, $serverDomainList[$ipAddress]);
+                $exists = array_key_exists($ipAddress, $ipDomainMap);
+                $found = in_array($domain, $ipDomainMap[$ipAddress]);
                 $enabled = $exists && $found ? 'yes' : '{red}no{end}';
 
                 $status = '{grn}good{end}';
@@ -378,7 +383,7 @@ class DnsTool extends Tool
             }
         }
         
-        $this->cli->print($table->render(true));
+        $this->cli->print("\n".$table->render(true));
     }
 
     // public function listDevices() {
