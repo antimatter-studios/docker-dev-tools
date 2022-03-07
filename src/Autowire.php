@@ -95,8 +95,8 @@ class Autowire
 
         $output = [];
 
-        Debug::dump("REFORMAT ARGS....................");
-        Debug::dump(["REFORMAT INPUT: " => $inputParameters]);
+        Debug::dump("autowire", "REFORMAT ARG....................");
+        Debug::dump("autowire", ["REFORMAT ARG INPUT: " => $inputParameters]);
 
         foreach($inputParameters as $name => $arg){
             if(is_string($name)){
@@ -113,7 +113,7 @@ class Autowire
                 }
             }
         }
-        Debug::dump(["FINAL OUTPUT" => $output]);
+        Debug::dump("autowire", ["REFORMAT ARG OUTPUT" => $output]);
 
         return $output;
     }
@@ -130,8 +130,8 @@ class Autowire
     {
         $output = [];
 
-        Debug::dump("STARTING AUTOWIRING....................");
-        Debug::dump(["AUTOWIRING INPUT: " => $inputParameters]);
+        Debug::dump("autowire", "STARTING AUTOWIRING....................");
+        Debug::dump("autowire", ["AUTOWIRING INPUT: " => $inputParameters]);
         foreach($signatureParameters as $search){
             $name = $search['name'];
             $type = trim((string)$search['type'], '?');
@@ -140,27 +140,27 @@ class Autowire
                 $type = 'string';
             }
 
-            Debug::dump("=======================\nSEARCH PARAMETER: name = '$name' with type '$type'");
+            Debug::dump("autowire", "=======================\nSEARCH PARAMETER: name = '$name' with type '$type'");
 
             if(class_exists($type) || interface_exists($type)){
                 // When the type is a class, 
                 foreach($inputParameters as $index => $data){
                     if($data['name']  === $name && is_object($data['value']) && get_class($data['value']) === $type){
-                        Debug::dump("FOUND OBJECT ARG: name = '$name'");
+                        Debug::dump("autowire", "FOUND OBJECT ARG: name = '$name'");
                         $output[] = $data['value'];
                         unset($inputParameters[$index]);
                         continue 2;
                     }
                 }
 
-                Debug::dump("FOUND CONTAINER ARG: type = '$type'");
+                Debug::dump("autowire", "FOUND CONTAINER ARG: type = '$type'");
                 $output[] = call_user_func($this->resolver, $type);
                 continue;
             }else if($type === 'array'){
                 foreach($inputParameters as $index => $data){
                     if($data['name'] == $name){
                         if(is_array($data['value'])){
-                            Debug::dump(['FOUND NAMED ARRAY' => $data]);
+                            Debug::dump("autowire", ['FOUND NAMED ARRAY' => $data]);
                             $output[] = $data['value'];
                             unset($inputParameters[$index]);
                             continue 2;
@@ -174,11 +174,11 @@ class Autowire
                 foreach($inputParameters as $index => $data){
                     if($data['name'] === $name && array_key_exists('value', $data)){
                         $test_numeric = (int)filter_var($data['value'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
-                        Debug::dump("NAMED TYPE CHECK($name), numeric = $test_numeric, value = '{$data['value']}'");
+                        Debug::dump("autowire", "NAMED TYPE CHECK($name), numeric = $test_numeric, value = '{$data['value']}'");
                         if($type === 'bool'){
                             $value = filter_var($data['value'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                             if(is_bool($value)){
-                                Debug::dump("FOUND NAMED BOOL: name = '$name', value = '$value}'");
+                                Debug::dump("autowire", "FOUND NAMED BOOL: name = '$name', value = '$value}'");
                                 $output[] = $value;
                                 unset($inputParameters[$index]);
                                 continue 2;
@@ -188,7 +188,7 @@ class Autowire
                         if($type === 'int'){
                             $value = filter_var($data['name'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
                             if(is_int($value)){
-                                Debug::dump("FOUND NAMED INT: name = '$name', value = '$value'");
+                                Debug::dump("autowire", "FOUND NAMED INT: name = '$name', value = '$value'");
                                 $output[] = $value;
                                 unset($inputParameters[$index]);
                                 continue 2;    
@@ -198,7 +198,7 @@ class Autowire
                         if($type === 'float'){
                             $value = filter_var($data['name'], FILTER_VALIDATE_FLOAT, FILTER_NULL_ON_FAILURE);
                             if(is_float($value)){
-                                Debug::dump("FOUND NAMED FLOAT: name = '$name', value = '$value'");
+                                Debug::dump("autowire", "FOUND NAMED FLOAT: name = '$name', value = '$value'");
                                 $output[] = $value;
                                 unset($inputParameters[$index]);
                                 continue 2;    
@@ -206,7 +206,7 @@ class Autowire
                         }
                         
                         if($type === 'string' && array_key_exists('value', $data)){
-                            Debug::dump("FOUND NAMED STRING: name = '$name', value = '{$data['value']}'");
+                            Debug::dump("autowire", "FOUND NAMED STRING: name = '$name', value = '{$data['value']}'");
                             $output[] = $data['value'];
                             unset($inputParameters[$index]);
                             continue 2;
@@ -220,11 +220,11 @@ class Autowire
                         continue;
                     }
                     $test_numeric = (int)filter_var($data['name'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
-                    Debug::dump("ANON TYPE CHECK($type / {$data['name']}), numeric = $test_numeric, value = '{$data['name']}'");
+                    Debug::dump("autowire", "ANON TYPE CHECK($type / {$data['name']}), numeric = $test_numeric, value = '{$data['name']}'");
                     if($type === 'bool'){
                         $value = filter_var($data['name'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                         if(is_bool($value)) {
-                            Debug::dump("FOUND ANON BOOL: name = '$value'");
+                            Debug::dump("autowire", "FOUND ANON BOOL: name = '$value'");
                             $output[] = $value;
                             unset($inputParameters[$index]);
                             continue 2;
@@ -234,7 +234,7 @@ class Autowire
                     if($type === 'int'){
                         $value = filter_var($data['name'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
                         if(is_int($value)){
-                            Debug::dump("FOUND ANON INT: name = '$value'");
+                            Debug::dump("autowire", "FOUND ANON INT: name = '$value'");
                             $output[] = $value;
                             unset($inputParameters[$index]);
                             continue 2;
@@ -244,7 +244,7 @@ class Autowire
                     if($type === 'float'){
                         $value = filter_var($data['name'], FILTER_VALIDATE_FLOAT, FILTER_NULL_ON_FAILURE);
                         if(is_float($value)){
-                            Debug::dump("FOUND ANON FLOAT: name = '$value'");
+                            Debug::dump("autowire", "FOUND ANON FLOAT: name = '$value'");
                             $output[] = $value;
                             unset($inputParameters[$index]);
                             continue 2;
@@ -252,7 +252,7 @@ class Autowire
                     }
 
                     if($type === 'string' && !empty($data['name'])){
-                        Debug::dump("FOUND ANON STRING: name = '{$data['name']}'");
+                        Debug::dump("autowire", "FOUND ANON STRING: name = '{$data['name']}'");
                         $output[] = $data['name'];
                         unset($inputParameters[$index]);
                         continue 2;
@@ -262,7 +262,7 @@ class Autowire
 
             if(array_key_exists('default', $search)){
                 $sd = is_scalar($search['default']) ? $search['default'] : json_encode($search['default']);
-                Debug::dump("FOUND DEFAULT VALUE: name = '$name', default = '{$sd}'");
+                Debug::dump("autowire", "FOUND DEFAULT VALUE: name = '$name', default = '{$sd}'");
                 $output[] = $search['default'];
                 continue;
             }
@@ -270,7 +270,7 @@ class Autowire
             throw new CannotAutowireParameterException($name, $type);
         }
 
-        Debug::dump(["FINAL OUTPUT" => array_map(function($a){ 
+        Debug::dump("autowire", ["AUTOWIRING OUTPUT" => array_map(function($a){ 
             return is_object($a) ? get_class($a) : $a;
         },$output)]);
 

@@ -5,11 +5,22 @@ namespace DDT;
 class Debug
 {
     static public $enabled = false;
-
-    static public function dump($mixed)
+    
+    static public function setState($enabled)
     {
-        if(self::$enabled){
-            is_scalar($mixed) ? print("$mixed\n") : var_dump($mixed);
+        if($enabled === false) return;
+
+        if(is_string($enabled)){
+            self::$enabled = array_map('trim', explode(',', $enabled));
+        }
+    }
+
+    static public function dump($filter, $mixed)
+    {
+        if(is_array(self::$enabled)){
+            if(in_array($filter, self::$enabled) || in_array('verbose', self::$enabled)){
+                is_scalar($mixed) ? print("$mixed\n") : var_dump($mixed);
+            }
         }
     }
 }

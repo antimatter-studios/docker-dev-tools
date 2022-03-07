@@ -65,7 +65,7 @@ try{
 	$cli = new CLI($argv, $text);
 
 	// We have to set this value really early so it's useful when the autowirer starts using it
-	Debug::$enabled = (bool)$cli->getArg('--dev-debug', false, true);
+	Debug::setState($cli->getArg('--debug', false));
 
 	$container = new Container($cli, [Autowire::class, 'instantiator']);
 
