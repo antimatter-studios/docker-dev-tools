@@ -300,9 +300,11 @@ class CLI
 
 		$redirect = $this->statusChannel('debug') ? "" : "2>&1";
 
-		passthru("$command $redirect", $code);
-
-		$this->exitCode = $code;
+		$stdout = $this->getChannel('stdout');
+		$stderr = $this->getChannel('stderr');
+		$this->exec("$command $redirect", $stdout, $stderr);
+		
+		$code = $this->getExitCode();
 
 		if ($code !== 0 && $throw === true){
 			throw new PassthruException($command, $code);
