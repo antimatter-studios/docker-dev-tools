@@ -14,7 +14,7 @@ abstract class Channel implements ChannelInterface
 
     public function __construct(string $name, bool $enabled=true)
     {
-        $this->name;
+        $this->name = $name;
         $this->tap = false;
         $this->enabled = $enabled;
     }
