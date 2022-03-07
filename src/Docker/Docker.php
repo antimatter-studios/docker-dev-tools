@@ -137,7 +137,9 @@ class Docker
 		try{
 			$command = $this->toCommandLine($command);
 
-			$this->cli->exec($command);
+			$stdout = $this->cli->getChannel('stdout');
+			$stderr = $this->cli->getChannel('stderr');
+			$this->cli->exec($command, $stdout, $stderr);
 			
 			$this->exitCode = $this->cli->getExitCode();
 

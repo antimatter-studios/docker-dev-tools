@@ -89,7 +89,7 @@ class DnsService implements DnsServiceInterface
 
 		$this->cli->exec("sudo resolvconf -u");
 
-		$this->cli->exec("sudo service network-manager restart", false, false);
+		$this->cli->exec("sudo service network-manager restart");
 
 		return true;
     }

@@ -2,10 +2,12 @@
 
 namespace DDT;
 
+use DDT\CLI\Output\Channel;
 use DDT\CLI\Output\DebugChannel;
 use DDT\CLI\Output\PrintChannel;
 use DDT\CLI\Output\StdoutChannel;
 use DDT\CLI\Output\StringChannel;
+use DDT\Contract\ChannelInterface;
 use DDT\Exceptions\CLI\AskResponseRejectedException;
 use Exception;
 use DDT\Text\Text;
@@ -92,6 +94,15 @@ class CLI
 		}
 
 		$this->channels[$channel]->enable($state);
+	}
+
+	public function getChannel(string $channel): ?ChannelInterface
+	{
+		if(array_key_exists($channel, $this->channels)){
+			return $this->channels[$channel];
+		}
+
+		return null;
 	}
 
 	public function toggleChannel(string $channel, bool $state)
@@ -232,7 +243,7 @@ class CLI
 		return $this->exitCode;
 	}
 
-	public function exec(string $command)
+	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
 	{
 		unset($pipes);
 		$pipes = [];
@@ -247,52 +258,34 @@ class CLI
 		$write = null;
 		$except = null;
 
-		$out = new StringChannel();
-		$err = new StringChannel();
-
-		// var_dump($command);
+		$output = [
+			1 => $stdout ?? new StringChannel(),
+			2 => $stderr ?? new StringChannel(),
+		];
+		
 		$debug = $this->channels['debug'];
-		$realtimeExec = $this->channels['realtime_exec'];
-		$realtimeExec->enable(true);
 
-		$realtimeExec->write("{cyn}>>>>>>>>>>>>>>>>>>>>>> opening process($command){end}\n");
-		while (true || stream_select($read, $write, $except, 0, 200000) !== 0)
+		$feof = false;
+		while ($feof === false && stream_select($read, $write, $except, 10) !== 0)
 		{
-			$realtimeExec->write("{yel}reading data($command)(keys: ".implode(',', array_keys($read))."){end}\n");
-			if(array_key_exists(1, $read)){
-				if(feof($read[1])) {
-					$realtimeExec->write("{red}Found [1] FOEF{end}\n");
-					break;
+			foreach($read as $index => $stream){
+				if(feof($stream)){
+					$feof = true;
 				}
-				$out->write(fgets($read[1]));
-				$realtimeExec->write("{grn}STDOUT Fragment{end}: '".$out->getLast()."'\n");
+				if($index !== 0){
+					$output[$index]->write(fgets($stream));
+				}
 			}
 
-			if(array_key_exists(2, $read)){
-				if(feof($read[2])) {
-					$realtimeExec->write("{end}Found [2] FOEF{end}\n");
-					break;
-				}
-				$err->write(fgets($read[2]));
-				$realtimeExec->write("{grn}STDERR Fragment{end}: '".$err->getLast()."'\n");
-			}
-
-			// stream_select modifies the contents of $read
-			// in a loop we should replace it with the original
+			// stream_select modifies the contents of $read in a loop we should replace it with the original
 			$read = $pipes;
-			$write = null;
 		}
-		$realtimeExec->write("{red}WHILE LOOP QUIT{end}\n");
 
+		array_map('fclose', $pipes);
 		$code = proc_close($proc);
-		// fclose($pipes[0]);
-		// fclose($pipes[1]);
-		// fclose($pipes[2]);
 
-		self::$stdout = trim(implode("\n", $out->history()));
-		self::$stderr = trim(implode("\n", $err->history()));
-
-		$realtimeExec->write("{cyn}<<<<<<<<<<<<<<<<<<<<<< closing process($command)[exit code: $code]{end}\n");
+		self::$stdout = trim(implode("\n", $output[1]->history()));
+		self::$stderr = trim(implode("\n", $output[2]->history()));
 
 		$this->exitCode = $code;
 
