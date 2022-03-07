@@ -10,6 +10,8 @@ class Debug
     {
         if($enabled === false) return;
 
+        if($enabled === true) $enabled = "true";
+
         if(is_string($enabled)){
             self::$enabled = array_map('trim', explode(',', $enabled));
         }

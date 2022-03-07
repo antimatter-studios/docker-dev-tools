@@ -2,6 +2,10 @@
 
 namespace DDT;
 
+use DDT\CLI\Output\DebugChannel;
+use DDT\CLI\Output\PrintChannel;
+use DDT\CLI\Output\StdoutChannel;
+use DDT\CLI\Output\StringChannel;
 use DDT\Exceptions\CLI\AskResponseRejectedException;
 use Exception;
 use DDT\Text\Text;
@@ -27,15 +31,22 @@ class CLI
 		$this->text = $text;
 		$this->setScript($argv[0]);
 		$this->setArgs(array_slice($argv, 1));
+
+		$this->printChannel = new PrintChannel($this->text);
 		$this->listenChannel('stdout');
+		$this->listenChannel('stderr');
 		$this->listenChannel('quiet');
+		$this->listenChannel('realtime_exec', false);
+		$this->listenChannel('debug', false);
+
 		$this->isRoot = $this->exec('whoami', true) === 'root';
 
 		// This will reset any colours bleeding over from commands by resetting the shell colour codes
-		$this->print("{end}");
+		// Don't do this! This breaks piping output to commands like jq because it'll output a shell code directly into the input of the next command
+		//$this->print("{end}");
 
 		if($this->isRoot){
-			$this->print("{yel}[SYSTEM]:{end} Root user detected\n");
+			$this->channels['stdout']->write("{yel}[SYSTEM]:{end} Root user detected\n");
 		}
 	}
 
@@ -74,48 +85,26 @@ class CLI
 
 	public function listenChannel(string $channel, ?bool $state=true, ?callable $enabled=null, ?callable $disabled=null)
 	{
-		if($enabled === null){
-			$enabled = function($text){
-				print($text);
-				return $text;
-			};
+		if($channel === 'debug'){
+			$this->channels[$channel] = new DebugChannel($this->printChannel, $this->text);
+		}else{
+			$this->channels[$channel] = new StdoutChannel($this->printChannel, $this->text);
 		}
 
-		if($disabled === null){
-			$disabled = function($text){
-				return $text;
-			};
-		}
-		
-		$this->channels[$channel] = [
-			'state' => $state,
-			'enabled' => $enabled,
-			'disabled' => $disabled,
-		];
+		$this->channels[$channel]->enable($state);
 	}
 
 	public function toggleChannel(string $channel, bool $state)
 	{
 		if(array_key_exists($channel, $this->channels)){
-			$this->channels[$channel]['state'] = $state;
-		}
-	}
-
-	public function writeChannel(string $channel, string $text)
-	{
-		if(array_key_exists($channel, $this->channels)){
-			if($this->channels[$channel]['state'] === true){
-				return $this->channels[$channel]['enabled']($text);
-			}else{
-				return $this->channels[$channel]['disabled']($text);
-			}
+			$this->channels[$channel]->enable($state);
 		}
 	}
 
 	public function statusChannel(string $channel): bool
 	{
 		if(array_key_exists($channel, $this->channels)){
-			return $this->channels[$channel]['state'];
+			return $this->channels[$channel]->status();
 		}
 
 		return false;
@@ -253,21 +242,63 @@ class CLI
 		$pipes = [];
 
 		$proc = proc_open($command,[
+			0 => ['pipe','r'],
 			1 => ['pipe','w'],
 			2 => ['pipe','w'],
 		],$pipes);
 
-		self::$stdout = trim(stream_get_contents($pipes[1]));
-		fclose($pipes[1]);
+		$read = $pipes;
+		$write = null;
+		$except = null;
 
-		self::$stderr = trim(stream_get_contents($pipes[2]));
+		$out = new StringChannel();
+		$err = new StringChannel();
+
+		$debug = $this->channels['debug'];
+		$realtimeExec = $this->channels['realtime_exec'];
+		//$realtimeExec->enable(true);
+
+		$realtimeExec->write("{cyn}>>>>>>>>>>>>>>>>>>>>>> opening process($command){end}\n");
+		while (stream_select($read, $write, $except, 0, 2000000) !== 0)
+		{
+			$realtimeExec->write("{yel}reading data($command)(keys: ".implode(',', array_keys($read))."){end}\n");
+			if(array_key_exists(1, $read)){
+				if(feof($read[1])) {
+					$realtimeExec->write("{red}Found [1] FOEF{end}\n");
+					break;
+				}
+				$out->write(fgets($read[1]));
+				$realtimeExec->write("{grn}STDOUT Fragment{end}: '".$out->getLast()."'\n");
+			}
+
+			if(array_key_exists(2, $read)){
+				if(feof($read[2])) {
+					$realtimeExec->write("{end}Found [2] FOEF{end}\n");
+					break;
+				}
+				$err->write(fgets($read[2]));
+				$realtimeExec->write("{grn}STDERR Fragment{end}: '".$err->getLast()."'\n");
+			}
+
+			// stream_select modifies the contents of $read
+			// in a loop we should replace it with the original
+			$read = $pipes;
+			$write = null;
+		}
+
+		self::$stdout = trim(implode("\n", $out->history()));
+		self::$stderr = trim(implode("\n", $err->history()));
+
+		fclose($pipes[0]);
+		fclose($pipes[1]);
 		fclose($pipes[2]);
 
 		$code = proc_close($proc);
+		$realtimeExec->write("{cyn}<<<<<<<<<<<<<<<<<<<<<< closing process($command)[exit code: $code]{end}\n");
 
 		$this->exitCode = $code;
 
-		$this->debug("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
+		$debug->write("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
 
 		if($code !== 0 && $throw === true){
 			throw new ExecException(self::$stdout, self::$stderr, $code);
@@ -297,26 +328,17 @@ class CLI
 
 	public function print(?string $string=''): string
 	{
-		if(empty($string)) return '';
-
-		return $this->writeChannel('stdout', $this->text->write($string));
+		return $this->channels['stdout']->write($string);
 	}
 
 	public function debug(?string $string='', ?array $params=[])
 	{
-		if(empty($string)) return '';
-
-		$string = $this->text->write('{blu}[DEBUG]:{end} ' . $string);
-		$string = trim(sprintf($string, ...$params));
-
-		return $this->writeChannel('debug', "$string\n");
+		return $this->channels['debug']->write($string, $params);
 	}
 
 	public function quiet(?string $string='')
 	{
-		if(empty($string)) return '';
-
-		return $this->writeChannel('quiet', $this->text->write($string));
+		return $this->channels['quiet']->write($this->text->write($string));
 	}
 
 	public function success(?string $string=null)
@@ -331,9 +353,7 @@ class CLI
 
 	public function box(string $string, string $foreground, string $background): string
 	{
-		if(empty($string)) return '';
-
-		return $this->writeChannel('stdout', $this->text->box($string, $foreground, $background));
+		return $this->channels['stdout']->write($this->text->box($string, $foreground, $background));
 	}
 
 	public function die(?string $string=null, int $exitCode=0)

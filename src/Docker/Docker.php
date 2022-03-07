@@ -137,7 +137,9 @@ class Docker
 		try{
 			$command = $this->toCommandLine($command);
 
-			$this->exitCode = $this->cli->passthru($command);
+			$this->cli->exec($command);
+			
+			$this->exitCode = $this->cli->getExitCode();
 
 			return $this->exitCode;
 		}catch(\Exception $e){
