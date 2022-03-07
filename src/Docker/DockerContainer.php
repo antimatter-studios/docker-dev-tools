@@ -222,7 +222,7 @@ class DockerContainer
     {
         $params = implode(' ', $params);
 
-        $output = $this->docker->exec("exec -it $params $this->id $command");
+        $output = $this->docker->exec("exec $params $this->id $command");
         
         $this->exitCode = $this->docker->getExitCode();
 
@@ -233,7 +233,7 @@ class DockerContainer
     {
         $params = implode(' ', $params);
 
-        return $this->exitCode = $this->docker->passthru("exec -it $params $this->id $command");
+        return $this->exitCode = $this->docker->passthru("exec $params $this->id $command");
     }
     
     public function stop(): bool
