@@ -16,17 +16,15 @@ class AwsCredsTool extends Tool
     public function getToolMetadata(): array
     {
         return [
-            'title' => 'AWS CLI Credential wrapper',
-            'short_description' => 'A tool to wrap up a aws cli command with the required environment variables',
+            'title' => 'AWS CLI Credential tool',
+            'short_description' => 'A tool to output into the shells environment AWS credentials from a chosen profile',
             'description' => [
-                'Will run the AWS cli with a configured set of environment variables. This sidesteps potential',
-                'issues with using aws --profile, which has some issues in some use-cases where it can not access',
-                'the $HOME/.aws directory, etc. Add the aws command desired after the profile name and this command',
-                'will build the final command and send it'
+                'The purpose of this command is to output credentials into the shells environment so they can',
+                'be used by commands that run inside that shell after they are set, such as aws cli or terraform, etc.'
             ],
             'examples' => [
-                '- ddt aws-creds mock aws s3api list-buckets',
-                '- ddt aws-creds mock aws --endpoint=http://s3.eu-west-1.aws.develop s3api list-buckets',
+                '- export $(ddt aws-creds mock) && aws s3api list-buckets',
+                '- export $(ddt aws-creds mock) && aws --endpoint=http://s3.eu-west-1.aws.develop s3api list-buckets',
             ]
         ];
     }
@@ -83,16 +81,7 @@ class AwsCredsTool extends Tool
             }
 
             $output[] = "AWS_CREDS=success";
-
-            foreach($output as $o){
-                putenv($o);
-            }
-
-            $argList = new ArgumentList($this->cli->getArgList(), 1);
-            $stdout = $this->cli->getChannel('stdout');
-            $stderr = $this->cli->getChannel('stderr');
-            $this->cli->exec((string)$argList, $stdout, $stderr);
-            exit($this->cli->getExitCode());
+            $this->cli->print(implode("\n", $output));
         }
     }
 }
