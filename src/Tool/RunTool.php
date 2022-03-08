@@ -66,7 +66,7 @@ class RunTool extends Tool
         ];
     }
 
-    public function list(?string $group=null): void
+    public function list(?string $group=null, ?string $script=null): void
     {
         /* @var Table $table */
         $table = container(Table::class);
@@ -74,7 +74,7 @@ class RunTool extends Tool
 
         foreach($this->projectConfig->listProjects() as $path => $project){
             $projectConfig = $this->projectConfig->getProjectConfig($project['name'], $path);
-            foreach($projectConfig->listScripts() as $script => $scriptCommand){
+            foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
                 if(is_array($scriptCommand)) {
                     $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
                 }
@@ -83,7 +83,11 @@ class RunTool extends Tool
                     continue;
                 }
 
-                $table->addRow([$project['name'], implode(', ', $project['group']), $script, $scriptCommand]);
+                if($script !== null && $script !== $scriptName){
+                    continue;
+                }
+
+                $table->addRow([$project['name'], implode(', ', $project['group']), $scriptName, $scriptCommand]);
             }
         }
         
