@@ -5,14 +5,10 @@ namespace DDT\Tool;
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
-use DDT\Exceptions\CLI\ArgumentException;
 use DDT\Exceptions\Config\ConfigMissingException;
-use DDT\Exceptions\Project\ProjectFoundMultipleException;
-use DDT\Exceptions\Project\ProjectFoundWrongGroupException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Services\RunService;
 use DDT\Text\Table;
-use PDO;
 
 class RunTool extends Tool
 {
@@ -30,7 +26,7 @@ class RunTool extends Tool
         $this->runService = $runService;
 
         $this->setToolCommand('script', null, true);
-        $this->setToolCommand('--list', 'list');
+        $this->setToolCommand('--list');
     }
 
     public function getToolMetadata(): array
@@ -48,20 +44,20 @@ class RunTool extends Tool
             ],
             'examples' => [
                 "{yel}{$this->getEntrypoint()} run{end}: This help",
-                "{yel}{$this->getEntrypoint()} run start backendapi mycompany{end}: Run the 'start' script from the 'backendapi' project in the 'mycompany' group",
-                "{yel}{$this->getEntrypoint()} run start -- mycompany{end}: Run the 'start' script from the ALL the projects in the 'mycompany' group",
-                "{yel}{$this->getEntrypoint()} run start mycompany api-project{end}: The same command as above, but using anonymous parameters",
+                "{yel}{$this->getEntrypoint()} run start api-project my-company{end}: Run the 'start' script from the 'backendapi' project in the 'mycompany' group",
+                "{yel}{$this->getEntrypoint()} run start --group=my-company{end}: Run the 'start' script from the ALL the projects in the 'mycompany' group",
+                "{yel}{$this->getEntrypoint()} run start api-project my-company{end}: The same command as above, but using anonymous parameters",
                 "{yel}{$this->getEntrypoint()} run --list{end}: Will output all the possible scripts that it's possible to run",
-                "{yel}{$this->getEntrypoint()} run --list --group=mycompany: Will limit the output from --list to only scripts within a particular group",
+                "{yel}{$this->getEntrypoint()} run --list --group=mycompany{end}: Will limit the output from --list to only scripts within a particular group",
+                "{yel}{$this->getEntrypoint()} run --list --project=api-project{end}: Will limit the output from --list to only scripts within a particular project",
+                "{yel}{$this->getEntrypoint()} run --list --script=start{end}: Will limit the output from --list to only entries which match a particular script",
+                "{yel}{$this->getEntrypoint()} run s3api -- list-buckets{end}: An example from fakews project, it uses the -- escape sequence to pass parameters to awscli",
             ],
             'notes' => [
-                "- You can not use * as a wildcard, just in case you are wondering why, because",
-                "\tof shell expansion, when you use *, your shell environment passes instead a",
-                "\thuge list of files and directories that are in your current directory, so",
-                "\tinstead we will use -- which is easy enough to type",
-                "- You can use -- as a wildcard as a placeholder for the project name, but in",
-                "\tthis case, you must provide the group name as it's meaning it 'every project'",
-                "- You can not use -- as a wildcard as a placeholder for the group name",
+                "- Use -- in your command line to use the bash escape sequence that will take all the arguments to the right and pass",
+                "\tthem to the script verbatim. This is useful when you want to not specific project or group, then you can use this to",
+                "\tto stop the processor from finding the wrong arguments",
+                "- To the --list command, you can combine --group --project --script together"
             ]
         ];
     }
@@ -104,68 +100,37 @@ class RunTool extends Tool
         ]));
     }
 
-    public function script(string $script, string $project, ?string $group=null): void
+    public function script(string $script, ?string $project=null, ?string $group=null): void
     {
         try{
-            // Ignore the first three arguments, they would be script, group, project
-            // This will not work when you don't have project specified, cause it wouldn't know
-            // how to differentiate between a project name and an extra argument to forward on
-            $arguments = new ArgumentList($this->cli->getArgList(), 3);
+            $arguments = new ArgumentList($this->cli->getArgList(), 2);
+            // remove project if it was specified
+            if($project !== null) $arguments->shift();
+            // remove group if it was specified
+            if($group !== null) $arguments->shift();
+            // remove -- arg if found
+            $arguments->remove('--');
+
+            $projectList = $this->projectConfig->listProjectsByScript($script);
+
+            $projectList = array_filter($projectList, function($config) use ($project) {
+                return $project === null || $project === $config['name'];
+            });
+
+            $projectList = array_filter($projectList, function($config) use ($group) {
+                return $group === null || in_array($group, $config['group']);
+            });
 
             $this->runService->reset();
 
-            $wildcard = '--';
-
-            // No project, no script to run
-            if(empty($project)){
-                throw new ArgumentException("The project parameter cannot be empty under any circumstances");
-            }
-
-            // You can't use the wildcard, when the group is valid, it doesn't make any sense
-            if($project === $wildcard && $group === null){
-                throw new ArgumentException("The project parameter cannot be '$wildcard' when the group is not given or specified");
-            }
-
-            // Make the project list from every project inside a particular group
-            if($project === $wildcard && $group !== null){
-                $projectList = $this->projectConfig->listProjectsInGroup($group);
-                $projectList = array_map(function($v){ return $v['name']; }, $projectList);
-            }
-
-            // Find a project that is only registered once in any group
-            if($project !== $wildcard && $group === null){
-                $projectList = $this->projectConfig->listProjectsByName($project);
-                if(count($projectList) > 1){
-                    throw new ProjectFoundMultipleException($project);
-                }
-                if(empty($projectList)){
-                    throw new ProjectNotFoundException($project);
-                }
-                $data = array_shift($projectList);
-                $group = array_shift($data['group']);
-                $projectList = [$project];
-            }
-
-            // Find a project which is registered in a particular group
-            if($project !== $wildcard && $group !== null){
-                $projectList = $this->projectConfig->listProjectsByName($project);
-                if(count($projectList) > 1){
-                    throw new ProjectFoundMultipleException($project);
-                }
-                $data = array_shift($projectList);
-                if(!in_array($group, $data['group'])){
-                    throw new ProjectFoundWrongGroupException($project, $group);
-                }
-                $projectList = [$project];
-            }
-
             // Couldn't find anything, time to die!
             if(empty($projectList)){
-                $this->cli->failure("The project '$project' was not found");
+                $this->cli->failure("The scipt was not found");
             }
 
-            foreach($projectList as $projectName){
-                $this->runService->run($script, $projectName, $group, $arguments);
+            foreach($projectList as $config){
+                $group = $group ?? current($config['group']);
+                $this->runService->run($script, $config['name'], $group, $arguments);
             }
         }catch(ConfigMissingException $e){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
