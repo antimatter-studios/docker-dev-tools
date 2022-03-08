@@ -216,9 +216,19 @@ class Autowire
 
                 // We did not find a named parameter, therefore lets pick the first anonymous parameter
                 foreach($inputParameters as $index => $data){
+                    // If it has a value, then it's not an anonymous string
                     if(is_array($data) && array_key_exists('value', $data)){
                         continue;
                     }
+                    
+                    // double-dash is a special shell escape sequence
+                    // it means all the text to the right should be sent to a sub-command
+                    // the text on the left, is the command being run, so this command maybe
+                    // will run a sub-command and pass the arguments on the right to it
+                    if($data['name'] === '--'){
+                        break;
+                    }
+
                     $test_numeric = (int)filter_var($data['name'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
                     Debug::dump("autowire", "ANON TYPE CHECK($type / {$data['name']}), numeric = $test_numeric, value = '{$data['name']}'");
                     if($type === 'bool'){
