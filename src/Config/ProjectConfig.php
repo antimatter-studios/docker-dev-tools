@@ -31,6 +31,24 @@ class ProjectConfig
 		return $this->config->getKey($this->key);
 	}
 
+	public function listProjectsByScript(string $script): array
+	{
+		$list = [];
+
+		foreach($this->listProjects() as $path => $config){
+            $projectConfig = $this->getProjectConfig($config['name'], $path);
+            foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+				if($script !== $scriptName){
+					continue;
+				}
+
+				$list[] = $config;
+			}
+		}
+
+		return $list;
+	}
+
 	public function listProjectsInGroup(string $group): array
 	{
 		return $this->listProjectsByKey('group', $group);
