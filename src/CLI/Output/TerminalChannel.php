@@ -12,7 +12,7 @@ class TerminalChannel extends Channel
     public function stdout(?string $string='', ?array $params=[]): string
     {
         if($this->status()){
-            fwrite(STDERR, $this->process($string, $params));
+            fwrite(STDOUT, $this->process($string, $params));
         }
 
         return $string;
