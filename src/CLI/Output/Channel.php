@@ -57,7 +57,7 @@ abstract class Channel implements ChannelInterface
         return $this->history;
     }
 
-    public function write(?string $string='', ?array $params=[]): string
+    protected function process(?string $string='', ?array $params=[]): string
     {
         if(empty($string)) $string = '';
 

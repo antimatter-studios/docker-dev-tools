@@ -18,6 +18,6 @@ class StringChannel extends Channel
         if(!is_string($string)) $string = '';
         if(empty($string)) $string = '';
 
-        return parent::write($string, $params);
+        return $this->process($string, $params);
     }
 }

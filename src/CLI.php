@@ -318,6 +318,11 @@ class CLI
 		return $this->channels['stdout']->write($string);
 	}
 
+	public function stderr(?string $string=''): string
+	{
+		return $this->terminal->stderr($this->text->write($string));
+	}
+
 	public function debug(?string $string='', ?array $params=[])
 	{
 		return $this->channels['debug']->write($string, $params);
