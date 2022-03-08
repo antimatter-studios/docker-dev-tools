@@ -2,9 +2,8 @@
 
 namespace DDT;
 
-use DDT\CLI\Output\Channel;
 use DDT\CLI\Output\DebugChannel;
-use DDT\CLI\Output\PrintChannel;
+use DDT\CLI\Output\TerminalChannel;
 use DDT\CLI\Output\StdoutChannel;
 use DDT\CLI\Output\StringChannel;
 use DDT\Contract\ChannelInterface;
@@ -22,6 +21,7 @@ class CLI
 	private $channels = [];
 	private $isRoot = false;
 	private $exitCode = 0;
+	private $terminal = null;
 
 	// TODO: why are these static? they're never used statically in this class?
 	// NOTE: maybe in external code?
@@ -34,7 +34,7 @@ class CLI
 		$this->setScript($argv[0]);
 		$this->setArgs(array_slice($argv, 1));
 
-		$this->printChannel = new PrintChannel($this->text);
+		$this->terminal = new TerminalChannel($this->text);
 		$this->listenChannel('stdout');
 		$this->listenChannel('stderr');
 		$this->listenChannel('quiet');
@@ -88,9 +88,9 @@ class CLI
 	public function listenChannel(string $channel, ?bool $state=true, ?callable $enabled=null, ?callable $disabled=null)
 	{
 		if($channel === 'debug'){
-			$this->channels[$channel] = new DebugChannel($this->printChannel, $this->text);
+			$this->channels[$channel] = new DebugChannel($this->terminal, $this->text);
 		}else{
-			$this->channels[$channel] = new StdoutChannel($this->printChannel, $this->text);
+			$this->channels[$channel] = new StdoutChannel($this->terminal, $this->text);
 		}
 
 		$this->channels[$channel]->enable($state);
