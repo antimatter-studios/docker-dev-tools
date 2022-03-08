@@ -32,4 +32,29 @@ class ArgumentList
     {
         return $this->argList;
     }
+
+    public function shift()
+    {
+        return array_shift($this->argList);
+    }
+
+    public function remove(?string $name, ?string $value=null)
+    {
+        $removed = null;
+
+        $this->argList = array_filter($this->argList, function($a) use ($name, $value, &$removed){
+            if($name === $a['name']){
+                $removed = $a;
+                return false;
+            }
+            if(array_key_exists('value', $a) && $value === $a['value']){
+                $removed = $a;
+                return false;
+            }
+
+            return true;
+        });
+
+        return $removed;
+    }
 }
