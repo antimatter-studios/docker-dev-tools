@@ -66,20 +66,20 @@ class RunTool extends Tool
         ];
     }
 
-    public function list(?string $group=null, ?string $script=null): void
+    public function list(?string $project=null, ?string $script=null, ?string $group=null): void
     {
         /* @var Table $table */
         $table = container(Table::class);
         $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
-        foreach($this->projectConfig->listProjects() as $path => $project){
-            $projectConfig = $this->projectConfig->getProjectConfig($project['name'], $path);
+        foreach($this->projectConfig->listProjects() as $path => $config){
+            $projectConfig = $this->projectConfig->getProjectConfig($config['name'], $path);
             foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
                 if(is_array($scriptCommand)) {
                     $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
                 }
 
-                if($group !== null && !in_array($group, $project['group'])){
+                if($group !== null && !in_array($group, $config['group'])){
                     continue;
                 }
 
@@ -87,7 +87,11 @@ class RunTool extends Tool
                     continue;
                 }
 
-                $table->addRow([$project['name'], implode(', ', $project['group']), $scriptName, $scriptCommand]);
+                if($project !==null && $project !== $config['name']){
+                    continue;
+                }
+
+                $table->addRow([$config['name'], implode(', ', $config['group']), $scriptName, $scriptCommand]);
             }
         }
         
