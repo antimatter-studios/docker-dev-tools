@@ -149,7 +149,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
                 }
 
                 /** @var Tool */
-                $instance = $this->getTool($tool['name']);
+                $instance = $this->getToolByClass($tool['name']);
 
                 $metadata = $instance->getToolMetadata();
                 $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
@@ -197,13 +197,18 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
     public function getTool(string $name): Tool
     {
-        if(empty($name)) throw new \Exception('Tool name cannot be empty');
-
         $name = strtolower($name);
         $name = explode("-", $name);
         $name = implode(" ", $name);
         $name = ucwords($name);
         $name = str_replace(" ", "", $name);
+
+        return $this->getToolByClass($name);
+    }
+
+    public function getToolByClass(string $name): Tool
+    {
+        if(empty($name)) throw new \Exception('Tool name cannot be empty');
 
         foreach($this->tools as $group){
             foreach($group['tools'] as $tool){
