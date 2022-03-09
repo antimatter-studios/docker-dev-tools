@@ -64,10 +64,11 @@ try{
 	$text = new Text();
 	$cli = new CLI($argv, $text);
 
+	$container = new Container($cli, [Autowire::class, 'instantiator']);
+	$container->singleton(CLI::class, $cli);
+
 	// We have to set this value really early so it's useful when the autowirer starts using it
 	Debug::setState($cli->getArg('--debug', false));
-
-	$container = new Container($cli, [Autowire::class, 'instantiator']);
 
 	$container->bind(Table::class, function() use ($text) {
 		$table = new Table($text);
@@ -101,8 +102,6 @@ try{
 	$container->singleton('config.file.default', __DIR__ . '/../default.ddt-system.json');
 	// This is the currently installed system configuration
 	$container->singleton('config.file.system', $_SERVER['HOME'] . '/.ddt-system.json');
-
-	$container->singleton(CLI::class, $cli);
 	
 	$container->singleton(SystemConfig::class, function() {
 		static $c = null;
