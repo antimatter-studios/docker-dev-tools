@@ -2,6 +2,7 @@
 
 namespace DDT;
 
+use DDT\CLI\Output\CustomChannel;
 use ReflectionClass;
 use DDT\Exceptions\Container\NotClassReferenceException;
 
@@ -13,6 +14,7 @@ class Container {
     private $bind = [];
     private $singleton = [];
     private $singletonCache = [];
+    private $debug;
 
     public function __construct(CLI $cli, ?callable $instantiator=null)
     {
@@ -20,6 +22,8 @@ class Container {
 
         $this->cli = $cli;
         $this->instantiator = $instantiator;
+        $this->debug = new CustomChannel($this->cli->getChannel('debug'), 'container', false);
+        $this->cli->setChannel($this->debug);
     }
 
     public function bind(string $ref, $func){
@@ -32,7 +36,7 @@ class Container {
     }
 
     private function createInstance(string $ref, array $args = []) {
-        $this->cli->debug("{red}[CONTAINER]:{end} '$ref' was bound as an instance");
+        $this->debug->write("{red}[CONTAINER]:{end} '$ref' was bound as an instance");
 
         $thing = $this->bind[$ref];
 
@@ -46,7 +50,7 @@ class Container {
     }
 
     private function createSingleton(string $ref, array $args = []) {
-        $this->cli->debug("{red}[CONTAINER]:{end} '$ref' was bound as a singleton");
+        $this->debug->write("{red}[CONTAINER]:{end} '$ref' was bound as a singleton");
 
         if(!array_key_exists($ref, $this->singletonCache)){
 
@@ -56,22 +60,22 @@ class Container {
 
             switch(true){
                 case is_callable($thing):
-                    $this->cli->debug("{red}[CONTAINER]:{end} the singleton references a callable");
+                    $this->debug->write("{red}[CONTAINER]:{end} the singleton references a callable");
                     $this->singletonCache[$ref] = call_user_func_array($thing, $args);
                     break;
 
                 case is_object($thing):
-                    $this->cli->debug("{red}[CONTAINER]:{end} the singleton references an object");
+                    $this->debug->write("{red}[CONTAINER]:{end} the singleton references an object");
                     $this->singletonCache[$ref] = $thing;
                     break;
 
                 case is_string($thing) && class_exists($thing):
-                    $this->cli->debug("{red}[CONTAINER]:{end} the singleton references a class name");
+                    $this->debug->write("{red}[CONTAINER]:{end} the singleton references a class name");
                     $this->singletonCache[$ref] = $this->createClass($thing, $args);
                     break;
 
                 case is_array($thing) || is_scalar($thing):
-                    $this->cli->debug("{red}[CONTAINER]:{end} the singleton references a scalar value");
+                    $this->debug->write("{red}[CONTAINER]:{end} the singleton references a scalar value");
                     $this->singletonCache[$ref] = $thing;
                     break;    
             }
@@ -81,7 +85,7 @@ class Container {
     }
 
     private function createClass(string $ref, array $args = []) {
-        $this->cli->debug("{red}[CONTAINER]:{end} '$ref' was bound as class");
+        $this->debug->write("{red}[CONTAINER]:{end} '$ref' was bound as class");
 
         if($this->instantiator){
             $resolver = [$this, "get"];
