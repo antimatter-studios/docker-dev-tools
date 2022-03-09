@@ -243,7 +243,7 @@ class CLI
 		return $this->exitCode;
 	}
 
-	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
+	public function runProcess(string $command, ChannelInterface $stdout, ChannelInterface $stderr)
 	{
 		unset($pipes);
 		$pipes = [];
@@ -259,11 +259,9 @@ class CLI
 		$except = null;
 
 		$output = [
-			1 => $stdout ?? new StringChannel(),
-			2 => $stderr ?? new StringChannel(),
+			1 => $stdout,
+			2 => $stderr,
 		];
-		
-		$debug = $this->channels['debug'];
 
 		$feof = false;
 		while ($feof === false && stream_select($read, $write, $except, 10) !== 0)
@@ -289,22 +287,32 @@ class CLI
 
 		$this->exitCode = $code;
 
-		$debug->write("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
-
 		return trim(self::$stdout);
+	}
+
+	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
+	{
+		$stdout = $stdout ?? new StringChannel();
+		$stderr = $stderr ?? new StringChannel();
+
+		$output = $this->runProcess($command, $stdout, $stderr);
+
+		$code = $this->getExitCode();
+
+		$this->channels['debug']->write("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
+
+		return $output;
 	}
 
 	public function passthru(string $command, bool $throw=true): int
 	{
-		$this->debug("{red}[PASSTHRU]:{end} %s", [$command]);
-
-		$redirect = $this->statusChannel('debug') ? "" : "2>&1";
-
 		$stdout = $this->getChannel('stdout');
 		$stderr = $this->getChannel('stderr');
-		$this->exec("$command $redirect", $stdout, $stderr);
-		
+		$this->runProcess($command, $stdout, $stderr);
+
 		$code = $this->getExitCode();
+
+		$this->channels['debug']->write("{red}[PASSTHRU]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
 
 		if ($code !== 0 && $throw === true){
 			throw new PassthruException($command, $code);
