@@ -6,11 +6,9 @@ use DDT\CLI;
 use DDT\CLI\Output\DockerFilterChannel;
 use DDT\CLI\Output\StringChannel;
 use DDT\Config\DockerConfig;
-use DDT\Exceptions\CLI\ExecException;
 use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerMissingException;
-use DDT\Exceptions\Docker\DockerNotRunningException;
 
 class Docker
 {
@@ -117,24 +115,16 @@ class Docker
 
 	public function exec(string $command)
 	{
-		try{
-			$command = $this->toCommandLine($command);
+		$command = $this->toCommandLine($command);
 
-			$stdout = new StringChannel();
-			$stderr = new StringChannel();
-			$filter = new DockerFilterChannel($stderr);
-			$output = $this->cli->exec($command, $stdout, $filter);
-			
-			$this->exitCode = $this->cli->getExitCode();
-			
-			return $output;
-		}catch(ExecException $e){
-			if(strpos(strtolower($e->getStderr()), 'cannot connect to the docker daemon') !== false){
-				throw new DockerNotRunningException();
-			}
-
-			throw new DockerException($e->getMessage(), $e->getCode(), $e->getPrevious());
-		}
+		$stdout = new StringChannel();
+		$stderr = new StringChannel();
+		$filter = new DockerFilterChannel($stderr);
+		$output = $this->cli->exec($command, $stdout, $filter);
+		
+		$this->exitCode = $this->cli->getExitCode();
+		
+		return $output;
 	}
 
 	public function passthru(string $command): int

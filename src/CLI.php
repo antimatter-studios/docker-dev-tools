@@ -12,8 +12,6 @@ use DDT\Contract\ChannelInterface;
 use DDT\Exceptions\CLI\AskResponseRejectedException;
 use Exception;
 use DDT\Text\Text;
-use DDT\Exceptions\CLI\ExecException;
-use DDT\Exceptions\CLI\PassthruException;
 
 class CLI
 {
@@ -329,10 +327,6 @@ class CLI
 		$code = $this->getExitCode();
 
 		$this->channels['debug']->write("{red}[PASSTHRU]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
-
-		if ($code !== 0 && $throw === true){
-			throw new PassthruException($command, $code);
-		}
 
 		return $code;
 	}
