@@ -3,14 +3,22 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
-use DDT\CLI\ArgumentList;
+use DDT\Docker\DockerContainer;
+use DDT\Docker\DockerImage;
 
 class AwsCredsTool extends Tool
 {
-    public function __construct(CLI $cli)
+    private $aws;
+
+    private $stdout;
+
+    public function __construct(CLI $cli, AwsTool $tool)
     {
     	parent::__construct('aws-creds', $cli);
         $this->setToolCommand('run', null, true);
+
+        $this->aws = $tool;
+        $this->stdout = $this->cli->getChannel('stdout');
     }
     
     public function getToolMetadata(): array
@@ -29,14 +37,24 @@ class AwsCredsTool extends Tool
         ];
     }
 
-    private function listProfiles(): array
+    private function awsCommand(DockerContainer $container, string $command, array $env): string
     {
-        return array_filter(explode("\n", $this->cli->exec('aws configure list-profiles')));
+        $this->stdout->tap(true);
+        $this->stdout->enable(false);
+        $this->aws->runCommand($container, $command, $env);
+        $output = $this->stdout->history();
+        $this->stdout->enable(true);
+
+        return trim(implode("\n", array_filter($output)));
     }
 
     public function run(?string $profile=null, ?string $sessionName='default'): void
     {
-        $list = $this->listProfiles();
+        $this->aws->buildImage();
+        $container = $this->aws->getContainer();
+        $env = $this->aws->getEnv();
+
+        $list = explode("\n",$this->awsCommand($container, 'configure list-profiles', $env));
 
         if(empty($profile)){
             $this->cli->stderr("{red}First parameter must be the name of the profile from the config file{end}\n");
@@ -47,24 +65,24 @@ class AwsCredsTool extends Tool
 
             exit(1);
         }else if(!in_array($profile, $list)){
-            $this->cli->stderr("AWS Profile '${profile}' was not found, please choose one from the following list and try again");
+            $this->cli->stderr("AWS Profile '${profile}' was not found, please choose one from the following list and try again\n");
             $this->cli->stderr("Available Profiles: \n");
             foreach($list as $p){
                 $this->cli->stderr("\t- ".trim($p)."\n");
             }
 
-            $this->cli->print("AWS_CREDS=failed");
+            $this->cli->print("AWS_CREDS=failed\n");
             exit(1);
         }else{
             $sessionName = "awscli_ddt_" . str_replace('-','_',$profile) . "_" . $sessionName;
 
-            $roleArn = $this->cli->exec("aws configure get role_arn --profile $profile");
+            $roleArn = $this->awsCommand($container, "configure get role_arn --profile $profile", $env);
 
             $output = [];
 
             if(!empty($roleArn)){
                 // If there is a role_arn, we can use it to assume-role, extract params and echo them
-                $creds = $this->cli->exec("aws sts assume-role --role-arn $roleArn --profile $profile --role-session-name=$sessionName");
+                $creds = $this->awsCommand($container, "sts assume-role --role-arn $roleArn --profile $profile --role-session-name=$sessionName", $env);
                 $creds = json_decode($creds, true);
 
                 $output[] = "AWS_ROLE_ARN=$roleArn";
@@ -73,15 +91,15 @@ class AwsCredsTool extends Tool
                 $output[] = "AWS_SESSION_TOKEN={$creds['Credentials']['SessionToken']}";
             }else{
                 // There was no role_arn, so that means we just extract the key/secret and echo them
-                $accessKey = trim($this->cli->exec("aws configure get aws_access_key_id --profile $profile"));
-                $secretAccessKey = trim($this->cli->exec("aws configure get aws_secret_access_key --profile $profile"));
+                $accessKey = $this->awsCommand($container, "configure get aws_access_key_id --profile $profile", $env);
+                $secretAccessKey = $this->awsCommand($container, "configure get aws_secret_access_key --profile $profile", $env);
 
                 $output[] = "AWS_ACCESS_KEY_ID=$accessKey";
                 $output[] = "AWS_SECRET_ACCESS_KEY=$secretAccessKey";
             }
 
             $output[] = "AWS_CREDS=success";
-            $this->cli->print(implode("\n", $output));
+            $this->cli->print(implode("\n", $output)."\n");
         }
     }
 }
