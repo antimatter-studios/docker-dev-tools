@@ -12,7 +12,7 @@ class DebugChannel extends Channel
     
     public function __construct(ChannelInterface $parent, Text $renderer)
     {
-        parent::__construct('debug');
+        parent::__construct('debug', false);
 
         $this->parent = $parent;
         $this->renderer = $renderer;
@@ -20,7 +20,7 @@ class DebugChannel extends Channel
 
     public function write(?string $string='', ?array $params=[]): string
     {
-        if(empty($string)) return '';
+        $string = $this->coerceToString($string);
 
         $string = $this->renderer->write('{blu}[DEBUG]:{end} ' . $string);
         $string = !empty($params) ? sprintf($string, ...$params) : $string;
@@ -29,7 +29,7 @@ class DebugChannel extends Channel
         if($this->status()){
             return $this->parent->write($string);
         }else{
-            return $string;
+            return $this->record($string);
         }
     }
 }

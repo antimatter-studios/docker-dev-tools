@@ -10,9 +10,9 @@ class StderrChannel extends Channel
     private $parent;
     private $renderer;
     
-    public function __construct(ChannelInterface $parent, Text $renderer)
+    public function __construct(TerminalChannel $parent, Text $renderer, ?bool $enabled=true)
     {
-        parent::__construct('stderr');
+        parent::__construct('stderr', $enabled);
 
         $this->parent = $parent;
         $this->renderer = $renderer;
@@ -20,18 +20,15 @@ class StderrChannel extends Channel
 
     public function write($string='', ?array $params=[]): string
     {
-        if(is_object($string)) $string = get_class($string);
-        if(is_array($string)) $string = json_encode($string);
-        if(!is_string($string)) $string = '';
-        if(empty($string)) $string = '';
+        $string = $this->coerceToString($string);
 
 		$string = !empty($params) ? sprintf($string, ...$params) : $string;
         $string = $this->renderer->write($string);
 
         if($this->status()){
-            return $this->parent->write($string);
+            return $this->parent->stderr($string);
         }else{
-            return $string;
+            return $this->record($string);
         }
     }
 }

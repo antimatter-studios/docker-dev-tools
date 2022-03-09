@@ -13,11 +13,10 @@ class StringChannel extends Channel
 
     public function write($string='', ?array $params=[]): string
     {
-        if(is_object($string)) $string = get_class($string);
-        if(is_array($string)) $string = json_encode($string);
-        if(!is_string($string)) $string = '';
-        if(empty($string)) $string = '';
+        $string = $this->coerceToString($string);
 
-        return $this->process($string, $params);
+        $string = !empty($params) ? sprintf($string, ...$params) : $string;
+
+        return $this->record($string);
     }
 }

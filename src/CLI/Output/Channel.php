@@ -15,8 +15,18 @@ abstract class Channel implements ChannelInterface
     public function __construct(string $name, bool $enabled=true)
     {
         $this->name = $name;
-        $this->tap = false;
-        $this->enabled = $enabled;
+        $this->tap(false);
+        $this->enable($enabled);
+    }
+
+    public function setParent(ChannelInterface $parent)
+    {
+        $this->parent = $parent;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
     }
 
     public function enable(bool $state)
@@ -39,17 +49,21 @@ abstract class Channel implements ChannelInterface
         return $this->last;
     }
 
-    public function tap()
+    public function tap(bool $state)
     {
-        $this->tap = true;
+        $this->tap = $state;
         $this->history = [];
     }
 
     public function record(string $string)
     {
-        if($this->enabled && $this->tap){
-            $this->history[] = $string;
+        $this->setLast($string);
+
+        if($this->tap){
+            $this->history[] = trim($string);
         }
+
+        return $string;
     }
 
     public function history(): array
@@ -57,14 +71,12 @@ abstract class Channel implements ChannelInterface
         return $this->history;
     }
 
-    protected function process(?string $string='', ?array $params=[]): string
+    protected function coerceToString($string): string
     {
+        if(is_object($string)) $string = get_class($string);
+        if(is_array($string)) $string = json_encode($string);
+        if(!is_string($string)) $string = '';
         if(empty($string)) $string = '';
-
-        $string = !empty($params) ? sprintf($string, ...$params) : $string;
-
-        $this->setLast($string);
-        $this->record($string);
 
         return $string;
     }

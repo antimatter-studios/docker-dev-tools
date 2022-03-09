@@ -2,7 +2,9 @@
 
 namespace DDT;
 
+use DDT\CLI\Output\CustomChannel;
 use DDT\CLI\Output\DebugChannel;
+use DDT\CLI\Output\StderrChannel;
 use DDT\CLI\Output\TerminalChannel;
 use DDT\CLI\Output\StdoutChannel;
 use DDT\CLI\Output\StringChannel;
@@ -35,11 +37,14 @@ class CLI
 		$this->setArgs(array_slice($argv, 1));
 
 		$this->terminal = new TerminalChannel($this->text);
-		$this->listenChannel('stdout');
-		$this->listenChannel('stderr');
-		$this->listenChannel('quiet');
-		$this->listenChannel('realtime_exec', false);
-		$this->listenChannel('debug', false);
+		$this->channels['stdout'] = new StdoutChannel($this->terminal, $this->text);
+		$this->channels['stderr'] = new StderrChannel($this->terminal, $this->text);
+
+		// These custom channels should not be created here
+		// if some part of teh code wants them, it should create them itself
+		$this->channels['quiet'] = new CustomChannel($this->channels['stdout'], 'quiet');
+		$this->channels['realtime_exec'] = new CustomChannel($this->channels['stdout'], 'realtime_exec');
+		$this->channels['debug'] = new DebugChannel($this->channels['stderr'], $this->text);
 
 		$this->isRoot = $this->exec('whoami') === 'root';
 
@@ -48,7 +53,7 @@ class CLI
 		//$this->print("{end}");
 
 		if($this->isRoot){
-			$this->channels['stdout']->write("{yel}[SYSTEM]:{end} Root user detected\n");
+			$this->channels['stderr']->write("{yel}[SYSTEM]:{end} Root user detected\n");
 		}
 	}
 
@@ -85,15 +90,26 @@ class CLI
 		return $answer;
 	}
 
-	public function listenChannel(string $channel, ?bool $state=true, ?callable $enabled=null, ?callable $disabled=null)
+	public function listenChannel(string $channel, ?bool $state=true): ChannelInterface
 	{
-		if($channel === 'debug'){
-			$this->channels[$channel] = new DebugChannel($this->terminal, $this->text);
-		}else{
-			$this->channels[$channel] = new StdoutChannel($this->terminal, $this->text);
+		if(!array_key_exists($channel, $this->channels)){
+			$this->channels[$channel] = new CustomChannel($this->channels['stdout'], $channel, $state);
 		}
 
 		$this->channels[$channel]->enable($state);
+
+		return $this->channels[$channel];
+	}
+
+	public function setChannel(ChannelInterface $channel): ChannelInterface
+	{
+		$name = $channel->getName();
+
+		if(!array_key_exists($name, $this->channels)){
+			$this->channels[$name] = $channel;
+		}
+
+		return $channel;
 	}
 
 	public function getChannel(string $channel): ?ChannelInterface
