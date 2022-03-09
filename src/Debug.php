@@ -15,6 +15,10 @@ class Debug
         if(is_string($enabled)){
             self::$enabled = array_map('trim', explode(',', $enabled));
         }
+
+        if(is_array(self::$enabled) && in_array('container', self::$enabled)){
+            container(CLI::class)->getChannel('container')->enable(true);
+        }
     }
 
     static public function dump($filter, $mixed)
