@@ -9,26 +9,26 @@ class TerminalChannel extends Channel
         parent::__construct('terminal');
     }
 
-    public function stdout(?string $string='', ?array $params=[]): string
+    public function stdout(?string $string=''): string
     {
         if($this->status()){
-            fwrite(STDOUT, $this->process($string, $params));
+            fwrite(STDOUT, $string);
         }
 
         return $string;
     }
 
-    public function stderr(?string $string='', ?array $params=[]): string
+    public function stderr(?string $string=''): string
     {
         if($this->status()){
-            fwrite(STDERR, $this->process($string, $params));
+            fwrite(STDERR, $string);
         }
 
         return $string;
     }
 
-    public function write(?string $string='', ?array $params=[]): string
+    public function write(?string $string=''): string
     {
-        return $this->stdout($string, $params);
+        return $this->stdout($string);
     }
 }
