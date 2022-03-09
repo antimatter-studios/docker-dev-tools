@@ -62,9 +62,9 @@ class AwsTool extends Tool
         return DockerImage::build($this->imageName, implode("\n", $this->dockerfile));
     }
 
-    public function startContainer(DockerImage $image): void
+    public function startContainer(DockerImage $image): DockerContainer
     {
-        DockerContainer::background(
+        return DockerContainer::background(
             $this->containerName, 
             "tail -f /dev/null", 
             $image->getName(), 
@@ -98,11 +98,15 @@ class AwsTool extends Tool
     {
         try{
             $arguments = new ArgumentList($this->cli->getArgList());
-            $image = $this->buildImage();
-            $this->startContainer($image);
-            $container = $this->getContainer();
-            $env = $this->getEnv();
-            $exitCode = $this->runCommand($container, (string)$arguments, $env);
+
+            if($this->cli->isCommand('aws')){
+                $exitCode = $this->cli->passthru("aws $arguments");
+            }else{
+                $image = $this->buildImage();
+                $container = $this->startContainer($image);
+                $env = $this->getEnv();
+                $exitCode = $this->runCommand($container, (string)$arguments, $env);
+            }
             exit($exitCode);
         }catch(DockerImageBuildFailureException $e){
             $this->cli->failure("The '$this->imageName' has failed to build for unknown reasons\n");
@@ -111,6 +115,10 @@ class AwsTool extends Tool
 
     public function runCommand(DockerContainer $container, string $command, ?array $env=[]): int
     {
-        return $container->passthru("aws $command", $env);
+        if($this->cli->isCommand('aws')){
+            return $this->cli->passthru("aws $command");
+        }else{
+            return $container->passthru("aws $command", $env);
+        }
     }
 }
