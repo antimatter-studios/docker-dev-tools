@@ -3,6 +3,8 @@
 namespace DDT\Docker;
 
 use DDT\CLI;
+use DDT\CLI\Output\DockerFilterChannel;
+use DDT\CLI\Output\StringChannel;
 use DDT\Config\DockerConfig;
 use DDT\Exceptions\CLI\ExecException;
 use DDT\Exceptions\Docker\DockerException;
@@ -113,12 +115,15 @@ class Docker
 		return $this->exitCode;
 	}
 
-	public function exec(string $command, bool $firstLine=false)
+	public function exec(string $command)
 	{
 		try{
 			$command = $this->toCommandLine($command);
 
-			$output = $this->cli->exec($command);
+			$stdout = new StringChannel();
+			$stderr = new StringChannel();
+			$filter = new DockerFilterChannel($stderr);
+			$output = $this->cli->exec($command, $stdout, $filter);
 			
 			$this->exitCode = $this->cli->getExitCode();
 			
@@ -139,7 +144,8 @@ class Docker
 
 			$stdout = $this->cli->getChannel('stdout');
 			$stderr = $this->cli->getChannel('stderr');
-			$this->cli->exec($command, $stdout, $stderr);
+			$filter = new DockerFilterChannel($stderr);
+			$this->cli->exec($command, $stdout, $filter);
 			
 			$this->exitCode = $this->cli->getExitCode();
 
