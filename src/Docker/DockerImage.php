@@ -5,6 +5,7 @@ namespace DDT\Docker;
 use DDT\CLI;
 use DDT\Exceptions\Docker\DockerImageBuildFailureException;
 use DDT\Exceptions\Docker\DockerImageNotFoundException;
+use DDT\Services\DockerService;
 
 class DockerImage
 {
@@ -17,7 +18,7 @@ class DockerImage
     /** @var string the name of this docker volume */
     private $name;
 
-    public function __construct(CLI $cli, Docker $docker, string $name, ?string $dockerFile=null)
+    public function __construct(CLI $cli, DockerService $docker, string $name, ?string $dockerFile=null)
     {
         $this->cli = $cli;
         $this->docker = $docker;

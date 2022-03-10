@@ -11,6 +11,8 @@ use DDT\Exceptions\Docker\DockerNetworkExistsException;
 use DDT\Exceptions\Docker\DockerNetworkFailedAttachException;
 use DDT\Exceptions\Docker\DockerNetworkFailedDetachException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
+use DDT\Services\DockerService;
+use DDT\Tool\DockerTool;
 
 class DockerNetwork
 {
@@ -26,7 +28,7 @@ class DockerNetwork
     /** @var string the docker network id */
     private $id;
 
-    public function __construct(CLI $cli, Docker $docker, string $name, ?bool $create=false)
+    public function __construct(CLI $cli, DockerService $docker, string $name, ?bool $create=false)
     {
         $this->cli = $cli;
         $this->docker = $docker;
@@ -122,7 +124,7 @@ class DockerNetwork
 
             throw new DockerNetworkFailedAttachException($this->name, $containerId);
 		}catch(DockerException $e){
-            if(!!preg_match(Docker::DOCKER_NETWORK_ALREADY_ATTACHED, $e->getMessage())){
+            if(!!preg_match(DockerService::DOCKER_NETWORK_ALREADY_ATTACHED, $e->getMessage())){
                 throw new DockerNetworkAlreadyAttachedException($this->name, $containerId);
             }
 

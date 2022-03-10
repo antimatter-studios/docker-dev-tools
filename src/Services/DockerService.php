@@ -1,16 +1,17 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Docker;
+namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\CLI\Output\DockerFilterChannel;
 use DDT\CLI\Output\StringChannel;
 use DDT\Config\DockerConfig;
+use DDT\Docker\DockerRunProfile;
 use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerMissingException;
 
-class Docker
+class DockerService
 {
     /** @var CLI */
     private $cli;

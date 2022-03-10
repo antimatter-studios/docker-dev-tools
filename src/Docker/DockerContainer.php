@@ -3,6 +3,7 @@
 namespace DDT\Docker;
 
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
+use DDT\Services\DockerService;
 
 class DockerContainer
 {
@@ -14,7 +15,7 @@ class DockerContainer
     private $exitCode = 0;
 
     public function __construct(
-        Docker $docker, 
+        DockerService $docker, 
         string $name, 
         ?string $command = '',
         ?string $image = null, 

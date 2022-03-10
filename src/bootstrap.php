@@ -19,6 +19,7 @@ use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Tool\ToolCommandNotFoundException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
 use DDT\Exceptions\Tool\ToolNotSpecifiedException;
+use DDT\Services\DockerService;
 
 try{
 	if (version_compare(phpversion(), '7.2', '<')) {
@@ -66,6 +67,7 @@ try{
 
 	$container = new Container($cli, [Autowire::class, 'instantiator']);
 	$container->singleton(CLI::class, $cli);
+	$container->singleton(DockerService::class, DockerService::class);
 
 	// We have to set this value really early so it's useful when the autowirer starts using it
 	Debug::setState($cli->getArg('--debug', false));

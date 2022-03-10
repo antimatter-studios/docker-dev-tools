@@ -7,6 +7,7 @@ use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerVolumeCreateException;
 use DDT\Exceptions\Docker\DockerVolumeExistsException;
 use DDT\Exceptions\Docker\DockerVolumeNotFoundException;
+use DDT\Services\DockerService;
 
 class DockerVolume
 {
@@ -22,7 +23,7 @@ class DockerVolume
     /** @var string the docker volume id */
     private $id;
 
-    public function __construct(CLI $cli, Docker $docker, string $name, ?bool $create=true)
+    public function __construct(CLI $cli, DockerService $docker, string $name, ?bool $create=true)
     {
         $this->cli = $cli;
         $this->docker = $docker;
