@@ -37,11 +37,11 @@ class AwsCredsTool extends Tool
         ];
     }
 
-    private function awsCommand(DockerContainer $container, string $command, array $env): string
+    private function awsCommand(string $command): string
     {
         $this->stdout->tap(true);
         $this->stdout->enable(false);
-        $this->aws->runCommand($container, $command, $env);
+        $this->aws->run($command);
         $output = $this->stdout->history();
         $this->stdout->enable(true);
 
@@ -50,11 +50,7 @@ class AwsCredsTool extends Tool
 
     public function run(?string $profile=null, ?string $sessionName='default'): void
     {
-        $this->aws->buildImage();
-        $container = $this->aws->getContainer();
-        $env = $this->aws->getEnv();
-
-        $list = explode("\n",$this->awsCommand($container, 'configure list-profiles', $env));
+        $list = explode("\n",$this->awsCommand('configure list-profiles'));
 
         if(empty($profile)){
             $this->cli->stderr("{red}First parameter must be the name of the profile from the config file{end}\n");
@@ -76,13 +72,13 @@ class AwsCredsTool extends Tool
         }else{
             $sessionName = "awscli_ddt_" . str_replace('-','_',$profile) . "_" . $sessionName;
 
-            $roleArn = $this->awsCommand($container, "configure get role_arn --profile $profile", $env);
+            $roleArn = $this->awsCommand("configure get role_arn --profile $profile");
 
             $output = [];
 
             if(!empty($roleArn)){
                 // If there is a role_arn, we can use it to assume-role, extract params and echo them
-                $creds = $this->awsCommand($container, "sts assume-role --role-arn $roleArn --profile $profile --role-session-name=$sessionName", $env);
+                $creds = $this->awsCommand("sts assume-role --role-arn $roleArn --profile $profile --role-session-name=$sessionName");
                 $creds = json_decode($creds, true);
 
                 $output[] = "AWS_ROLE_ARN=$roleArn";
@@ -91,8 +87,8 @@ class AwsCredsTool extends Tool
                 $output[] = "AWS_SESSION_TOKEN={$creds['Credentials']['SessionToken']}";
             }else{
                 // There was no role_arn, so that means we just extract the key/secret and echo them
-                $accessKey = $this->awsCommand($container, "configure get aws_access_key_id --profile $profile", $env);
-                $secretAccessKey = $this->awsCommand($container, "configure get aws_secret_access_key --profile $profile", $env);
+                $accessKey = $this->awsCommand("configure get aws_access_key_id --profile $profile");
+                $secretAccessKey = $this->awsCommand("configure get aws_secret_access_key --profile $profile");
 
                 $output[] = "AWS_ACCESS_KEY_ID=$accessKey";
                 $output[] = "AWS_SECRET_ACCESS_KEY=$secretAccessKey";

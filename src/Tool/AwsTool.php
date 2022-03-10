@@ -6,19 +6,25 @@ use DDT\CLI;
 use DDT\CLI\ArgumentList;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerImage;
+use DDT\Exceptions\Docker\DockerContainerNotFoundException;
+use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerImageBuildFailureException;
 use DDT\Exceptions\Docker\DockerImageNotFoundException;
 
 class AwsTool extends Tool
 {
-    private $containerName = "ddt-aws";
-    
-    private $imageName = 'awscli:ddt';
+    private $image = null;
+    private $container = null;
+
+    private $containerName = "ddt-awscli";    
+    private $imageName = 'ddt-awscli:__ARCH__';
+
+    private $localAws = false;
     
     private $dockerfile = [
-        'FROM --platform=linux/amd64 debian:bookworm-slim',
+        'FROM --platform=__PLATFORM__ debian:bookworm-slim',
         'RUN apt-get update && apt-get install -y groff jq curl zip',
-        'RUN curl -s https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.0.30.zip -o awscliv2.zip',
+        'RUN curl -s https://awscli.amazonaws.com/awscli-exe-linux-__ARCH__-2.0.30.zip -o awscliv2.zip',
         'RUN unzip awscliv2.zip && ./aws/install',
         'ENV PATH=\${PATH}:/app/bin',
     ];
@@ -27,6 +33,30 @@ class AwsTool extends Tool
     {
     	parent::__construct('aws', $cli);
         $this->setToolCommand('run', null, true);
+        
+        $this->setArch($this->getArch());
+        $this->localAws = $this->cli->isCommand('aws');
+    }
+
+    public function getArch(): string
+    {
+        $arch = $this->cli->exec('[ $(uname -m) = "x86_64" ] && [ $(sysctl -in sysctl.proc_translated) = "1" ] && echo "arm64" || echo "x86_64"');
+
+        return $arch;
+    }
+
+    public function setArch(string $arch): void
+    {
+        $dockerArch = "linux/$arch";
+        $awscliArch = strpos($arch,'arm64') !== false ? 'aarch64' : 'x86_64';
+
+        $this->imageName = str_replace('__ARCH__', $arch, $this->imageName);
+
+        foreach($this->dockerfile as $index => $line){
+            $line = str_replace('__PLATFORM__', $dockerArch, $line);
+            $line = str_replace('__ARCH__', $awscliArch, $line);
+            $this->dockerfile[$index] = $line;
+        };
     }
     
     public function getToolMetadata(): array
@@ -45,37 +75,49 @@ class AwsTool extends Tool
         ];
     }
 
+    /**
+     * @throws DockerImageBuildFailureException
+     */
     public function getImage(): DockerImage
     {
-        return DockerImage::get($this->imageName);
-    }
+        if($this->image instanceof DockerImage){
+            return $this->image;
+        }
 
-    public function buildImage(): DockerImage
-    {
         try{
-            return $this->getImage();
+            $this->image = DockerImage::get($this->imageName);
+            return $this->image;
         }catch(DockerImageNotFoundException $e){
             // do nothing I guess?             
         }
 
         $this->cli->print("AWSCli Docker Image: '$this->imageName' Not Found, building...");
-        return DockerImage::build($this->imageName, implode("\n", $this->dockerfile));
-    }
-
-    public function startContainer(DockerImage $image): DockerContainer
-    {
-        return DockerContainer::background(
-            $this->containerName, 
-            "tail -f /dev/null", 
-            $image->getName(), 
-            ["\$HOME/.aws:/root/.aws", "\$PWD:/app"], 
-            ['-w /app'],
-        );
+        $this->image = DockerImage::build($this->imageName, implode("\n", $this->dockerfile));
+        return $this->image;
     }
 
     public function getContainer(): DockerContainer
     {
-        return DockerContainer::get($this->containerName);
+        if($this->container instanceof DockerContainer){
+            return $this->container;
+        }
+
+        try{
+            $this->container = DockerContainer::get($this->containerName);
+            return $this->container;
+        }catch(DockerContainerNotFoundException $e){
+            // start container instead
+        }
+
+        $this->container = DockerContainer::background(
+            $this->containerName, 
+            "tail -f /dev/null", 
+            $this->getImage()->getName(), 
+            ["\$HOME/.aws:/root/.aws", "\$PWD:/app"], 
+            ['-w /app'],
+        );
+
+        return $this->container;
     }
 
     public function getEnv(): array
@@ -97,28 +139,18 @@ class AwsTool extends Tool
     public function run(): void
     {
         try{
-            $arguments = new ArgumentList($this->cli->getArgList());
+            $input = implode(' ', func_get_args());
+            $arguments = empty($input) ? new ArgumentList($this->cli->getArgList()) : $input;
 
-            if($this->cli->isCommand('aws')){
-                $exitCode = $this->cli->passthru("aws $arguments");
+            if(false && $this->localAws){
+                $this->cli->passthru("aws $arguments");
             }else{
-                $image = $this->buildImage();
-                $container = $this->startContainer($image);
                 $env = $this->getEnv();
-                $exitCode = $this->runCommand($container, (string)$arguments, $env);
+                $container = $this->getContainer();
+                $container->passthru("aws $arguments", $env);
             }
-            exit($exitCode);
         }catch(DockerImageBuildFailureException $e){
             $this->cli->failure("The '$this->imageName' has failed to build for unknown reasons\n");
-        }
-    }
-
-    public function runCommand(DockerContainer $container, string $command, ?array $env=[]): int
-    {
-        if($this->cli->isCommand('aws')){
-            return $this->cli->passthru("aws $command");
-        }else{
-            return $container->passthru("aws $command", $env);
         }
     }
 }
