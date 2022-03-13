@@ -48,7 +48,7 @@ class AwsCredsTool extends Tool
         return trim(implode("\n", array_filter($output)));
     }
 
-    public function run(?string $profile=null, ?string $sessionName='default'): void
+    public function get(?string $profile=null, ?string $sessionName='default'): ?array
     {
         $list = explode("\n",$this->awsCommand('configure list-profiles'));
 
@@ -59,7 +59,7 @@ class AwsCredsTool extends Tool
                 $this->cli->stderr("\t- ".trim($p)."\n");
             }
 
-            exit(1);
+            return null;
         }else if(!in_array($profile, $list)){
             $this->cli->stderr("AWS Profile '${profile}' was not found, please choose one from the following list and try again\n");
             $this->cli->stderr("Available Profiles: \n");
@@ -68,7 +68,7 @@ class AwsCredsTool extends Tool
             }
 
             $this->cli->print("AWS_CREDS=failed\n");
-            exit(1);
+            return null;
         }else{
             $sessionName = "awscli_ddt_" . str_replace('-','_',$profile) . "_" . $sessionName;
 
@@ -95,7 +95,18 @@ class AwsCredsTool extends Tool
             }
 
             $output[] = "AWS_CREDS=success";
-            $this->cli->print(implode("\n", $output)."\n");
+            return $output;
         }
+    }
+
+    public function run(?string $profile=null, ?string $sessionName='default'): void
+    {
+        $creds = $this->get($profile, $sessionName);
+
+        if($creds === null){
+            exit(1);
+        }
+
+        $this->cli->print(implode("\n", $creds));
     }
 }
