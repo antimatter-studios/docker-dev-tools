@@ -13,6 +13,11 @@ class SelfUpdateConfig
         $this->config = $config;
     }
 
+    public function isReadonly(): bool
+    {
+        return $this->config->isReadonly();
+    }
+
     public function isEnabled(): bool
     {
         return !!$this->config->getKey("$this->key.enabled");

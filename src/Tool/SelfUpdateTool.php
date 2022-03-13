@@ -24,7 +24,6 @@ class SelfUpdateTool extends Tool
     	parent::__construct('self-update', $cli);
 
         $this->config = $config;
-        $this->toolsPath = $systemConfig->getPath('tools');
         $this->gitService = $gitService;
 
         $this->setToolCommand('now');
@@ -95,6 +94,11 @@ class SelfUpdateTool extends Tool
 
     public function run(): void
     {
+        if($this->config->isReadonly()){
+            $this->cli->print("{yel}System Configuration is readonly{end}\n");
+            return;
+        }
+
         $timeout = $this->config->getTimeout();
 
         if(time() < $timeout){
@@ -111,12 +115,17 @@ class SelfUpdateTool extends Tool
         $this->cli->print("========================================\n");
         $this->cli->print("{blu}Docker Dev Tools{end}: Self Updater\n");
 
+        if($this->config->isReadonly()){
+            $this->cli->print("{yel}System Configuration is readonly{end}\n");
+            return;
+        }
+
         if(!$this->config->isEnabled()){
             $this->cli->print("{yel}Self Updater is disabled{end}\n");
             return;
         }
 
-        $this->gitService->pull($this->toolsPath);
+        $this->gitService->pull(container('config.tools.path'));
 
         $timeout = $this->cli->silenceChannel('stdout', function(){
             return $this->reset();
