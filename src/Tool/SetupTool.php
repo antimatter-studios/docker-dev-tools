@@ -173,9 +173,13 @@ class SetupTool extends Tool
 		}
 	}
 
-    public function install(string $path, ?bool $overwrite=true)
+    public function install(?string $path=null, ?bool $overwrite=true)
     {
         $this->cli->print("{blu}Docker Dev Tools Installer{end}\n");
+
+        if($path === null){
+            $path = container('config.tools.path');
+        }
 
         $path = rtrim($path, "/");
 
@@ -192,12 +196,9 @@ class SetupTool extends Tool
                     "File: $path/bin/ddt{end}",
                 ]));
             }
-        }else if(is_file($path)){
-            // if it's a file, we can't continue anymore, this is going to corrupt something
-            $this->cli->failure("The path '$path' given was not a directory, cannot continue\n");
         }else{
-            // if not, create it
-            mkdir($path);
+            // if it's a file, we can't continue anymore, this is going to corrupt something
+            $this->cli->failure("The path does not exist or was not a directory. Please check that '$path' is correct and try again\n");
         }
 
         // for each shell configuration file we found
