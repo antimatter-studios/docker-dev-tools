@@ -4,7 +4,7 @@ namespace DDT\Network;
 
 use DDT\CLI;
 use DDT\Config\ProxyConfig;
-use DDT\Docker\Docker;
+use DDT\Services\DockerService;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerNetwork;
 use DDT\Docker\DockerVolume;
@@ -26,7 +26,7 @@ class Proxy
 	/** @var Docker */
 	private $docker;
 
-	public function __construct(CLI $cli, ProxyConfig $config, Docker $docker)
+	public function __construct(CLI $cli, ProxyConfig $config, DockerService $docker)
 	{
 		$this->cli = $cli;
 		$this->config = $config;

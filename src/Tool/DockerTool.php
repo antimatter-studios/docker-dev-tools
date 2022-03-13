@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\DockerConfig;
-use DDT\Docker\Docker;
+use DDT\Services\DockerService;
 use DDT\Docker\DockerRunProfile;
 
 class DockerTool extends Tool
@@ -15,7 +15,7 @@ class DockerTool extends Tool
     /** @var DockerConfig $config */
     private $config;
     
-    public function __construct(CLI $cli, Docker $docker, DockerConfig $config)
+    public function __construct(CLI $cli, DockerService $docker, DockerConfig $config)
     {
         parent::__construct('docker', $cli);
 

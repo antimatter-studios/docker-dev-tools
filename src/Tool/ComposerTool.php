@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\PhpComposerConfig;
-use DDT\Docker\Docker;
+use DDT\Services\DockerService;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerVolume;
 use DDT\Exceptions\Docker\DockerVolumeNotFoundException;
@@ -17,7 +17,7 @@ class ComposerTool extends Tool
     /** @var Docker */
     private $docker;
 
-    public function __construct(CLI $cli, PhpComposerConfig $config, Docker $docker)
+    public function __construct(CLI $cli, PhpComposerConfig $config, DockerService $docker)
     {
         $this->config = $config;
         $this->docker = $docker;

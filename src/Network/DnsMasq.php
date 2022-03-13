@@ -4,7 +4,7 @@ namespace DDT\Network;
 
 use DDT\CLI;
 use DDT\Config\DnsConfig;
-use DDT\Docker\Docker;
+use DDT\Services\DockerService;
 use DDT\Docker\DockerContainer;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 
@@ -19,7 +19,7 @@ class DnsMasq
     /** @var Docker */
     private $docker;
 
-    public function __construct(CLI $cli, DnsConfig $config, Docker $docker)
+    public function __construct(CLI $cli, DnsConfig $config, DockerService $docker)
     {
         $this->cli = $cli;
         $this->config = $config;
