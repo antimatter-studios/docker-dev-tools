@@ -358,6 +358,7 @@ class CLI
 
 	public function failure(?string $string=null)
 	{
+		// FIXME: I think failure should write into stderr not stdout
 		$this->die($string, 1);
 	}
 
