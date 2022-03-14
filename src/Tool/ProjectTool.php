@@ -155,7 +155,7 @@ class ProjectTool extends Tool
         if($hasDefault) {
             $type = 'ddt';
         }else if($hasComposerJson && $hasPackageJson){
-            $type = null;
+            $type = 'composer';
         }else if($hasComposerJson){
             $type = 'composer';
         }else if($hasPackageJson){
