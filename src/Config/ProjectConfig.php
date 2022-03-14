@@ -242,15 +242,18 @@ class ProjectConfig
 				$args = ['filename' => $path, 'project' => $project, 'group' => $group];
 
 				if($type === 'ddt'){
-					return container(StandardProjectConfig::class, $args);
+					$filename = $path . '/' . StandardProjectConfig::defaultFilename;
+					return container(StandardProjectConfig::class, [...$args, 'filename' => $filename]);
 				}
 				
 				if($type === 'node'){
-					return container(NodeProjectConfig::class, $args);
+					$filename = $path . '/' . NodeProjectConfig::defaultFilename;
+					return container(NodeProjectConfig::class, [...$args, 'filename' => $filename]);
 				}
 				
 				if($type === 'composer'){
-					return container(ComposerProjectConfig::class, $args);
+					$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
+					return container(ComposerProjectConfig::class, [...$args, 'filename' => $filename]);
 				}
 			}else{
 				throw new ProjectNotFoundException($project);
