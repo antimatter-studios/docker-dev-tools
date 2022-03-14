@@ -29,7 +29,7 @@ class ProjectConfig
 
 	public function listProjects(): array
 	{
-		return $this->config->getKey($this->key);
+		return $this->config->getKey($this->key) ?? [];
 	}
 
 	public function listProjectsByScript(string $script): array
