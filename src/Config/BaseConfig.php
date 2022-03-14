@@ -6,6 +6,7 @@ use DDT\Helper\Arr;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigReadonlyException;
+use DDT\Exceptions\Filesystem\DirectoryExistsException;
 
 abstract class BaseConfig implements ConfigInterface
 {
@@ -21,25 +22,17 @@ abstract class BaseConfig implements ConfigInterface
     
     public function setFilename(string $filename): string
 	{
-        if(is_dir($filename)){
-            $filename = $filename . '/' . $this->getDefaultFilename();
-        }
-
         $temp = realpath($filename);
 
         if(!$temp){
-            throw new ConfigMissingException($filename);
+            throw new ConfigInvalidException("An unknown problem with the filename '$filename' was detected");
         }
 
-        $filename = $temp;
-
-        if(!is_file($filename)){
-            throw new ConfigMissingException($filename);
+        if(!is_file($temp)){
+            throw new ConfigInvalidException("The filename given '$filename' was not a file");
 		}
 
-		$this->filename = $filename;
-
-        return $filename;
+		return $this->filename = $temp;
 	}
 
     abstract public function getDefaultFilename(): string;
@@ -116,12 +109,25 @@ abstract class BaseConfig implements ConfigInterface
             throw new ConfigReadonlyException();
         }
 
-        // If provided, reset the filename to the new file, otherwise get the current filename
-		$filename = !empty($filename) ? $this->setFilename($filename) : $this->getFilename();
+        if(!empty($filename)){
+            if(!is_string($filename)){
+                throw new \Exception('Filename must be a string');
+            }
+
+            if(is_dir($filename)){
+                throw new DirectoryExistsException($filename);
+            }
+        }else{
+            $filename = $this->getFilename();
+        }
 
 		$data = json_encode($this->data, JSON_PRETTY_PRINT);
 
-		return file_put_contents($filename, $data) !== false;
+		$result = file_put_contents($filename, $data."\n") !== false;
+
+        $this->setFilename($filename);
+
+        return $result;
     }
 
     public function scanConfigTree(string $section, ?callable $callback=null): array
