@@ -66,7 +66,7 @@ class RunService
 
 		// TODO: do I need to keep track of any runtime data here?
 		$this->stack[] = $key;
-		$this->cli->debug("{red}[RUNSERVICE]:{end}\n{cyn}Stack(push = $key):\n".implode("\n", $this->stack)."{end}\n");
+		$this->cli->debug("runservice", "\n{cyn}Stack(push = $key):\n".implode("\n", $this->stack)."{end}\n");
 		// I don't know how to handle failure yet
 		return true;
 	}
@@ -81,7 +81,7 @@ class RunService
 	public function run(string $script, string $project, ?string $group=null, ?ArgumentList $extraArgs=null)
 	{
 		try{
-			$this->cli->debug("{red}[RUNSERVICE]:{end} Running: '$script', '$project', '$group'\n");
+			$this->cli->debug("runservice", "Running: '$script', '$project', '$group'\n");
 			// Obtain the project configuration
 			$projectConfig = $this->getProject($project, $group);
 		
@@ -99,11 +99,11 @@ class RunService
 			}else{
 				// show an error about non-entrant scripts, so we don't do any infinite loops
 				$key = $this->makeKey($projectConfig, $script);
-				$this->cli->debug("{red}[RUNSERVICE]:{end} Script already running: $key\n");
+				$this->cli->debug("runservice", "Script already running: $key\n");
 			}
 		}catch(ProjectScriptInvalidException $e){
-			$this->cli->debug("{red}".get_class($e)."{end} => {$e->getMessage()}\n");
-			$this->cli->debug("{yel}No Script Found:{end} group: {yel}{$e->getGroup()}{end}, project: {yel}{$e->getProject()}{end}, script: {yel}{$e->getScript()}{end}, extra args: {yel}'$extraArgs'{end}");
+			$this->cli->debug("runservice", "{red}".get_class($e)."{end} => {$e->getMessage()}\n");
+			$this->cli->debug("runservice", "{yel}No Script Found:{end} group: {yel}{$e->getGroup()}{end}, project: {yel}{$e->getProject()}{end}, script: {yel}{$e->getScript()}{end}, extra args: {yel}'$extraArgs'{end}");
 		}catch(\Exception $e){
 			// Oh, exception happened :( oopsie
 			$this->cli->print("{red}".get_class($e)."{end} => {$e->getMessage()}\n");
@@ -161,7 +161,7 @@ class RunService
 	public function runDependencies(StandardProjectConfig $projectConfig, string $script, ?ArgumentList $extraArgs=null): bool
 	{
 		if($projectConfig->shouldRunDependencies($script) === false){
-			$this->cli->debug("{red}[RUNSERVICE]{end}: Found token to skip dependencies\n");
+			$this->cli->debug("runservice", "Found token to skip dependencies\n");
 			return true;
 		}
 
@@ -179,7 +179,7 @@ class RunService
 			$t = array_map(function($k, $v) { 
 				return $k===($v=implode(', ', is_array($v) ? $v : [$v])) ? $k : "$k=($v)"; 
 			}, array_keys($d['scripts']), array_values($d['scripts']));
-			$this->cli->debug("{red}[RUNSERVICE]{end}: Dependencies($project@$depGroup): [".implode(",", $t)."]\n");
+			$this->cli->debug("runservice", "Dependencies($project@$depGroup): [".implode(",", $t)."]\n");
 
 			// Does this dependency overload the script with an alternative script name?
 			if(array_key_exists('scripts', $d)){
@@ -199,7 +199,7 @@ class RunService
 					$this->run($s, $project, $depGroup, $extraArgs);
 				}
 			}else{
-				$this->cli->debug("{red}[RUNSERVICE]{end}: Unexpected script configuration, must be a string|string[] value\n");
+				$this->cli->debug("runservice", "{red}[RUNSERVICE]{end}: Unexpected script configuration, must be a string|string[] value\n");
 			}
 		}
 		

@@ -66,7 +66,7 @@ class ComposerTool extends Tool
                     }
                 }catch(DockerVolumeNotFoundException $e){
                     // don't do anything, nothing to delete
-                    $this->cli->debug("{red}[COMPOSER TOOL]{end}: No volume named '$name' to delete\n");
+                    $this->cli->debug("php composer", "No volume named '$name' to delete\n");
                 }
             }
 

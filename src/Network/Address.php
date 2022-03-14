@@ -72,11 +72,11 @@ class Address
         if(preg_match("/(cannot resolve|Time to live exceeded|\s0 packets received)/", $result, $matches)){
             $this->can_resolve = false;
             $this->packet_loss = 100;
-            $this->cli->debug("{red}[PING]:{end} There was a problem resolving address");
+            $this->cli->debug("ping", "There was a problem resolving address");
         }
 
         if($this->packet_loss > 0){
-            $this->cli->debug("{red}[PING]:{end} There was non-zero packet loss: '{$this->packet_loss}%'");
+            $this->cli->debug("ping", "There was non-zero packet loss: '{$this->packet_loss}%'");
         }
 
         if($this->ip_address !== null && $this->packet_loss === 0.0 && $this->can_resolve === true){

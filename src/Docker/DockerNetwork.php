@@ -95,7 +95,7 @@ class DockerNetwork
 			
 			return $r[0];
 		}catch(\Exception $e){
-			$this->cli->debug("The docker network '$name' failed to create with error:\n".$e->getMessage());
+			$this->cli->debug("docker network", "The docker network '$name' failed to create with error:\n".$e->getMessage());
 			throw new DockerNetworkCreateException($name);
 		}
     }
@@ -128,7 +128,7 @@ class DockerNetwork
                 throw new DockerNetworkAlreadyAttachedException($this->name, $containerId);
             }
 
-            $this->cli->debug('Uncaught exception: ' . $e->getMessage());
+            $this->cli->debug("docker network", 'Uncaught exception: ' . $e->getMessage());
         }
 	}
 

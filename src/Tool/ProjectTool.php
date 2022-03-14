@@ -232,7 +232,7 @@ class ProjectTool extends Tool
     public function removeProject(string $project, ?string $path=null, ?bool $delete=false): bool
     {
         $this->cli->print("{blu}Removing Project{end}\n");
-        $this->cli->debug("{red}[PROJECT]{end}: Delete functionality is not written yet\n");
+        $this->cli->debug("project", "Delete functionality is not written yet\n");
 
         if($this->config->removeProject($project, $path)){
             $this->cli->print("{grn}The project '$project' was successfully removed'{end}\n");

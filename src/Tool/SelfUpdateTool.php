@@ -103,12 +103,12 @@ class SelfUpdateTool extends Tool
 
         if(time() < $timeout){
             $text = DateTimeHelper::nicetime($timeout);
-            $this->cli->debug("{red}[UPDATE]{end}: Did not trigger because the timeout has not run out, timeout in $text\n");
+            $this->cli->debug("update", "Did not trigger because the timeout has not run out, timeout in $text\n");
             return;
         }
 
         if(!$this->config->isEnabled()){
-            $this->cli->debug("{yel}Self Updater is disabled{end}\n");
+            $this->cli->debug("update", "{yel}Self Updater is disabled{end}\n");
             return;
         }
 

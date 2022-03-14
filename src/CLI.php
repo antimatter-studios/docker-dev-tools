@@ -341,9 +341,9 @@ class CLI
 		return $this->terminal->stderr($this->text->write($string));
 	}
 
-	public function debug(?string $string='', ?array $params=[])
+	public function debug(string $type, ?string $string='', ?array $params=[])
 	{
-		return $this->channels['debug']->write($string, $params);
+		return $this->channels['debug']->write("{red}[".strtoupper($type)."]{end}: " . $string, $params);
 	}
 
 	public function quiet(?string $string='')

@@ -143,7 +143,7 @@ class ConfigTool extends Tool
 			$config->setKey($key, $value);
 			$config->write();
 		}else{
-			$this->cli->debug("Attempting to set an empty config key '$key'");
+			$this->cli->debug("config", "Attempting to set an empty config key '$key'");
 		}
 	}
 

@@ -278,7 +278,7 @@ class DnsTool extends Tool
     {
         // TODO: what to do when you set a new ip address, here, should reconfigure everything with that new ip address?
         // NOTE: this could be quite a lot of changes in various aspects of the system that might be storing that ip address and using it locally
-        $this->cli->debug("new ip address = '$address'");
+        $this->cli->debug("dns", "new ip address = '$address'");
 
         $list = $this->dnsService->listIpAddress();
 
@@ -377,7 +377,7 @@ class DnsTool extends Tool
                 if(!$address->can_resolve) $status = '{red}could not resolve{end}';
                 if(!$address->status) $status = '{red}error pinging address{end}';
 
-                $this->cli->debug("{red}[PING]{end}: $address\n");
+                $this->cli->debug("dns", "ping: $address\n");
 
                 $table->addRow([$domain, $ipAddress, $enabled, $status]);
             }
