@@ -125,7 +125,8 @@ class RunTool extends Tool
 
             // Couldn't find anything, time to die!
             if(empty($projectList)){
-                $this->cli->failure("The script requested was not found");
+                $this->list($project, null, $group);
+                $this->cli->failure("\nThe script '$script' requested was not found, please look at the above table to see what options are available");
             }
 
             foreach($projectList as $config){
