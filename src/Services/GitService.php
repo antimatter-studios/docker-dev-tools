@@ -36,73 +36,73 @@ class GitService
 
 	/**
 	 * @param string $url
-	 * @param string $dir
+	 * @param string $path
 	 * @return bool
 	 * @throws DirectoryExistsException
 	 */
-	public function clone(string $url, string $dir): bool
+	public function clone(string $url, string $path): bool
 	{
-		if(is_dir($dir)){
-			throw new DirectoryExistsException($dir);
+		if(is_dir($path)){
+			throw new DirectoryExistsException($path);
 		}
 
 		if($this->exists($url) === false){
 			throw new InvalidArgumentException("The url '$url' is not a valid git repository");
 		}
 
-		return $this->cli->passthru("git clone $url $dir") === 0;
+		return $this->cli->passthru("git clone $url $path") === 0;
 	}
 
 	/**
-	 * @param string $dir
+	 * @param string $path
 	 * @return bool
 	 * @throws DirectoryNotExistException
 	 */
-	public function pull(string $dir, bool $quiet=false): bool
+	public function pull(string $path, bool $quiet=false): bool
 	{
-		if(!is_dir($dir)){
-			throw new DirectoryNotExistException($dir);
+		if(!is_dir($path)){
+			throw new DirectoryNotExistException($path);
 		}
 
 		$quiet = $quiet ? "&>/dev/null": "";
 
-		return $this->cli->passthru("git -C $dir pull $quiet") === 0;
+		return $this->cli->passthru("git -C $path pull $quiet") === 0;
 	}
 
-	public function push(string $dir, bool $quiet=false): bool
+	public function push(string $path, bool $quiet=false): bool
 	{
-		if(!is_dir($dir)){
-			throw new DirectoryNotExistException($dir);
+		if(!is_dir($path)){
+			throw new DirectoryNotExistException($path);
 		}
 
 		$quiet = $quiet ? "&>/dev/null": "";
 
-		return $this->cli->passthru("git -C $dir push $quiet") === 0;
+		return $this->cli->passthru("git -C $path push $quiet") === 0;
 	}
 
-	public function status(string $dir): string
+	public function status(string $path): string
 	{
-		$output = $this->cli->exec("git -C $dir status -s");
+		$output = $this->cli->exec("git -C $path status -s");
 		$output = trim($output);
 
 		return $output;
 	}
 
-	public function branch(string $dir): string
+	public function branch(string $path): string
 	{
-		return $this->cli->exec("git -C $dir rev-parse --abbrev-ref HEAD");
+		return $this->cli->exec("git -C $path rev-parse --abbrev-ref HEAD");
 	}
 
-	public function remote(string $dir, string $name='origin'): string
+	public function remote(string $path, string $name='origin'): string
 	{
-		return $this->cli->exec("git -C $dir remote get-url $name");
+		return $this->cli->exec("git -C $path remote get-url $name");
 	}
 
-	public function fetch(string $dir, bool $prune=false): bool
+	public function fetch(string $path, bool $prune=false): bool
 	{
 		$prune = $prune ? "-p" : "";
 
-		$this->cli->exec("git -C $dir fetch $prune");
+		$this->cli->exec("git -C $path fetch $prune");
 
 		return $this->cli->getExitCode() === 0;
 	}
