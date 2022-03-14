@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Network;
+namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\Config\ProxyConfig;
@@ -15,7 +15,7 @@ use DDT\Exceptions\Docker\DockerNetworkCreateException;
 use DDT\Exceptions\Docker\DockerNetworkExistsException;
 use Exception;
 
-class Proxy
+class ProxyService
 {
 	/** @var CLI */
 	private $cli;
@@ -65,7 +65,7 @@ class Proxy
 		try{
 			return $this->docker->exec("exec $containerId cat /etc/nginx/conf.d/default.conf");
 		}catch(\Exception $e){
-			$this->cli->debug($e->getMessage());
+			$this->cli->debug("proxy", $e->getMessage());
 			return "";
 		}
 	}
@@ -217,7 +217,7 @@ class Proxy
 				return true;
 			}
 			
-			$this->cli->debug("{red}[PROXY]{end}: The proxy was found, but it's state is that it's not running, so lets kill it and start again\n");
+			$this->cli->debug("proxy", "The proxy was found, but it's state is that it's not running, so lets kill it and start again\n");
 			$this->cli->print("Deleting Container with name '$name'\n");
 			$container->stop();
 			$container->delete();
@@ -325,7 +325,7 @@ class Proxy
 			$this->cli->print("{blu}Network:{end} '{yel}$name{end}' was already attached to container id '$containerId'\n");
 		}catch(\Exception $e){
 			// TODO: should we do anything different here?
-			$this->cli->debug("We have a general failure attaching the proxy to network '$name' with message: " . $e->getMessage());	
+			$this->cli->debug("proxy", "We have a general failure attaching the proxy to network '$name' with message: " . $e->getMessage());	
 		}
 
 		return false;
@@ -345,7 +345,7 @@ class Proxy
 			return $this->config->removeNetwork($name );
 		}catch(\Exception $e){
 			// TODO: should we do anything different here?
-			$this->cli->debug("We have a general failure detaching the proxy from network '$name' with message: " . $e->getMessage());	
+			$this->cli->debug("proxy", "We have a general failure detaching the proxy from network '$name' with message: " . $e->getMessage());	
 		}
 
 		return false;

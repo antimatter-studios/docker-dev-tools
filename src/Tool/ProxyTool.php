@@ -7,7 +7,7 @@ use DDT\Config\ProxyConfig;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use DDT\Exceptions\Docker\DockerInspectException;
-use DDT\Network\Proxy;
+use DDT\Services\ProxyService;
 use DDT\Services\ConfigGeneratorService;
 use DDT\Text\Table;
 
@@ -22,7 +22,7 @@ class ProxyTool extends Tool
     /** @var ConfigGeneratorService */
     private $configGeneratorService;
 
-    public function __construct(CLI $cli, ProxyConfig $config, Proxy $proxy, ConfigGeneratorService $configGeneratorService)
+    public function __construct(CLI $cli, ProxyConfig $config, ProxyService $proxy, ConfigGeneratorService $configGeneratorService)
     {
         parent::__construct('proxy', $cli);
 
@@ -206,7 +206,7 @@ class ProxyTool extends Tool
             try{
                 $containerList = $this->proxy->getContainersOnNetwork($network);
             }catch(DockerNetworkNotFoundException $e){
-                $this->cli->debug("{red}[PROXY]{end}: Network '$network' was not found\n");
+                $this->cli->debug("proxy", "Network '$network' was not found\n");
                 $containerList = [];
             }
 
@@ -234,7 +234,7 @@ class ProxyTool extends Tool
                         ]);
                     }
                 }catch(\Exception $e){
-                    $this->cli->debug("{red}[PROXY]{end}: Could not read proxy config for container '{$container['name']}'\n");
+                    $this->cli->debug("proxy", "Could not read proxy config for container '{$container['name']}'\n");
                 }
             }
             

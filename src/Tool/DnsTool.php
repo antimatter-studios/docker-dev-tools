@@ -7,7 +7,7 @@ use DDT\Config\DnsConfig;
 use DDT\Config\IpConfig;
 use DDT\Contract\DnsServiceInterface;
 use DDT\Network\Address;
-use DDT\Network\DnsMasq;
+use DDT\Services\DnsMasqService;
 use DDT\Text\Table;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 
@@ -19,13 +19,13 @@ class DnsTool extends Tool
     /** @var IpConfig */
     private $ipConfig;
 
-    /** @var DnsMasq */
+    /** @var DnsMasqService */
     private $dnsMasq;
     
     /** @var DnsServiceInterface */
     private $dnsService;
 
-    public function __construct(CLI $cli, DnsConfig $dnsConfig, IpConfig $ipConfig, DnsMasq $dnsMasq, DnsServiceInterface $dnsService)
+    public function __construct(CLI $cli, DnsConfig $dnsConfig, IpConfig $ipConfig, DnsMasqService $dnsMasq, DnsServiceInterface $dnsService)
     {
     	parent::__construct('dns', $cli);
 

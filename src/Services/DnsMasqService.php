@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Network;
+namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\Config\DnsConfig;
@@ -8,7 +8,7 @@ use DDT\Services\DockerService;
 use DDT\Docker\DockerContainer;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 
-class DnsMasq
+class DnsMasqService
 {
     /** @var CLI */
     private $cli;

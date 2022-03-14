@@ -19,7 +19,12 @@ use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Tool\ToolCommandNotFoundException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
 use DDT\Exceptions\Tool\ToolNotSpecifiedException;
+use DDT\Services\ConfigGeneratorService;
+use DDT\Services\DnsMasqService;
 use DDT\Services\DockerService;
+use DDT\Services\GitService;
+use DDT\Services\ProxyService;
+use DDT\Services\RunService;
 
 try{
 	if (version_compare(phpversion(), '7.2', '<')) {
@@ -70,7 +75,14 @@ try{
 
 	$container = new Container($cli, [Autowire::class, 'instantiator']);
 	$container->singleton(CLI::class, $cli);
+
+	// Add all the services which we only want to instantiate once since they are singular in nature
+	$container->singleton(ConfigGeneratorService::class, ConfigGeneratorService::class);
+	$container->singleton(DnsMasqService::class, DnsMasqService::class);
 	$container->singleton(DockerService::class, DockerService::class);
+	$container->singleton(GitService::class, GitService::class);
+	$container->singleton(ProxyService::class, ProxyService::class);
+	$container->singleton(RunService::class, RunService::class);
 
 	// We have to set this value really early so it's useful when the autowirer starts using it
 	Debug::setState($cli->getArg('--debug', false));
