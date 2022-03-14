@@ -1,10 +1,10 @@
 <?php
 namespace DDT\Exceptions\Filesystem;
 
-class DirectoryExistsException extends \Exception
+class FileExistsException extends \Exception
 {
     public function __construct(string $path, int $code = 0, \Throwable $previous = null)
     {
-        parent::__construct("The directory '$path' already exists", $code, $previous);
+        parent::__construct("The file '$path' already exists", $code, $previous);
     }
 };
