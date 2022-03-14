@@ -23,17 +23,6 @@ class GitService
 		return $this->cli->getExitCode() === 0;	
 	}
 
-	public function getRemote(string $path, string $remote): string
-	{
-		try{
-			return $this->cli->exec("git -C $path remote get-url $remote");
-		}catch(\Exception $e){
-			if(strpos($e->getMessage(), "not a git repository") !== false){
-				throw new GitNotARepositoryException($path);
-			}
-		}
-	}
-
 	/**
 	 * @param string $url
 	 * @param string $path
@@ -96,6 +85,18 @@ class GitService
 	public function remote(string $path, string $name='origin'): string
 	{
 		return $this->cli->exec("git -C $path remote get-url $name");
+	}
+
+	// FIXME: exec no longer throws exceptions, so how can we manage errors now?
+	public function getRemote(string $path, string $remote): string
+	{
+		try{
+			return $this->cli->exec("git -C $path remote get-url $remote");
+		}catch(\Exception $e){
+			if(strpos($e->getMessage(), "not a git repository") !== false){
+				throw new GitNotARepositoryException($path);
+			}
+		}
 	}
 
 	public function fetch(string $path, bool $prune=false): bool
