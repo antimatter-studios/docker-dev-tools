@@ -19,7 +19,7 @@ class SelfUpdateTool extends Tool
     /** @var GitService */
     private $gitService;
 
-    public function __construct(CLI $cli, SelfUpdateConfig $config, SystemConfig $systemConfig, GitService $gitService)
+    public function __construct(CLI $cli, SelfUpdateConfig $config, GitService $gitService)
     {
     	parent::__construct('self-update', $cli);
 
@@ -95,7 +95,7 @@ class SelfUpdateTool extends Tool
     public function run(): void
     {
         if($this->config->isReadonly()){
-            $this->cli->print("{yel}System Configuration is readonly{end}\n");
+            $this->cli->print("{yel}System Configuration is readonly, can not update{end}\n");
             return;
         }
 
@@ -104,6 +104,11 @@ class SelfUpdateTool extends Tool
         if(time() < $timeout){
             $text = DateTimeHelper::nicetime($timeout);
             $this->cli->debug("{red}[UPDATE]{end}: Did not trigger because the timeout has not run out, timeout in $text\n");
+            return;
+        }
+
+        if(!$this->config->isEnabled()){
+            $this->cli->debug("{yel}Self Updater is disabled{end}\n");
             return;
         }
 
@@ -116,7 +121,7 @@ class SelfUpdateTool extends Tool
         $this->cli->print("{blu}Docker Dev Tools{end}: Self Updater\n");
 
         if($this->config->isReadonly()){
-            $this->cli->print("{yel}System Configuration is readonly{end}\n");
+            $this->cli->print("{yel}System Configuration is readonly, can not update{end}\n");
             return;
         }
 
