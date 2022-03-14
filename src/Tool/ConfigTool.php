@@ -4,7 +4,6 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\SystemConfig;
-use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectConfigUpgradeFailureException;
 use DDT\Text\Text;
 
@@ -99,25 +98,16 @@ class ConfigTool extends Tool
 		return $config->getFilename();
 	}
 
-	public function exists(SystemConfig $config): bool
-	{
-		try{
-			return is_file($this->filename($config));
-		}catch(ConfigMissingException $e){
-			return false;
-		}
-	}
-
 	public function reset(SystemConfig $config): ?SystemConfig
 	{
 		// Test if system configuration exists, if yes then you'll be asked to reset it
-		if($this->exists($config)){
+		if(file_exists($this->systemConfig)){
 			$reply = $this->cli->ask('Are you sure you want to reset your configuration?', ['yes', 'no']);
 
 			if($reply !== 'yes'){
 				$this->cli->box("The request to reset was refused", "wht", "red");
 				return null;
-			}	
+			}
 		}
 		
 		$config->read($this->defaultConfig);
