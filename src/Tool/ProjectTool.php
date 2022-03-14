@@ -167,9 +167,14 @@ class ProjectTool extends Tool
         return $type;
     }
 
-    public function addProject(string $path, ?string $project=null, ?string $type=null, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): bool
+    public function addProject(?string $path=null, ?string $project=null, ?string $type=null, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): bool
     {
         $this->cli->print("{blu}Adding project{end}\n");
+
+        if(empty($path)){
+            $path = getcwd();
+            $this->cli->print("{yel}WARNING{end}: No path provided so defaulting to the current directory '$path'\n");
+        }
         
         $updatedPath = realpath($path);
         
