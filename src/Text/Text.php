@@ -36,9 +36,9 @@ class Text
 		'i_wrn' => "\xF0\x9F\x98\xB1",
 	];
 
-	public function __construct()
+	public function __construct(?array $theme=[])
 	{
-		foreach($this->codes as $key => $val){
+		foreach(array_merge($this->codes, $theme) as $key => $val){
 			if(strpos($val, '\033') === 0){
 				$val = "\e".str_replace('\033', '', $val);
 			}

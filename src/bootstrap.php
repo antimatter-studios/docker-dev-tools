@@ -62,7 +62,10 @@ try{
 			: Container::$instance;
 	}
 
-	$text = new Text();
+	$text = new Text([
+		// NOTE: look in the text renderer for the array keys if you want to customise the colour palette
+	]);
+
 	$cli = new CLI($argv, $text);
 
 	$container = new Container($cli, [Autowire::class, 'instantiator']);
@@ -155,6 +158,7 @@ try{
 	// But in the end, handle the request made by the user
 	$entrypoint->handle();
 }catch(ConfigMissingException $e){
+	$cli->print($e->getTraceAsString());
 	$cli->failure(get_class($e) . $text->box($e->getMessage(), "wht", "red"));
 }catch(ConfigInvalidException $e){
 	$cli->failure($text->box($e->getMessage(), "wht", "red"));
@@ -167,8 +171,5 @@ try{
 }catch(ProjectConfigUpgradeException $e){
 	$cli->failure($text->box($e->getMessage(), "wht", "red"));
 }catch(Exception $e){
-	if(Debug::$enabled){
-		$cli->print($e->getTraceAsString());
-	}
 	$cli->failure($text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), "wht", "red"));
 }
