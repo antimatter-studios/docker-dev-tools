@@ -2,6 +2,7 @@
 
 namespace DDT;
 
+use DDT\Text\Text;
 use DDT\CLI\Output\CustomChannel;
 use DDT\CLI\Output\DebugChannel;
 use DDT\CLI\Output\StderrChannel;
@@ -11,7 +12,6 @@ use DDT\CLI\Output\StringChannel;
 use DDT\Contract\ChannelInterface;
 use DDT\Exceptions\CLI\AskResponseRejectedException;
 use Exception;
-use DDT\Text\Text;
 
 class CLI
 {
@@ -55,7 +55,7 @@ class CLI
 		$isRoot = $this->exec('whoami') === 'root';
 		
 		if($isRoot){
-			$this->channels['stderr']->write("{yel}[SYSTEM]:{end} Root user detected\n");
+			$this->stderr("{yel}[SYSTEM]:{end} Root user detected\n");
 		}
 
 		return $isRoot;
@@ -66,7 +66,7 @@ class CLI
 		if($showErrors){
 			error_reporting(-1);
 			ini_set('display_errors', 'true');
-			$this->channels['stderr']->write("{yel}[SYSTEM]:{end} Errors enabled\n");
+			$this->stderr("{yel}[SYSTEM]:{end} Errors enabled\n");
 		}else{
 			error_reporting(0);
 			ini_set('display_errors', 'false');
@@ -93,17 +93,6 @@ class CLI
 		}
 
 		return $answer;
-	}
-
-	public function listenChannel(string $channel, ?bool $state=true): ChannelInterface
-	{
-		if(!array_key_exists($channel, $this->channels)){
-			$this->channels[$channel] = new CustomChannel($this->channels['stdout'], $channel, $state);
-		}
-
-		$this->channels[$channel]->enable($state);
-
-		return $this->channels[$channel];
 	}
 
 	public function setChannel(ChannelInterface $channel): ChannelInterface
@@ -254,11 +243,6 @@ class CLI
 		return $this;
 	}
 
-	public function getStdErr(): string
-	{
-		return self::$stderr;
-	}
-
 	public function getExitCode(): int
 	{
 		return $this->exitCode;
@@ -345,7 +329,7 @@ class CLI
 
 	public function stderr(?string $string=''): string
 	{
-		return $this->terminal->stderr($this->text->write($string));
+		return $this->channels['stderr']->write($this->text->write($string));
 	}
 
 	public function debug(string $type, ?string $string='', ?array $params=[])
@@ -371,16 +355,16 @@ class CLI
 
 	public function box(string $string, string $foreground, string $background): string
 	{
-		return $this->channels['stdout']->write($this->text->box($string, $foreground, $background));
+		return $this->print($this->text->box($string, $foreground, $background));
 	}
 
 	public function die(?string $string=null, int $exitCode=0)
 	{
 		$colour	= $exitCode === 0 ? "{grn}" : "{red}";
-		$where	= $exitCode === 0 ? STDOUT : STDERR;
+		$where	= $exitCode === 0 ? $this->getChannel('stdout') : $this->getChannel('stderr');
 
 		if($string !== null){
-			fwrite($where, $this->text->write($colour.rtrim($string, "\n")."{end}\n"));
+			$where->write($colour.rtrim($string, "\n")."{end}\n");
 		}
 
 		exit($exitCode);

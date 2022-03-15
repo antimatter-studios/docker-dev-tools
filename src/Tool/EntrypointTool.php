@@ -31,7 +31,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     {
         $this->debug = $enable;
         $this->cli->enableErrors($enable);
-        $this->cli->listenChannel('debug', $enable);
+        $this->cli->toggleChannel('debug', $enable);
     }
 
     public function getDebug(): bool
@@ -42,7 +42,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     public function setQuiet(bool $enable): void
     {
         $this->quiet = $enable;
-        $this->cli->listenChannel('quiet', $enable);
+        $this->cli->toggleChannel('quiet', $enable);
 
         if($enable){
             $this->cli->print("{yel}[SYSTEM]:{end} Quiet output enabled\n");
