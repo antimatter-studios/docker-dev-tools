@@ -130,8 +130,7 @@ class DnsTool extends Tool
     public function start()
     {
         $this->cli->print("{blu}Starting:{end} DNS...\n");
-        
-        $this->dnsMasq->pull();
+    
         
         $id = $this->dnsMasq->start();
         
