@@ -40,7 +40,18 @@ class AwsTool extends Tool
 
     public function getArch(): string
     {
-        $arch = $this->cli->exec('[ $(uname -m) = "x86_64" ] && [ $(sysctl -in sysctl.proc_translated) = "1" ] && echo "arm64" || echo "x86_64"');
+        $arch = $this->cli->exec('uname -m');
+        $rosetta = false;
+
+        if($this->cli->exec('uname -s') === "Darwin"){
+            $rosetta = (int)$this->cli->exec('sysctl -in sysctl.proc_translated');
+            if($arch === 'x86_64' && $rosetta === 1){
+                $arch = 'arm64';
+            }
+        }
+
+        $this->cli->debug('cpu arch', $arch);
+        $this->cli->debug('cpu rosetta', $rosetta ? 'yes' : 'no');
 
         return $arch;
     }
