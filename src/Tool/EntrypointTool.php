@@ -39,13 +39,16 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         return $this->debug;
     }
 
+    // TODO: decide what to do with the quiet mode, I don't think I ever
+    // used it for anything, despite it having a good premise at the beginning
+    // I think it turns out this functionality is not needed
     public function setQuiet(bool $enable): void
     {
         $this->quiet = $enable;
         $this->cli->toggleChannel('quiet', $enable);
 
         if($enable){
-            $this->cli->print("{yel}[SYSTEM]:{end} Quiet output enabled\n");
+            $this->cli->stderr("{yel}[SYSTEM]:{end} Quiet output enabled\n");
         }
     }
 
