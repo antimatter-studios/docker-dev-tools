@@ -4,16 +4,16 @@
     "version": "1.0",
     "ip_address": "10.254.254.254",
     "dns": {
-        "docker_image": "antimatter-studios\/docker-dns:latest",
+        "docker_image": "ghcr.io/antimatter-studios\/docker-dns:latest",
         "container_name": "ddt-dns"
     },
     "proxy": {
-        "docker_image": "antimatter-studios\/docker-proxy:latest",
+        "docker_image": "ghcr.io/antimatter-studios\/docker-proxy:latest",
         "container_name": "ddt-proxy",
         "network": []
     },
     "config_gen": {
-        "docker_image": "antimatter-studios\/docker-config-gen:latest",
+        "docker_image": "ghcr.io/antimatter-studios\/docker-config-gen:latest",
         "container_name": "ddt-config-gen",
         "network": []
     }
