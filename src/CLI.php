@@ -19,7 +19,6 @@ class CLI
 	private $args = [];
 	private $script = null;
 	private $channels = [];
-	private $isRoot = false;
 	private $exitCode = 0;
 	private $terminal = null;
 
@@ -44,15 +43,22 @@ class CLI
 		$this->channels['realtime_exec'] = new CustomChannel($this->channels['stdout'], 'realtime_exec');
 		$this->channels['debug'] = new DebugChannel($this->channels['stderr'], $this->text);
 
-		$this->isRoot = $this->exec('whoami') === 'root';
+		$this->isRoot();
 
 		// This will reset any colours bleeding over from commands by resetting the shell colour codes
 		// Don't do this! This breaks piping output to commands like jq because it'll output a shell code directly into the input of the next command
 		//$this->print("{end}");
+	}
 
-		if($this->isRoot){
+	public function isRoot(): bool
+	{
+		$isRoot = $this->exec('whoami') === 'root';
+		
+		if($isRoot){
 			$this->channels['stderr']->write("{yel}[SYSTEM]:{end} Root user detected\n");
 		}
+
+		return $isRoot;
 	}
 
 	public function enableErrors(bool $showErrors=false)
@@ -60,6 +66,7 @@ class CLI
 		if($showErrors){
 			error_reporting(-1);
 			ini_set('display_errors', 'true');
+			$this->channels['stderr']->write("{yel}[SYSTEM]:{end} Errors enabled\n");
 		}else{
 			error_reporting(0);
 			ini_set('display_errors', 'false');
@@ -238,7 +245,7 @@ class CLI
 
 	public function sudo(?string $command='echo'): CLI
 	{
-		if($this->isRoot === false){
+		if($this->isRoot() === false){
 			$command = "sudo $command";
 		}
 

@@ -32,10 +32,6 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         $this->debug = $enable;
         $this->cli->enableErrors($enable);
         $this->cli->listenChannel('debug', $enable);
-        
-        if($enable){
-            $this->cli->print("{yel}[SYSTEM]:{end} Errors enabled\n");
-        }
     }
 
     public function getDebug(): bool
