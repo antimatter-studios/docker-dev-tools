@@ -67,6 +67,11 @@ try{
 			: Container::$instance;
 	}
 
+	function config(string $key)
+	{
+		return container("config.$key");
+	}
+
 	$text = new Text([
 		// NOTE: look in the text renderer for the array keys if you want to customise the colour palette
 	]);
@@ -114,9 +119,9 @@ try{
 	$container->singleton('defaults.dns.container_name',	'ddt-dnsmasq');
 	
 	// Set these important values for the system configuration
-	$container->singleton('config.tools.path', __DIR__ . '/..');
+	$container->singleton('config.tools.path', realpath(__DIR__ . '/..'));
 	// This is the default system configuration that is the basic template for any new installation
-	$container->singleton('config.file.default', __DIR__ . '/../default.ddt-system.json');
+	$container->singleton('config.file.default', config('tools.path') . '/default.ddt-system.json');
 	// This is the currently installed system configuration
 	$container->singleton('config.file.system', $_SERVER['HOME'] . '/.ddt-system.json');
 	
@@ -124,8 +129,8 @@ try{
 		static $c = null;
 		
 		if($c === null) {
-			$installConfig = container('config.file.system');
-			$defaultConfig = container('config.file.default');
+			$installConfig = config('file.system');
+			$defaultConfig = config('file.default');
 
 			if(file_exists($installConfig)){
 				$c = new SystemConfig($installConfig, false);
