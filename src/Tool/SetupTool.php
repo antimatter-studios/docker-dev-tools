@@ -178,7 +178,7 @@ class SetupTool extends Tool
         $this->cli->print("{blu}Docker Dev Tools Installer{end}\n");
 
         if($path === null){
-            $path = container('config.tools.path');
+            $path = config('tools.path');
         }
 
         $path = rtrim($path, "/");

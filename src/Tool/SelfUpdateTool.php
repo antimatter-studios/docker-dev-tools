@@ -130,7 +130,7 @@ class SelfUpdateTool extends Tool
             return;
         }
 
-        $this->gitService->pull(container('config.tools.path'));
+        $this->gitService->pull(config('tools.path'));
 
         $timeout = $this->cli->silenceChannel('stdout', function(){
             return $this->reset();

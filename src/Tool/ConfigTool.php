@@ -19,8 +19,8 @@ class ConfigTool extends Tool
     {
     	parent::__construct('config', $cli);
 
-		$this->defaultConfig = container('config.file.default');
-		$this->systemConfig = container('config.file.system');
+		$this->defaultConfig = config('file.default');
+		$this->systemConfig = config('file.system');
 
 		$this->text = $text;
 
