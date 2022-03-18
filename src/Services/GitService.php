@@ -23,6 +23,13 @@ class GitService
 		return $this->cli->getExitCode() === 0;	
 	}
 
+	public function isRepository(string $path): bool
+	{
+		$this->cli->exec("git -C $path remote -v");
+
+		return $this->cli->getExitCode() === 0;
+	}
+
 	/**
 	 * @param string $url
 	 * @param string $path

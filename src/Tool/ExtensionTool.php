@@ -88,31 +88,44 @@ class ExtensionTool extends Tool
         }
     }
 
-    public function install(string $name, string $url)
+    public function install(string $name, ?string $url=null)
     {
         $this->cli->print("Installing new ExtensionManager '{yel}$name{end}' from url '{yel}$url{end}'\n");
 
-        $path = $this->config->getToolsPath("/extensions/$name");
+        $path = config('tools.path') . "/extensions/$name";
 
         try{
-            if($this->gitService->clone($url, $path)){
-                $extensionConfig = ExtensionPackageConfig::instance($path);
-                $test = $extensionConfig->getTest();
+            // Not installed and no url given, so we can't install
+            if(!is_dir($path) && $url === null){
+                $this->cli->failure("Failed to install extension '$name' because nothing was found and no url was given to clone from\n");
+            }
 
-                /** @var SetupTool */
-                $setupTool = $this->toolRegistry->getTool('setup');
-                $this->cli->print("Removing extension '$name' with path '$path' from system files\n");
-                $setupTool->add($path);
-                
-                if($this->cli->silenceChannel('stdout', function() use ($setupTool, $test) {
-                    return $setupTool->test($test);
-                }) === true){
-                    $this->config->add($name, $url, $path, $test);
-                    $this->cli->success("Extension '$name' was installed");
+            // Not installed, but a url given to clone + install from
+            if(!is_dir($path) && $url !== null){
+                if($this->gitService->clone($url, $path)){
+                    $this->cli->failure("Failed install extension '$name' and clone repository from '$url' into '$path'\n");
                 }
             }
 
-            $this->cli->failure("Extension '$name' failed to install");
+            // Found the path, but the url was null, probably this is a reinstallation attempt
+            if(is_dir($path) && $url ===null){
+                $url = $this->gitService->getRemote($path, 'origin');
+            }
+
+            $extensionConfig = ExtensionPackageConfig::instance($path . '/' . ExtensionPackageConfig::defautFilename);
+            $test = $extensionConfig->getTest();
+
+            /** @var SetupTool */
+            $setupTool = $this->toolRegistry->getTool('setup');
+            $this->cli->print("Installing extension '$name' with path '$path' into system files\n");
+            $setupTool->add($path);
+            
+            if($this->cli->silenceChannel('stdout', function() use ($setupTool, $test) {
+                return $setupTool->test($test);
+            }) === true){
+                $this->config->add($name, $url, $path, $test);
+                $this->cli->success("Extension '$name' was installed");
+            }
         }catch(DirectoryExistsException $e){
             $this->cli->failure("Sorry, but the path '$path' already exists, we cannot install to this location\n");
         }catch(InvalidArgumentException $e){
