@@ -192,9 +192,13 @@ class DockerService
      */
 	public function inspect(string $type, string $name, ?string $filter='{{json . }}'): ?array
 	{
-		try{
-			$result = $this->exec("$type inspect $name -f '$filter'");
+		$result = $this->exec("$type inspect $name -f '$filter'");
+			
+		if($this->getExitCode() !== 0) {
+			throw new DockerInspectException($type, $name);
+		}
 
+		try{
 			// attempt to decode the result, it might fail cause some return values are not valid json
 			$r = json_decode($result, true);
 			// if empty, then assume decoding it failed, revert back to original value
@@ -204,7 +208,7 @@ class DockerService
 
 			return $r;
 		}catch(\Exception $e){
-		    throw new DockerInspectException($type, $name, 0, $e);
+			throw new DockerInspectException($type, $name, 0, $e);   
 		}
 	}
 
