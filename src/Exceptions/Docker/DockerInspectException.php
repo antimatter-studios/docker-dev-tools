@@ -6,7 +6,7 @@ class DockerInspectException extends \Exception
 {
     public function __construct(string $type, string $name, int $code = 0, \Throwable $previous = null)
     {
-        $message = trim($previous->getMessage());
+        $message = $previous ? trim($previous->getMessage()) : 'no message given';
         parent::__construct("Docker could not find the '$type' resource named '$name' to inspect ($message)", $code, $previous);
     }
 }
