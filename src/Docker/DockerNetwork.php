@@ -12,14 +12,13 @@ use DDT\Exceptions\Docker\DockerNetworkFailedAttachException;
 use DDT\Exceptions\Docker\DockerNetworkFailedDetachException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use DDT\Services\DockerService;
-use DDT\Tool\DockerTool;
 
 class DockerNetwork
 {
     /** @var CLI */
     private $cli;
 
-    /** @var Docker */
+    /** @var DockerService */
     private $docker;
 
     /** @var string the name of this docker network */
@@ -55,13 +54,13 @@ class DockerNetwork
 
     public function getId(): string
     {
-        try{
-            $id = $this->docker->inspect('network', $this->name, '{{json .Id }}');
+        $id = $this->docker->inspect('network', $this->name, '{{json .Id }}');
 
-            return $id[0];
-        }catch(\Exception $e){
+        if(empty($id)){
             throw new DockerNetworkNotFoundException($this->name);
         }
+
+        return $id[0];
     }
 
     public function getName(): string
