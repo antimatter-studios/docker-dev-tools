@@ -7,6 +7,8 @@ use DDT\Config\ProxyConfig;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use DDT\Exceptions\Docker\DockerInspectException;
+use DDT\Exceptions\Docker\DockerNetworkAlreadyAttachedException;
+use DDT\Exceptions\Docker\DockerNetworkCreateException;
 use DDT\Services\ProxyService;
 use DDT\Services\ConfigGeneratorService;
 use DDT\Text\Table;
@@ -16,18 +18,18 @@ class ProxyTool extends Tool
     /** @var ProxyConfig */
     private $config;
 
-    /** @var Proxy */
-    private $proxy;
+    /** @var ProxyService */
+    private $proxyService;
 
     /** @var ConfigGeneratorService */
     private $configGeneratorService;
 
-    public function __construct(CLI $cli, ProxyConfig $config, ProxyService $proxy, ConfigGeneratorService $configGeneratorService)
+    public function __construct(CLI $cli, ProxyConfig $config, ProxyService $proxyService, ConfigGeneratorService $configGeneratorService)
     {
         parent::__construct('proxy', $cli);
 
         $this->config = $config;
-        $this->proxy = $proxy;
+        $this->proxyService = $proxyService;
         $this->configGeneratorService = $configGeneratorService;
 
         foreach([
@@ -88,7 +90,7 @@ class ProxyTool extends Tool
     {
         $this->cli->print("{blu}Starting the Frontend Proxy:{end} ".$this->dockerImage()."\n");
         $this->configGeneratorService->start();
-        $this->proxy->start();
+        $this->proxyService->start();
 
         // FIXME: perhaps this should call the docker object to do this
         $this->cli->print("{blu}Running Containers:{end}\n");
@@ -99,7 +101,7 @@ class ProxyTool extends Tool
     {
         try{
             $this->cli->print("{blu}Stopping the Frontend Proxy:{end} ".$this->dockerImage()."\n");
-            $this->proxy->stop();
+            $this->proxyService->stop();
             // TODO: should I stop this when I stop the proxy?
             // TODO: what if it's used by another service?
             $this->configGeneratorService->stop();
@@ -115,7 +117,7 @@ class ProxyTool extends Tool
     public function reload()
     {
         try{
-            if($this->proxy->reload()){
+            if($this->proxyService->reload()){
                 $this->cli->success("The proxy has reloaded the configuration\n");
             }else{
                 $this->cli->failure("The proxy failed to reload\n");
@@ -134,12 +136,12 @@ class ProxyTool extends Tool
 
     public function logs(?string $since=null)
     {
-        $this->proxy->logs(false, $since);
+        $this->proxyService->logs(false, $since);
     }
 
     public function logsF(?string $since=null)
     {
-        $this->proxy->logs(true, $since);
+        $this->proxyService->logs(true, $since);
     }
 
     public function addNetwork(string $network)
@@ -152,8 +154,20 @@ class ProxyTool extends Tool
 
         $this->cli->print("{blu}Connecting to a new network '$network' to the proxy container '{$this->containerName()}'{end}\n");
 
-        $this->proxy->addNetwork($network);
-        $this->status();
+        try{
+            $this->proxyService->addNetwork($network);
+            $this->status();
+		}catch(DockerNetworkCreateException $e){
+			$this->cli->print("{blu}Network:{end} '{yel}$network{end}' was not found, but creating it also failed\n");
+		}catch(DockerNetworkAlreadyAttachedException $e){
+			$this->cli->print("{blu}Network:{end} '{yel}$network{end}' was already attached to container '{$this->containerName()}'\n");
+        }catch(DockerNetworkNotFoundException $e){
+            $this->cli->failure("Could not find network '$network'\n");
+		}catch(\Exception $e){
+			// TODO: should we do anything different here?
+			$this->cli->debug("proxy", "We have a general failure attaching the proxy to network '$network' with message: " . $e->getMessage());
+            $this->cli->failure("Unknown error trying to attach to network, message = " . $e->getMessage() . "\n");
+		}
     }
 
     public function removeNetwork(string $network)
@@ -166,14 +180,22 @@ class ProxyTool extends Tool
 
         $this->cli->print("{blu}Disconnecting the network '$network' from the proxy container '{$this->containerName()}'{end}\n");
 
-        $this->proxy->removeNetwork($network);
-        $this->status();
+        try{
+            $this->proxyService->removeNetwork($network);
+            $this->status();   
+        }catch(DockerNetworkNotFoundException $e){
+            $this->cli->failure("Could not find network '$network'\n");
+        }catch(\Exception $e){
+			// TODO: should we do anything different here?
+			$this->cli->debug("proxy", "We have a general failure detaching the proxy from network '$network' with message: " . $e->getMessage());
+            $this->cli->failure("Unknown error trying to detach to network, message = " . $e->getMessage() . "\n");
+        }
     } 
 
     public function nginxConfig(?bool $colour=true)
     {
-        if($this->proxy->isRunning()){
-            $output = $this->proxy->getConfig();
+        if($this->proxyService->isRunning()){
+            $output = $this->proxyService->getConfig();
             if($colour){
                 $output = "\n{cyn}".$output."{end}\n\n";
             }
@@ -197,14 +219,14 @@ class ProxyTool extends Tool
             '{yel}Nginx Status{end}',
         ]);
 
-        $networkList = $this->proxy->getNetworks(true);
+        $networkList = $this->proxyService->getNetworks(true);
         $networkIndex = 1;
         $networkCount = count($networkList);
         foreach($networkList as $network){
             $text = "\r{yel}Scanning Network (" . $networkIndex++ . "/$networkCount){end}: '$network'";
 
             try{
-                $containerList = $this->proxy->getContainersOnNetwork($network);
+                $containerList = $this->proxyService->getContainersOnNetwork($network);
             }catch(DockerNetworkNotFoundException $e){
                 $this->cli->debug("proxy", "Network '$network' was not found\n");
                 $containerList = [];
@@ -219,7 +241,7 @@ class ProxyTool extends Tool
             foreach($containerList as $container){
                 $this->cli->print($text . ", reading container list (" . $containerIndex++ ."/$containerCount)...");
                 try{
-                    $configurations = $this->proxy->getContainerProxyEnv($container['name']);
+                    $configurations = $this->proxyService->getContainerProxyEnv($container['name']);
                     foreach($configurations as $config){
                         $tag = array_key_exists('tag', $config) ? "(tag: {$config['tag']})" : "";
                         $nginxStatus = $container['nginx_status'][$config['port']];

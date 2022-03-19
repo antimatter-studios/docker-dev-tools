@@ -13,6 +13,7 @@ use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerNetworkAlreadyAttachedException;
 use DDT\Exceptions\Docker\DockerNetworkCreateException;
 use DDT\Exceptions\Docker\DockerNetworkExistsException;
+use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use Exception;
 
 class ProxyService
@@ -313,22 +314,15 @@ class ProxyService
 			$network = DockerNetwork::instance($name, true);
 
 			$containerId = $this->getContainerId();
-
+	
 			$network->attach($containerId);
-
+	
 			$this->cli->print("{blu}Attaching:{end} '{yel}$name{end}' to proxy so it can listen for containers\n");
 			
 			return $this->config->addNetwork($name);
-		}catch(DockerNetworkCreateException $e){
-			$this->cli->print("{blu}Network:{end} '{yel}$name{end}' was not found, but creating it also failed\n");
-		}catch(DockerNetworkAlreadyAttachedException $e){
-			$this->cli->print("{blu}Network:{end} '{yel}$name{end}' was already attached to container id '$containerId'\n");
-		}catch(\Exception $e){
-			// TODO: should we do anything different here?
-			$this->cli->debug("proxy", "We have a general failure attaching the proxy to network '$name' with message: " . $e->getMessage());	
+		}catch(DockerInspectException $e){
+			throw new DockerNetworkNotFoundException($name, 0, $e);
 		}
-
-		return false;
 	}
 
 	public function removeNetwork(string $name): bool
@@ -343,11 +337,8 @@ class ProxyService
 			$this->cli->print("{blu}Detaching:{end} '{yel}$name{end}' from the proxy so it will stop listening for containers\n");
 
 			return $this->config->removeNetwork($name );
-		}catch(\Exception $e){
-			// TODO: should we do anything different here?
-			$this->cli->debug("proxy", "We have a general failure detaching the proxy from network '$name' with message: " . $e->getMessage());	
+		}catch(DockerInspectException $e){
+			throw new DockerNetworkNotFoundException($name, 0, $e);
 		}
-
-		return false;
 	}
 }
