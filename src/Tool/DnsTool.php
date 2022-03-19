@@ -130,11 +130,15 @@ class DnsTool extends Tool
     public function start()
     {
         $this->cli->print("{blu}Starting:{end} DNS...\n");
-    
-        
+
         $id = $this->dnsMasq->start();
         
         $this->cli->print("{blu}Started{end}: container id '$id'...{end}\n");
+        
+        // Set the dns upstreams to your previous ip addresses (most likely from your dhcp/router config)
+        foreach($this->dnsService->listIpAddress() as $ipAddress){
+            $this->dnsMasq->addUpstream($ipAddress);
+        }
         
         $this->enable();
 

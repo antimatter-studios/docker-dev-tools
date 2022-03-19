@@ -99,6 +99,15 @@ class DnsMasqService
         return $container->getExitCode() === 0;
 	}
 
+    public function addUpstream(string $ipAddress): bool
+    {
+        $container = $this->getContainer();
+
+        $container->exec("/bin/sh -c 'echo 'server=$ipAddress' > /etc/dnsmasq.d/upstream_dns_".str_replace(['.',':'],'_',$ipAddress).".conf'");
+
+        return $container->getExitCode() === 0;
+    }
+
     public function reload()
     {
         $container = $this->getContainer();
