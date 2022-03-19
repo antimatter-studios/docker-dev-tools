@@ -313,6 +313,7 @@ class CLI
 	{
 		$stdout = $this->getChannel('stdout');
 		$stderr = $this->getChannel('stderr');
+
 		$this->runProcess($command, $stdout, $stderr);
 
 		$code = $this->getExitCode();
