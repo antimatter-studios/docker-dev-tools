@@ -86,9 +86,15 @@ class ProxyTool extends Tool
         throw new \Exception('Proxy is not running');
     }
 
-    public function start()
+    public function start(?bool $pull=false)
     {
         $this->cli->print("{blu}Starting the Frontend Proxy:{end} ".$this->dockerImage()."\n");
+
+        if($pull === true){
+            $this->configGeneratorService->pull();
+            $this->proxyService->pull();
+        }
+
         $this->configGeneratorService->start();
         $this->proxyService->start();
 
@@ -128,10 +134,10 @@ class ProxyTool extends Tool
 		}
     }
 
-    public function restart()
+    public function restart(?bool $pull=false)
     {
         $this->stop();
-        $this->start();
+        $this->start($pull);
     }
 
     public function logs(?string $since=null)
