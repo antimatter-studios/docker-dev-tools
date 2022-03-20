@@ -10,9 +10,6 @@ use DDT\Docker\DockerNetwork;
 use DDT\Docker\DockerVolume;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerInspectException;
-use DDT\Exceptions\Docker\DockerNetworkAlreadyAttachedException;
-use DDT\Exceptions\Docker\DockerNetworkCreateException;
-use DDT\Exceptions\Docker\DockerNetworkExistsException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 use Exception;
 
@@ -25,13 +22,13 @@ class ProxyService
 	private $config;
 
 	/** @var Docker */
-	private $docker;
+	private $dockerService;
 
-	public function __construct(CLI $cli, ProxyConfig $config, DockerService $docker)
+	public function __construct(CLI $cli, ProxyConfig $config, DockerService $dockerService)
 	{
 		$this->cli = $cli;
 		$this->config = $config;
-		$this->docker = $docker;
+		$this->dockerService = $dockerService;
 	}
 
 	public function getContainer(): DockerContainer
@@ -41,7 +38,7 @@ class ProxyService
 
 	public function getContainerId(): ?string
 	{
-        $data = $this->docker->inspect("container", $this->config->getContainerName());
+        $data = $this->dockerService->inspect("container", $this->config->getContainerName());
 
         return is_array($data) && array_key_exists("Id", $data) ? $data["Id"] : null;
 	}
@@ -61,10 +58,9 @@ class ProxyService
      */
 	public function getConfig(): string
 	{
-		$containerId = $this->getContainerId();
-
 		try{
-			return $this->docker->exec("exec $containerId cat /etc/nginx/conf.d/default.conf");
+			$container = $this->getContainer();
+			return $container->exec("cat /etc/nginx/conf.d/default.conf");
 		}catch(\Exception $e){
 			$this->cli->debug("proxy", $e->getMessage());
 			return "";
@@ -202,6 +198,11 @@ class ProxyService
 		}
 
 		return $configurations;
+	}
+
+	public function pull()
+	{
+		$this->dockerService->pull($this->config->getDockerImage());
 	}
 
 	public function start(?array $networkList=null): bool

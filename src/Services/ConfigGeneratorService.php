@@ -15,18 +15,27 @@ class ConfigGeneratorService
     /** @var CLI */
     private $cli;
 
-
+	/** @var ConfigGeneratorConfig */
     private $config;
 
-    public function __construct(CLI $cli, ConfigGeneratorConfig $config)
+	/** @var DockerService */
+	private $dockerService;
+
+    public function __construct(CLI $cli, ConfigGeneratorConfig $config, DockerService $dockerService)
     {
         $this->cli = $cli;
         $this->config = $config;
+		$this->dockerService = $dockerService;
     }
 
     public function getContainer(): DockerContainer
 	{
 		return DockerContainer::get($this->config->getContainerName());
+	}
+
+	public function pull()
+	{
+		$this->dockerService->pull($this->config->getDockerImage());
 	}
 
     public function start()
