@@ -60,7 +60,7 @@ abstract class Channel implements ChannelInterface
         $this->setLast($string);
 
         if($this->tap){
-            $this->history[] = trim($string);
+            $this->history[] = rtrim($string);
         }
 
         return $string;
