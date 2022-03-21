@@ -127,9 +127,13 @@ class DnsTool extends Tool
         $this->dnsMasq->reload();
     }
 
-    public function start()
+    public function start(?bool $pull=false)
     {
         $this->cli->print("{blu}Starting:{end} DNS...\n");
+
+        if($pull){
+            $this->dnsMasq->pull();
+        }
 
         $id = $this->dnsMasq->start();
         
@@ -171,15 +175,15 @@ class DnsTool extends Tool
         $this->cli->print((string)$address);
     }
 
-    public function restart(): void
+    public function restart(?bool $pull=false): void
     {
         $this->cli->print("{yel}Restarting:{end} DNS...\n");
 
         if($this->dnsMasq->isRunning()){
             $this->stop();
-            $this->start();
+            $this->start($pull);
         }else{
-            $this->start();
+            $this->start($pull);
         }
     }
 
