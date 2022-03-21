@@ -194,7 +194,7 @@ class ProxyService
 		}, []);
 
 		foreach($labelGroups as $tag => $config){
-			$configurations[] = ['tag' => $tag, 'proto' => 'http', 'port' => '80', ...$config];
+			$configurations[] = array_merge(['tag' => $tag, 'proto' => 'http', 'port' => '80'], $config);
 		}
 
 		return $configurations;
