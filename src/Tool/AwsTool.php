@@ -141,7 +141,7 @@ class AwsTool extends Tool
             "AWS_SESSION_TOKEN",
         ] as $key){
             $val = getenv($key);
-            $env = !empty($val) ? [...$env, "-e \"$key=$val\""] : $env;
+            $env = !empty($val) ? array_merge($env, ["-e \"$key=$val\""]) : $env;
         }
 
         return $env;
