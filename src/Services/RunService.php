@@ -56,6 +56,11 @@ class RunService
 		// reimplode the rest of the args into a string to append afterwards
 		$extraArgs = implode(' ', $extraArgs);
 
+		if(strpos($commandLine, '$@') !== false) {
+			$commandLine = str_replace('$@', $extraArgs, $commandLine);
+			$extraArgs = '';
+		}
+
 		return [$commandLine, $extraArgs];
 	}
 
