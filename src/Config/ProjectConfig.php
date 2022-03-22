@@ -4,6 +4,7 @@ namespace DDT\Config;
 
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
+use DDT\Config\External\NoProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
@@ -254,6 +255,11 @@ class ProjectConfig
 				if($type === 'composer'){
 					$class = ComposerProjectConfig::class;
 					$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
+				}
+
+				if($type === 'none'){
+					$class = NoProjectConfig::class;
+					$filename = null;
 				}
 
 				return container($class, array_merge($args, ['filename' => $filename]));

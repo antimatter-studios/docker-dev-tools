@@ -60,6 +60,7 @@ class ProjectTool extends Tool
 
                 "\n\t{cyn}Project Types{end}:",
                 "\tThese just define where the configuration will be stored, it has one of the following values:\n",
+                "\tnone: {yel}There is no project type detected or configuration that could be read' file",
                 "\tnode: This project type will use the 'package.json' file.",
                 "\tcomposer: This project type will use the 'composer.json' file.",
                 "\tddt: {yel}(default if no type given){end} This project will use the 'ddt-project.json' file",
@@ -78,7 +79,7 @@ class ProjectTool extends Tool
 
     public function isProjectType(string $type=null): bool
     {
-        return in_array($type, ['composer', 'node', 'ddt']);
+        return in_array($type, ['composer', 'node', 'ddt', 'none']);
     }
 
     public function list(): void
@@ -161,7 +162,7 @@ class ProjectTool extends Tool
         }else if($hasPackageJson){
             $type = 'node';
         }else{
-            $type = null;
+            $type = 'none';
         }
 
         return $type;
@@ -180,7 +181,7 @@ class ProjectTool extends Tool
         
         // Path does not exist, but vcs parameter was not specified so cannot clone into this location
         if(!$updatedPath && $vcs === null){
-            $this->cli->failure("{red}The path given '$path' was not valid, please check and try again{end}\n");
+            $this->cli->failure("{red}The path given '$path' does not exist, but no --vcs parameter with a repository to clone from was given, please check and try again{end}\n");
         }
         
         // Path does not exist, but vcs is not null, check it's valid and if so, clone project into that location
