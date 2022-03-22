@@ -27,7 +27,7 @@ class ProjectTool extends Tool
         $this->config = $config;
         $this->repoService = $repoService;
 
-        foreach(['list', 'add-group', 'remove-group', 'add-project', 'remove-project'] as $command){
+        foreach(['list', 'set-type', 'add-group', 'remove-group', 'add-project', 'remove-project'] as $command){
             $this->setToolCommand($command);
         }
     }
@@ -145,6 +145,23 @@ class ProjectTool extends Tool
             $this->list();
         }else{
             $this->cli->print("{red}Removing the group '$group' from project '$project' has failed{end}\n");
+        }
+    }
+
+    public function setType(string $type, string $project, ?string $group=null, ?string $path=null): void
+    {
+        $pathText = !empty($path) ? " with given path '$path'" : "";
+
+        $this->cli->print("{blu}Changing type of project '$project' to '$type'{end}\n");
+
+        if(!$this->isProjectType($type)){
+            $this->cli->failure("The requested type was not valid");
+        }
+
+        if($this->config->setType($project, $group, $path, $type)){
+            $this->cli->success("Project '$project' type was changed to '$type'");
+        }else{
+            $this->cli->failure("Project '$project' failed to change type to '$type'");
         }
     }
 

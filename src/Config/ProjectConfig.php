@@ -85,6 +85,40 @@ class ProjectConfig
 		});
 	}
 
+	public function setType(string $project, ?string $group, ?string $path, string $type): bool
+	{
+		$projectList = $this->listProjects();
+
+		if(!empty($path)){
+			if(array_key_exists($path, $projectList)){
+				// If path is specified, you don't need to care about the project name
+				// If path is specified, you don't need to care about the group either
+				// Just change the type of whatever project is here
+				$projectList[$path]['type'] = $type;
+				$this->config->setKey($this->key, $projectList);
+				return $this->config->write();
+			}else{
+				throw new ProjectNotFoundException($project);
+			}
+		}
+
+		$filteredList = array_filter($projectList, function($v) use ($project, $group) {
+			if($v['name'] !== $project) return false;
+			if(is_string($group) && !in_array($group, $v['group'])) return false;
+			return true;
+		});
+
+		if(count($filteredList) > 1){
+			throw new ProjectFoundMultipleException($project);
+		}
+
+		$first = array_shift($filteredList);
+
+		$projectList[$first['path']]['type'] = $type;
+		$this->config->setKey($this->key, $projectList);
+		return $this->config->write();
+	}
+
 	public function addGroup(string $project, string $group, ?string $path=null): bool
 	{
 		$projectList = $this->listProjects();
