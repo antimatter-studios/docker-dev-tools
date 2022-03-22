@@ -2,7 +2,6 @@
 
 namespace DDT\Config;
 
-use DDT\Helper\Arr;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigReadonlyException;
@@ -128,28 +127,6 @@ abstract class BaseConfig implements ConfigInterface
         $this->setFilename($filename);
 
         return $result;
-    }
-
-    public function scanConfigTree(string $section, ?callable $callback=null): array
-	{
-		$results = [];
-
-        $arr = new Arr($this->data);
-        $parent = $arr->get($section);
-
-        if($callback === null){
-            if($parent !== null) $results[] = $parent;
-        }else{
-            if(is_array($parent)){
-                foreach($parent as $key => $value){
-                    $results = array_merge($results, (array)$callback($key, $value));
-                }
-            }else{
-                if($parent !== null) $results[] = $parent;
-            }
-        }
-
-		return $results;
     }
     
     public function setKey(string $key, $value): void
