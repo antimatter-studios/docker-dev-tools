@@ -102,7 +102,7 @@ class ExtensionTool extends Tool
 
             // Not installed, but a url given to clone + install from
             if(!is_dir($path) && $url !== null){
-                if($this->gitService->clone($url, $path)){
+                if(!$this->gitService->clone($url, $path)){
                     $this->cli->failure("Failed install extension '$name' and clone repository from '$url' into '$path'\n");
                 }
             }
@@ -124,7 +124,7 @@ class ExtensionTool extends Tool
                 return $setupTool->test($test);
             }) === true){
                 $this->config->add($name, $url, $path, $test);
-                $this->cli->success("Extension '$name' was installed");
+                $this->cli->success("Extension '$name' was installed. You might need to reopen terminals to see effects of changes to system paths");
             }
         }catch(DirectoryExistsException $e){
             $this->cli->failure("Sorry, but the path '$path' already exists, we cannot install to this location\n");
