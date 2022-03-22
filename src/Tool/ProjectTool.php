@@ -8,6 +8,7 @@ use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
 use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Git\GitNotARepositoryException;
+use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Services\GitService;
 use DDT\Text\Table;
 
@@ -221,13 +222,16 @@ class ProjectTool extends Tool
             }
         }
 
-        if($this->config->addProject($path, $project, $type, $group, $vcs, $remote)){
-            $this->cli->print("{grn}The project '$project' with type '$type' was successfully added with the path '$path'{end}\n");
-            return true;
-        }else{
-            $this->cli->print("{red}The project '$project' failed{end}\n");
-            return false;
+        try{
+            if($this->config->addProject($path, $project, $type, $group, $vcs, $remote)){
+                $this->cli->print("{grn}The project '$project' with type '$type' was successfully added with the path '$path'{end}\n");
+                return true;
+            }
+        }catch(ProjectExistsException $e){
+            $this->cli->failure("The project already exists, please just edit it if you want to change settings\n");
         }
+
+        $this->cli->failure("The project '$project' failed\n");
     }
 
     public function removeProject(string $project, ?string $path=null, ?bool $delete=false): bool
