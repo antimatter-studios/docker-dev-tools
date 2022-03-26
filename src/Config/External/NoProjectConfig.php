@@ -2,14 +2,19 @@
 
 namespace DDT\Config\External;
 
-class NoProjectConfig extends StandardProjectConfig
+use DDT\Contract\External\ProjectConfigInterface;
+
+class NoProjectConfig extends AbstractProjectConfig implements ProjectConfigInterface
 {
-    public function __construct(?string $filename, string $project, ?string $group=null)
+    public function __construct()
 	{
-		$this->group = $group;
-		$this->project = $project;
         $this->setKey('.', []);
 	}
+
+    public function getDefaultFilename(): string
+    {
+        return '';
+    }
 
     public function read(string $filename): void
     {

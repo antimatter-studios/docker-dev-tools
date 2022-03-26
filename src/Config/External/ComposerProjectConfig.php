@@ -2,7 +2,9 @@
 
 namespace DDT\Config\External;
 
-class ComposerProjectConfig extends StandardProjectConfig
+use DDT\Contract\External\ProjectConfigInterface;
+
+class ComposerProjectConfig extends AbstractProjectConfig implements ProjectConfigInterface
 {
     const defaultFilename = 'composer.json';
 

@@ -2,7 +2,9 @@
 
 namespace DDT\Config\External;
 
-class NodeProjectConfig extends StandardProjectConfig
+use DDT\Contract\External\ProjectConfigInterface;
+
+class NodeProjectConfig extends AbstractProjectConfig implements ProjectConfigInterface
 {
     const defaultFilename = 'package.json';
 
