@@ -10,6 +10,7 @@ use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerImageBuildFailureException;
 use DDT\Exceptions\Docker\DockerImageNotFoundException;
+use DDT\Text\Template;
 
 class AwsTool extends Tool
 {
@@ -17,17 +18,16 @@ class AwsTool extends Tool
     private $container = null;
 
     private $containerName = "ddt-awscli";    
-    private $imageName = 'ddt-awscli:__ARCH__';
+    private $imageName = 'ddt-awscli:{{DOCKER_ARCH}}';
 
     private $localAws = false;
     
-    private $dockerfile = [
-        'FROM --platform=__PLATFORM__ debian:bookworm-slim',
-        'RUN apt-get update && apt-get install -y groff jq curl zip',
-        'RUN curl -s https://awscli.amazonaws.com/awscli-exe-linux-__ARCH__-2.0.30.zip -o awscliv2.zip',
-        'RUN unzip awscliv2.zip && ./aws/install',
-        'ENV PATH=\${PATH}:/app/bin',
-    ];
+    private $dockerfile = 
+        "FROM --platform=linux/{{DOCKER_ARCH}} alpine\n".
+        "RUN apk add --no-cache gcompat py-pip groff jq curl zip\n".
+        "RUN curl -s https://awscli.amazonaws.com/awscli-exe-linux-{{AWS_ARCH}}-{{AWS_VERSION}}.zip -o awscliv2.zip\n".
+        "RUN unzip awscliv2.zip && ./aws/install\n".
+        "ENV PATH=\${PATH}:/app/bin";
 
     public function __construct(CLI $cli)
     {
@@ -58,16 +58,14 @@ class AwsTool extends Tool
 
     public function setArch(string $arch): void
     {
-        $dockerArch = "linux/$arch";
+        $dockerArch = $arch;
         $awscliArch = strpos($arch,'arm64') !== false ? 'aarch64' : 'x86_64';
+        $awsVersion = "2.0.30";
 
-        $this->imageName = str_replace('__ARCH__', $arch, $this->imageName);
+        $params = ['DOCKER_ARCH' => $arch, 'AWS_ARCH' => $awscliArch, 'AWS_VERSION' => $awsVersion];
 
-        foreach($this->dockerfile as $index => $line){
-            $line = str_replace('__PLATFORM__', $dockerArch, $line);
-            $line = str_replace('__ARCH__', $awscliArch, $line);
-            $this->dockerfile[$index] = $line;
-        };
+        $this->imageName = (string)new Template($this->imageName, $params);
+        $this->dockerfile = (string)new Template($this->dockerfile, $params);
     }
     
     public function getToolMetadata(): array
@@ -103,7 +101,7 @@ class AwsTool extends Tool
         }
 
         $this->cli->print("AWSCli Docker Image: '$this->imageName' Not Found, building...");
-        $this->image = DockerImage::build($this->imageName, implode("\n", $this->dockerfile));
+        $this->image = DockerImage::build($this->imageName, $this->dockerfile);
         return $this->image;
     }
 
