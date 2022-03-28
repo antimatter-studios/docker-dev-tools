@@ -7,6 +7,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
+use DDT\Model\RunConfiguration;
 use DDT\Services\RunService;
 use DDT\Text\Table;
 
@@ -26,7 +27,8 @@ class RunTool extends Tool
         $this->runService = $runService;
 
         $this->setToolCommand('script', null, true);
-        $this->setToolCommand('--list');
+        $this->setToolCommand('--list', 'list');
+        $this->setToolCommand('--show', 'show');
     }
 
     public function getToolMetadata(): array
@@ -60,6 +62,28 @@ class RunTool extends Tool
                 "- To the --list command, you can combine --group --project --script together"
             ]
         ];
+    }
+
+    private function resolveProjectList(ArgumentList $arguments, string $script, ?string $project, ?string $group): array
+    {
+        // remove project if it was specified
+        if($project !== null) $arguments->shift();
+        // remove group if it was specified
+        if($group !== null) $arguments->shift();
+        // remove -- arg if found
+        $arguments->remove('--');
+
+        $projectList = $this->projectConfig->listProjectsByScript($script);
+
+        $projectList = array_filter($projectList, function($config) use ($project) {
+            return $project === null || $project === $config['name'];
+        });
+
+        $projectList = array_filter($projectList, function($config) use ($group) {
+            return $group === null || in_array($group, $config['group']);
+        });
+
+        return $projectList;
     }
 
     public function list(?string $project=null, ?string $script=null, ?string $group=null): void
@@ -100,26 +124,51 @@ class RunTool extends Tool
         ]));
     }
 
+    public function show(string $script, ?string $project=null, ?string $group=null): void
+    {
+        try{
+            $arguments = new ArgumentList($this->cli->getArgList(), 2);
+            $projectList = $this->resolveProjectList($arguments, $script, $project, $group);
+
+            $this->runService->reset();
+
+            // Couldn't find anything, time to die!
+            if(empty($projectList)){
+                $this->cli->failure("\nThe script '$script' requested was not found, please look at the above table to see what options are available");
+            }
+
+            // Resolve the project list and dependency tree into a final run list
+            [$runlist] = $this->runService->resolve($script, $projectList);
+
+            $print = function(RunConfiguration $r, int $indentLevel) use (&$print): void {
+                $this->cli->print(str_repeat("\t", $indentLevel) . "- {blu}" . $r->getName()."{end}\n");
+                foreach($r->getCommandList() as $script => $commandLine){
+                    $this->cli->print(str_repeat("\t", $indentLevel + 1) . "{yel}script{end}: '$script' => '$commandLine'\n");
+                }
+
+                if($r->hasDependencies()){
+                    $this->cli->print(str_repeat("\t", $indentLevel + 1) . "{mag}dependencies{end}:\n");
+                    foreach($r->getDependencies() as $d){
+                        $print($d, $indentLevel+2);
+                    }
+                }
+            };
+
+            foreach($runlist as $r){
+                $print($r, 0);
+            }
+        }catch(ConfigMissingException $e){
+            $this->cli->failure("The project directory for '$project' in group '$group' was not found");
+        }catch(ProjectNotFoundException $e){
+            $this->cli->failure("The project was not found '" . $e->getProject() . "'");
+        }
+    }
+
     public function script(string $script, ?string $project=null, ?string $group=null): void
     {
         try{
             $arguments = new ArgumentList($this->cli->getArgList(), 2);
-            // remove project if it was specified
-            if($project !== null) $arguments->shift();
-            // remove group if it was specified
-            if($group !== null) $arguments->shift();
-            // remove -- arg if found
-            $arguments->remove('--');
-
-            $projectList = $this->projectConfig->listProjectsByScript($script);
-
-            $projectList = array_filter($projectList, function($config) use ($project) {
-                return $project === null || $project === $config['name'];
-            });
-
-            $projectList = array_filter($projectList, function($config) use ($group) {
-                return $group === null || in_array($group, $config['group']);
-            });
+            $projectList = $this->resolveProjectList($arguments, $script, $project, $group);
 
             $this->runService->reset();
 
@@ -129,9 +178,12 @@ class RunTool extends Tool
                 $this->cli->failure("\nThe script '$script' requested was not found, please look at the above table to see what options are available");
             }
 
-            foreach($projectList as $config){
-                $group = $group ?? current($config['group']);
-                $this->runService->run($script, $config['name'], $group, $arguments);
+            // Resolve the project list and dependency tree into a final run list
+            [$runlist] = $this->runService->resolve($script, $projectList);
+
+            // Iterate the run list and execute each project in step
+            foreach($runlist as $config){
+                $this->runService->run($config, $arguments);
             }
         }catch(ConfigMissingException $e){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");

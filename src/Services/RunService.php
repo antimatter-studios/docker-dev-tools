@@ -3,9 +3,10 @@ namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
-use DDT\Config\External\StandardProjectConfig;
 use DDT\Config\ProjectConfig;
+use DDT\Contract\External\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectScriptInvalidException;
+use DDT\Model\RunConfiguration;
 
 class RunService
 {
@@ -29,12 +30,12 @@ class RunService
 		$this->stack = [];
 	}
 
-	private function makeKey(StandardProjectConfig $projectConfig, string $script): string
+	private function makeKey(ProjectConfigInterface $projectConfig, string $script): string
 	{
 		return $projectConfig->getPath() . "@" . $script;
 	}
 
-	private function isRunning(StandardProjectConfig $projectConfig, string $script): bool
+	private function isRunning(ProjectConfigInterface $projectConfig, string $script): bool
 	{
 		// does this project have a script named this?
 		// is this project already running this script? (prevent infinite loops)
@@ -43,7 +44,7 @@ class RunService
 		return in_array($key, $this->stack);
 	}
 
-	private function buildCommandLine(string $commandLine, ?string $extraArgs=null): array
+	private function buildCommandLine(string $commandLine, ?string $extraArgs=null): string
 	{
 		$index = 1;
 		$extraArgs = explode(' ', $extraArgs ?? '');
@@ -61,10 +62,10 @@ class RunService
 			$extraArgs = '';
 		}
 
-		return [$commandLine, $extraArgs];
+		return "$commandLine $extraArgs";
 	}
 
-	private function pushJob(StandardProjectConfig $projectConfig, string $script): bool
+	private function pushJob(ProjectConfigInterface $projectConfig, string $script): bool
 	{
 		// if not, add it to the stack and return true;
 		$key = $this->makeKey($projectConfig, $script);
@@ -76,35 +77,121 @@ class RunService
 		return true;
 	}
 
+	public function resolve(string $script, array $projectList, ?array $stack=[]): array
+	{
+		$list = [];
+
+		foreach($projectList as $p){
+			$name = $p['name'];
+			$group = current($p['group']) ?: null;
+			// var_dump(__METHOD__ . " => " . $script . ", project = {$p['name']}");
+
+			$key = "{$p['path']}@{$script}";
+			if(in_array($key, $stack)){
+				// var_dump(__METHOD__ . ", key '$key' already in stack, skipping");
+				continue;
+			}
+			$stack[] = $key;
+
+			// Obtain the project configuration
+			$projectConfig = $this->getProject($name, $group);
+			
+			$command = $this->resolveCommandList2($script, $projectConfig);
+			// var_dump(['command' => $command]);
+
+			$subtree = [];
+			$dependencies = $projectConfig->getDependencies2($script);	
+			foreach($dependencies as $depName => $depData){
+				$depProjectList = $this->projectConfig->listProjectsByFilter(['name' => $depName, 'group' => $group]);
+
+				foreach(array_keys($command) as $cmdName){
+					// If the dependency script is not found, don't try to process it
+					if(!array_key_exists($cmdName, $depData['scripts'])){
+						continue;
+					}
+
+					$depScript = $depData['scripts'][$cmdName];
+					$depScript = is_string($depScript) ? [$depScript] : $depScript;
+	
+					foreach($depScript as $ds){
+						[$st, $stack] = $this->resolve($ds, $depProjectList, $stack);
+						$subtree = array_merge($subtree, $st);
+					}
+				}
+			}
+
+			$list[] = new RunConfiguration($name, $group, array_filter($command), $subtree);
+		}
+
+		return [$list, $stack];
+	}
+
+	private function resolveCommandList2(string $command, ProjectConfigInterface $projectConfig, array $output=[]): array
+	{
+		// sleep(1);
+		// var_dump("resolving '$command'");
+		if(array_key_exists($command, $output)) {
+			// var_dump("skipping '$command' because it already exists");
+			return $output;
+		}
+
+		$script = $projectConfig->getScript($command);
+		// var_dump("command '$command' resolved to '".trim(json_encode($script),'"')."'");
+
+		if(is_string($script)){
+			$output[$command] = $script;
+		}
+		if(is_array($script)){
+			// We need to set a null value here as a method to stop infinite loops
+			// Say we found key "one" and it was an array of sub-commands, but in that tree one subcommands
+			// one of them loops back to "one". Then you'd be in an infinite loop. So this null key effectively
+			// tells the code "we are already processing this key, don't try to process it again"
+			$output[$command] = null;
+
+			foreach($script as $s){
+				$output = $this->resolveCommandList2($s, $projectConfig, $output);
+			}
+		}
+		// var_dump(['output' => $output]);
+		return $output;
+	}
+
 	// FIXME: I don't know why I have this function and i only use it in one place
-	public function getProject(string $project, ?string $group=null): StandardProjectConfig
+	public function getProject(string $project, ?string $group=null): ProjectConfigInterface
 	{
 		//	TODO: how to handle when a project is not found, it'll throw exceptions?
 		return $this->projectConfig->getProjectConfig($project, null, $group);
 	}
 
-	public function run(string $script, string $project, ?string $group=null, ?ArgumentList $extraArgs=null)
+	public function run(RunConfiguration $runConfig, ?ArgumentList $extraArgs=null)
 	{
 		try{
-			$this->cli->debug("runservice", "Running: '$script', '$project', '$group'\n");
+			$project = $runConfig->getName();
+			$group = $runConfig->getGroup();
+
+			foreach($runConfig->getDependencies() as $dependency){
+				$this->run($dependency, $extraArgs);
+			}
+
 			// Obtain the project configuration
 			$projectConfig = $this->getProject($project, $group);
-		
-			// Check if script is already running, we refuse to run scripts if 
-			// it's already run since it might lead to infinite loops
-			if($this->isRunning($projectConfig, $script) === false){
-				// Push job onto stack, blocking it from future duplicate execution
-				$this->pushJob($projectConfig, $script);
 
-				// Before attempting to run the script required, process it's dependencies
-				if($this->runDependencies($projectConfig, $script, $extraArgs) === true){
+			foreach($runConfig->getCommandList() as $script => $commandLine){
+				$this->cli->debug("runservice", "Running: '{$script}', '{$project}', '".($group ?? 'none')."'\n");
+
+				// Check if script is already running, we refuse to run scripts if
+				// it's already run since it might lead to infinite loops
+				if($this->isRunning($projectConfig, $script) === false){
+					// Push job onto stack, blocking it from future duplicate execution
+					$this->pushJob($projectConfig, $script);
+
 					// Now all dependencies are run, obtain the actual commandline to run
-					$this->runCommand($projectConfig, $script, $extraArgs);
+					$this->runCommand($projectConfig, $script, $commandLine, $extraArgs);
+				}else{
+					// show an error about non-entrant scripts, so we don't do any infinite loops
+					$key = $this->makeKey($projectConfig, $script);
+					$this->cli->debug("runservice", "Script already running: $key\n");
 				}
-			}else{
-				// show an error about non-entrant scripts, so we don't do any infinite loops
-				$key = $this->makeKey($projectConfig, $script);
-				$this->cli->debug("runservice", "Script already running: $key\n");
 			}
 		}catch(ProjectScriptInvalidException $e){
 			$this->cli->debug("runservice", "{red}".get_class($e)."{end} => {$e->getMessage()}\n");
@@ -116,17 +203,11 @@ class RunService
 		}
 	}
 
-	public function runCommand(StandardProjectConfig $projectConfig, string $script, ?ArgumentList $extraArgs=null)
+	public function runCommand(ProjectConfigInterface $projectConfig, string $script, string $commandLine, ?ArgumentList $extraArgs=null)
 	{
 		$group		= $projectConfig->getGroup();
 		$project	= $projectConfig->getProject();
 		$path		= $projectConfig->getPath();
-		$command	= $projectConfig->getScript($script);
-
-		// If the command line is empty, this is a probable bug in the configuration, the value is set incorrectly
-		if(empty($command)){
-			throw new ProjectScriptInvalidException($group, $project, $script);
-		}
 
 		$groupText = !empty($group) ? ", group: {yel}$group{end}" : "";
 		$extraArgsText = !empty((string)$extraArgs) ? ", extra args: {yel}'$extraArgs'{end}" : "";
@@ -134,81 +215,13 @@ class RunService
 		// Otherwise, cd into the project path and run the script as specified
 		$this->cli->print("\n{blu}Run Script:{end} script: {yel}$script{end}, project: {yel}$project{end}{$groupText}{$extraArgsText}\n");
 
-		$command = $this->resolveCommandList($command, $projectConfig);
-
-		foreach($command as $commandLine){
-			// If we find a parameterised command line, try to follow it
-			[$commandLine, $extraArgs] = $this->buildCommandLine($commandLine, $extraArgs);
-			
-			// TODO: how to handle when a script fails?
-			// TODO: how to handle when a script returns important information?
-			$this->cli->passthru("cd $path; $commandLine $extraArgs");
-		}
-	}
-
-	private function resolveCommandList($command, StandardProjectConfig $projectConfig)
-	{
-		$output = [];
-
-		if(is_string($command)){
-			$output[] = $command;
-		}else if(is_array($command)){
-			foreach($command as $script){
-				$script = $projectConfig->getScript($script);
-				$commandList = $this->resolveCommandList($script, $projectConfig);
-				$output = array_merge($output, $commandList);
-			}
-		}
-
-		return $output;
-	}
-
-	public function runDependencies(StandardProjectConfig $projectConfig, string $script, ?ArgumentList $extraArgs=null): bool
-	{
-		if($projectConfig->shouldRunDependencies($script) === false){
-			$this->cli->debug("runservice", "Found token to skip dependencies\n");
-			return true;
-		}
-
-		// First, get all this projects dependencies, so you can loop through them
-		$dependencies = $projectConfig->getDependencies($script);
-
-		foreach($dependencies as $project => $d){
-			// We make copies of these variables because they can be overridden per dependency
-			// We don't want to alter the original variables, 
-			// because each dependency can have a different group and script to the parent
-			$depGroup = array_key_exists('group', $d) ? $d['group'] : $projectConfig->getGroup();
-			$depScript = $script;
-
-			// Make some debugging text easier to read like this
-			$t = array_map(function($k, $v) { 
-				return $k===($v=implode(', ', is_array($v) ? $v : [$v])) ? $k : "$k=($v)"; 
-			}, array_keys($d['scripts']), array_values($d['scripts']));
-			$this->cli->debug("runservice", "Dependencies($project@$depGroup): [".implode(",", $t)."]\n");
-
-			// Does this dependency overload the script with an alternative script name?
-			if(array_key_exists('scripts', $d)){
-				if(array_key_exists($script, $d['scripts'])){
-					$depScript = $d['scripts'][$script];
-				}
-			}
-
-			if(is_string($depScript)){
-				$depScript = [$depScript];
-			}
-
-			if(is_array($depScript)){
-				foreach($depScript as $s){
-					// Run the script for this dependency
-					// TODO: how to handle a the return value from this?
-					$this->run($s, $project, $depGroup, $extraArgs);
-				}
-			}else{
-				$this->cli->debug("runservice", "{red}[RUNSERVICE]{end}: Unexpected script configuration, must be a string|string[] value\n");
-			}
-		}
+		// If we find a parameterised command line, try to follow it
+		$commandLine = $this->buildCommandLine($commandLine, $extraArgs);
+		$commandLine = "cd $path; $commandLine";
 		
-		// Lol, I don't know how to deal with all the return values yet
-		return true;
+		// TODO: how to handle when a script fails?
+		// TODO: how to handle when a script returns important information?
+		$this->cli->passthru($commandLine);
+		//$this->cli->print("$commandLine\n");
 	}
 }
