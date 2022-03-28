@@ -297,28 +297,40 @@ class CLI
 
 	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
 	{
+		static $ctr = 0;
+
 		$stdout = $stdout ?? new StringChannel();
 		$stderr = $stderr ?? new StringChannel();
+
+		$this->channels['debug']->write("{red}[EXEC(>>ctr:$ctr)]:{end} $command\n");
 
 		$output = $this->runProcess($command, $stdout, $stderr);
 
 		$code = $this->getExitCode();
 
-		$this->channels['debug']->write("{red}[EXEC]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
+		$this->channels['debug']->write("{red}[EXEC(<<ctr:$ctr)]:{end} {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'");
+
+		$ctr++;
 
 		return $output;
 	}
 
 	public function passthru(string $command, bool $throw=true): int
 	{
+		static $ctr = 0;
+
 		$stdout = $this->getChannel('stdout');
 		$stderr = $this->getChannel('stderr');
+
+		$this->channels['debug']->write("{red}[PASSTHRU(>>ctr:$ctr)]:{end} $command\n");
 
 		$this->runProcess($command, $stdout, $stderr);
 
 		$code = $this->getExitCode();
 
-		$this->channels['debug']->write("{red}[PASSTHRU]:{end} %s {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'", [$command]);
+		$this->channels['debug']->write("{red}[PASSTHRU(<<ctr:$ctr)]:{end} {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'");
+
+		$ctr++;
 
 		return $code;
 	}
