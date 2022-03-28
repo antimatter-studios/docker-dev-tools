@@ -6,6 +6,7 @@ use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\NoProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
+use DDT\Contract\External\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
@@ -70,14 +71,15 @@ class ProjectConfig
 	{
 		return array_filter($this->listProjects(), function($config) use ($filter) {
 			foreach($filter as $key => $value){
-				if(!array_key_exists($key, $config)) return false;
-				
-				if($key === 'group') {
-					if(!in_array($value, $config[$key])) {
+				if(!array_key_exists($key, $config)) {
+					return false;
+				}else if(is_scalar($config[$key]) && $config[$key] !== $value){
+					return false;
+				}else if(is_array($config[$key]) && !in_array($value, $config[$key])){
+					// But additionally; if you requested an empty group and the group list is empty, then this is a match
+					if(!(empty($config[$key]) && empty($value))){
 						return false;
 					}
-				}else if($config[$key] !== $value) {
-					return false;
 				}
 			}
 
@@ -263,7 +265,7 @@ class ProjectConfig
 		return $this->removeProject($project, $first['path']);
 	}
 
-	public function getProjectConfig(string $project, ?string $path=null, ?string $group=null): StandardProjectConfig
+	public function getProjectConfig(string $project, ?string $path=null, ?string $group=null): ProjectConfigInterface
 	{
 		$projectList = $this->listProjects();
 
