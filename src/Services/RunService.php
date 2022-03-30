@@ -84,11 +84,9 @@ class RunService
 		foreach($projectList as $p){
 			$name = $p['name'];
 			$group = current($p['group']) ?: null;
-			// var_dump(__METHOD__ . " => " . $script . ", project = {$p['name']}");
 
 			$key = "{$p['path']}@{$script}";
 			if(in_array($key, $stack)){
-				// var_dump(__METHOD__ . ", key '$key' already in stack, skipping");
 				continue;
 			}
 			$stack[] = $key;
@@ -96,11 +94,10 @@ class RunService
 			// Obtain the project configuration
 			$projectConfig = $this->getProject($name, $group);
 			
-			$command = $this->resolveCommandList2($script, $projectConfig);
-			// var_dump(['command' => $command]);
+			$command = $this->resolveCommandList($script, $projectConfig);
 
 			$subtree = [];
-			$dependencies = $projectConfig->getDependencies2($script);	
+			$dependencies = $projectConfig->getDependencies($script);	
 			foreach($dependencies as $depName => $depData){
 				$depProjectList = $this->projectConfig->listProjectsByFilter(['name' => $depName, 'group' => $group]);
 
@@ -126,17 +123,13 @@ class RunService
 		return [$list, $stack];
 	}
 
-	private function resolveCommandList2(string $command, ProjectConfigInterface $projectConfig, array $output=[]): array
+	private function resolveCommandList(string $command, ProjectConfigInterface $projectConfig, array $output=[]): array
 	{
-		// sleep(1);
-		// var_dump("resolving '$command'");
 		if(array_key_exists($command, $output)) {
-			// var_dump("skipping '$command' because it already exists");
 			return $output;
 		}
 
 		$script = $projectConfig->getScript($command);
-		// var_dump("command '$command' resolved to '".trim(json_encode($script),'"')."'");
 
 		if(is_string($script)){
 			$output[$command] = $script;
@@ -149,10 +142,10 @@ class RunService
 			$output[$command] = null;
 
 			foreach($script as $s){
-				$output = $this->resolveCommandList2($s, $projectConfig, $output);
+				$output = $this->resolveCommandList($s, $projectConfig, $output);
 			}
 		}
-		// var_dump(['output' => $output]);
+
 		return $output;
 	}
 
@@ -222,6 +215,6 @@ class RunService
 		// TODO: how to handle when a script fails?
 		// TODO: how to handle when a script returns important information?
 		$this->cli->passthru($commandLine);
-		//$this->cli->print("$commandLine\n");
+		$this->cli->debug('runservice' ,"$commandLine\n");
 	}
 }

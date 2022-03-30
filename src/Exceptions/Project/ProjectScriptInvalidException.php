@@ -7,16 +7,16 @@ class ProjectScriptInvalidException extends \Exception
     private $project;
     private $script;
 
-    public function __construct(string $group, string $project, string $script, $code = 0, \Throwable $previous = null)
+    public function __construct(?string $group, string $project, string $script, $code = 0, \Throwable $previous = null)
     {
-        parent::__construct("The group '$group' and project '$project' does not have a valid commandline for script '$script'", $code, $previous);
+        parent::__construct("The project '$project' does not have a valid commandline for script '$script'", $code, $previous);
 
         $this->group = $group;
         $this->project = $project;
         $this->script = $script;
     }
 
-    public function getGroup(): string
+    public function getGroup(): ?string
     {
         return $this->group;
     }
