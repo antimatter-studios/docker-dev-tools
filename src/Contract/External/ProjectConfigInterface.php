@@ -11,5 +11,5 @@ interface ProjectConfigInterface
 	public function getPath(): string;
 	public function listScripts(): array;
 	public function getScript(string $name);
-	public function getDependencies(?string $script): array;
+	public function getDependencies(string $script): array;
 }
