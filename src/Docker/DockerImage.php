@@ -18,7 +18,7 @@ class DockerImage
     /** @var string the name of this docker volume */
     private $name;
 
-    public function __construct(CLI $cli, DockerService $docker, string $name, ?string $dockerFile=null)
+    public function __construct(CLI $cli, DockerService $docker, string $name, ?string $dockerFile=null, bool $cache=true)
     {
         $this->cli = $cli;
         $this->docker = $docker;
@@ -32,7 +32,7 @@ class DockerImage
             }
 
             // otherwise build the image
-            if($this->buildImage($name, $dockerFile) === false){
+            if($this->buildImage($name, $dockerFile, $cache) === false){
                 throw new DockerImageBuildFailureException($name);
             }
         }
@@ -45,11 +45,12 @@ class DockerImage
         ]);
     }
 
-    static public function build(string $name, string $dockerFile): DockerImage
+    static public function build(string $name, string $dockerFile, bool $cache=true): DockerImage
     {
         return container(DockerImage::class, [
             'name' => $name,
             'dockerFile' => $dockerFile,
+            'cache' => $cache,
         ]);
     }
 
@@ -69,10 +70,11 @@ class DockerImage
         return true;
     }
 
-    private function buildImage(string $name, string $dockerFile): bool
+    private function buildImage(string $name, string $dockerFile, bool $cache): bool
     {
+        $cache = $cache ? '' : '--no-cache';
         $command = implode("\n", [
-            "build -t $name . -f - <<EOF",
+            "build $cache -t $name . -f - <<EOF",
             $dockerFile,
             "EOF\n"
         ]);
