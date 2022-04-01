@@ -21,13 +21,7 @@ class AwsTool extends Tool
     private $imageName = 'ddt-awscli:{{DOCKER_ARCH}}';
 
     private $localAws = false;
-    
-    private $dockerfile = 
-        "FROM --platform=linux/{{DOCKER_ARCH}} alpine\n".
-        "RUN apk add --no-cache gcompat py-pip groff jq curl zip\n".
-        "RUN curl -s https://awscli.amazonaws.com/awscli-exe-linux-{{AWS_ARCH}}-{{AWS_VERSION}}.zip -o awscliv2.zip\n".
-        "RUN unzip awscliv2.zip && ./aws/install\n".
-        "ENV PATH=\${PATH}:/app/bin";
+    private $dockerfile = '/docker/awscli.dockerfile';
 
     public function __construct(CLI $cli)
     {
@@ -56,13 +50,15 @@ class AwsTool extends Tool
         return $arch;
     }
 
-    public function setArch(string $arch): void
+    public function setArch(string $dockerArch): void
     {
-        $dockerArch = $arch;
-        $awscliArch = strpos($arch,'arm64') !== false ? 'aarch64' : 'x86_64';
+        $awsArch = strpos($dockerArch,'arm64') !== false ? 'aarch64' : 'x86_64';
         $awsVersion = "2.0.30";
 
-        $params = ['DOCKER_ARCH' => $arch, 'AWS_ARCH' => $awscliArch, 'AWS_VERSION' => $awsVersion];
+        $params = ['DOCKER_ARCH' => $dockerArch, 'AWS_ARCH' => $awsArch, 'AWS_VERSION' => $awsVersion];
+
+        $this->dockerfile = file_get_contents(config('tools.path').$this->dockerfile);
+        $this->dockerfile = str_replace('$', '\$', $this->dockerfile);
 
         $this->imageName = (string)new Template($this->imageName, $params);
         $this->dockerfile = (string)new Template($this->dockerfile, $params);
@@ -101,7 +97,7 @@ class AwsTool extends Tool
         }
 
         $this->cli->print("AWSCli Docker Image: '$this->imageName' Not Found, building...");
-        $this->image = DockerImage::build($this->imageName, $this->dockerfile);
+        $this->image = DockerImage::build($this->imageName, $this->dockerfile, false);
         return $this->image;
     }
 
