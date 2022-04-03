@@ -74,6 +74,7 @@ class Project implements JsonSerializable
     public function addGroup(string $groupName): self
     {
         $this->group[] = $groupName;
+        $this->group = array_unique($this->group);
         return $this;
     }
 
