@@ -76,11 +76,11 @@ class RunTool extends Tool
         $projectList = $this->projectConfig->listProjectsByScript($script);
 
         $projectList = array_filter($projectList, function($config) use ($project) {
-            return $project === null || $project === $config['name'];
+            return $project === null || $project === $config->getName();
         });
 
         $projectList = array_filter($projectList, function($config) use ($group) {
-            return $group === null || in_array($group, $config['group']);
+            return $group === null || $config->hasGroup($group);
         });
 
         return $projectList;
@@ -92,26 +92,31 @@ class RunTool extends Tool
         $table = container(Table::class);
         $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
-        foreach($this->projectConfig->listProjects() as $path => $config){
-            $projectConfig = $this->projectConfig->getProjectConfig($config['name'], $path);
-            foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
-                if(is_array($scriptCommand)) {
-                    $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
+        foreach($this->projectConfig->listProjects() as $config){
+            try{
+                $projectConfig = $this->projectConfig->getProjectConfig($config->getName(), $config->getPath());
+                foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+                    if(is_array($scriptCommand)) {
+                        $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
+                    }
+    
+                    if($group !== null && !$config->hasGroup($group)){
+                        continue;
+                    }
+    
+                    if($script !== null && $script !== $scriptName){
+                        continue;
+                    }
+    
+                    if($project !==null && $project !== $config['name']){
+                        continue;
+                    }
+    
+                    $table->addRow([$config->getName(), implode(', ', $config->getGroups()), $scriptName, $scriptCommand]);
                 }
-
-                if($group !== null && !in_array($group, $config['group'])){
-                    continue;
-                }
-
-                if($script !== null && $script !== $scriptName){
-                    continue;
-                }
-
-                if($project !==null && $project !== $config['name']){
-                    continue;
-                }
-
-                $table->addRow([$config['name'], implode(', ', $config['group']), $scriptName, $scriptCommand]);
+            }catch(ProjectNotFoundException $e){
+                // This exception is thrown when a registered project has no project configuration
+                // So if this is the case, we just need to skip over this project instead of erroring out
             }
         }
         
@@ -162,7 +167,7 @@ class RunTool extends Tool
         }catch(ConfigMissingException $e){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
         }catch(ProjectNotFoundException $e){
-            $this->cli->failure("The project was not found '" . $e->getProject() . "'");
+            $this->cli->failure($e->getMessage());
         }
     }
 
