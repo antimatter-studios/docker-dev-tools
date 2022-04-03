@@ -102,8 +102,6 @@ class SetupTool extends Tool
     private $found;
 	public function add(string $newPath): void
 	{
-		$this->found = false;
-
 		$this->processFiles(function($contents, $lineNum, $lineData) use ($newPath) {
 			$pattern = "/^(?P<prefix>[\s]+)?PATH=(?P<path>.*)$/";
 
@@ -153,6 +151,7 @@ class SetupTool extends Tool
 	{
 		foreach($this->files as $file){
             $this->cli->print("Processing file '$file'\n");
+            $this->found = false;
 
 			// read file contents
 			$contents = file_get_contents($file);
@@ -212,23 +211,20 @@ class SetupTool extends Tool
         // TODO: I don't like how this processes all files at once, I would like this functionality removed
         // add the installation path from the file
         $this->add("$path/bin");
-
-        // You must write a default ddt-system.json file to the $HOME directory
-        // This is to store configuration from the tool system in a predictable 
-        // place. It's not optional because without it, nothing else will run
-        // Use the ConfigTool to get the job done
-        /** @var ConfigTool */
-        $configTool = $this->toolRegistry->getTool('config');
-        $systemConfig = SystemConfig::instance();
         
         // Whether or not to overwrite the config can be controlled by the --overwrite=(bool) flag
         if($overwrite){
+            // You must write a default ddt-system.json file to the $HOME directory
+            // This is to store configuration from the tool system in a predictable 
+            // place. It's not optional because without it, nothing else will run
+            // Use the ConfigTool to get the job done
+            /** @var ConfigTool */
+            $configTool = $this->toolRegistry->getTool('config');
+            $systemConfig = SystemConfig::instance();
             $configTool->reset($systemConfig);
-        }        
-        
-        //  write into the config the tools path and save file
-		$systemConfig->setPath('tools', $path);
-		$systemConfig->write();
+            //  write into the config the tools 
+            $systemConfig->write();
+        }
 
         $this->cli->print("{grn}Testing installation, this next operation should succeed{end}\n");
         $this->test($this->getEntrypoint().' --version');
