@@ -172,6 +172,11 @@ class Autowire
 
                 // for every named parameter, we must look for an input parameter with the same name AND HAS A VALUE
                 foreach($inputParameters as $index => $data){
+                    if(!array_key_exists('name', $data)){
+                        Debug::dump("autowire", "Parameter format invalid: ".json_encode($data));
+                        continue;
+                    }
+
                     if($data['name'] === $name && array_key_exists('value', $data)){
                         $test_numeric = (int)filter_var($data['value'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
                         Debug::dump("autowire", "NAMED TYPE CHECK($name), numeric = $test_numeric, value = '{$data['value']}'");
@@ -216,6 +221,11 @@ class Autowire
 
                 // We did not find a named parameter, therefore lets pick the first anonymous parameter
                 foreach($inputParameters as $index => $data){
+                    if(!array_key_exists('name', $data)){
+                        Debug::dump("autowire", "Parameter format invalid: ".json_encode($data));
+                        continue;
+                    }
+
                     // If it has a value, then it's not an anonymous string
                     if(is_array($data) && array_key_exists('value', $data)){
                         continue;
