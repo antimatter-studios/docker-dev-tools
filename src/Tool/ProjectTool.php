@@ -9,6 +9,7 @@ use DDT\Config\External\StandardProjectConfig;
 use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Git\GitNotARepositoryException;
 use DDT\Exceptions\Project\ProjectExistsException;
+use DDT\Model\Project;
 use DDT\Services\GitService;
 use DDT\Text\Table;
 
@@ -91,29 +92,25 @@ class ProjectTool extends Tool
 
         $table = container(Table::class);
         $table->setColumnMapping(['project', 'group', 'path', 'type', 'vcs', 'remote']);
-        $table->addRow(['{yel}Project{end}', '{yel}Group{end}', '{yel}Path{end}', '{yel}Type{end}', '{yel}Repository Url{end}', '{yel}Remote Name{end}']);
+        $table->addRow(['{yel}Project{end}', '{yel}Group{end}', '{yel}Path{end}', '{yel}Type{end}', '{yel}Repository Url{end}']);
 
         if(empty($projectList)){
             $table->addRow(['There are no projects']);
         }
 
+        /** @var Project $project */
         foreach($projectList as $project) {
-            // To allow projects with empty group lists to display using the same logic as below
-            if(empty($project['group'])){
-                $project['group'][] = '';
-            }
+            $groupList = $project->getGroups();
 
-            foreach($project['group'] as $group){
-                // If a project has multiple projects, render each as a separate empty row 
-                // (apart from group), with a little "+ next" to it
-                if(empty($project['name'])){
-                    $group = "+ $group";
-                }
-                $table->addRow([$project['name'], $group, $project['path'], $project['type'], $project['vcs'], $project['remote']]);
-                // For all extra rows created by multiple groups, leave all the other columns empty except group
-                $project = array_fill_keys(['name', 'path', 'type', 'vcs', 'remote'], null);
+            // If there are no groups, we just output an empty column
+            $group = empty($groupList) ? '' : array_shift($groupList);
+
+            $table->addRow([$project->getName(), $group, $project->getPath(), $project->getType(), $this->repoService->remote($project->getPath())]);
+
+            // For every EXTRA group, we render an empty row with just the "+ group" name to indicate it's an extra group
+            foreach($groupList as $group){
+                $table->addRow([null, "+ $group", null, null, null]);
             }
-            
         }
 
         $this->cli->print($table->render());
