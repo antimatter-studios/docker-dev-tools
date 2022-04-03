@@ -2,23 +2,22 @@
 
 namespace DDT\Model;
 
-class Project
+use DDT\Config\External\ComposerProjectConfig;
+use DDT\Config\External\NodeProjectConfig;
+use DDT\Config\External\StandardProjectConfig;
+use JsonSerializable;
+
+class Project implements JsonSerializable
 {
     private $name;
-    private $type;
     private $path;
     private $group;
-    private $vcsUrl;
-    private $vcsRemote;
 
-    public function __construct(string $name, string $type, string $path, array $group, string $vcsUrl, string $vcsRemote)
+    public function __construct(string $path, ?string $name=null, ?array $group=[])
     {
-        $this->setName($name);
-        $this->setType($type);
         $this->setPath($path);
+        $this->setName($name ?? basename($path));
         $this->setGroup($group);
-        $this->setVcsUrl($vcsUrl);
-        $this->setVcsRemote($vcsRemote);
     }
 
     public function setName(string $name): self
@@ -27,10 +26,32 @@ class Project
         return $this;
     }
 
-    public function setType(string $type): self
+    public function getName(): string
     {
-        $this->type = $type;
-        return $this;
+        return $this->name;
+    }
+
+    public function getType(): string
+    {
+        $path = $this->getPath();
+
+        $hasComposerJson = file_exists("$path/" . ComposerProjectConfig::defaultFilename);
+        $hasPackageJson = file_exists("$path/" . NodeProjectConfig::defaultFilename);
+        $hasDefault = file_exists("$path/" . StandardProjectConfig::defaultFilename);
+
+        if($hasDefault) {
+            $type = 'ddt';
+        }else if($hasComposerJson && $hasPackageJson){
+            $type = 'composer';
+        }else if($hasComposerJson){
+            $type = 'composer';
+        }else if($hasPackageJson){
+            $type = 'node';
+        }else{
+            $type = 'none';
+        }
+
+        return $type;
     }
 
     public function setPath(string $path): self
@@ -39,21 +60,26 @@ class Project
         return $this;
     }
 
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
     public function setGroup(array $groupList): self
     {
-        $this->groupList = $groupList;
+        $this->group = $groupList;
         return $this;
     }
 
     public function addGroup(string $groupName): self
     {
-        $this->groupList[] = $groupName;
+        $this->group[] = $groupName;
         return $this;
     }
 
     public function removeGroup(string $groupName): self
     {
-        $this->groupList = array_filter($this->groupList, function($v) use ($groupName) {
+        $this->group = array_filter($this->groupList, function($v) use ($groupName) {
             return $v !== $groupName;
         });
 
@@ -62,30 +88,34 @@ class Project
 
     public function hasGroup(string $groupName): bool
     {
-        return in_array($groupName, $this->toArray());
+        return in_array($groupName, $this->group);
     }
 
-    public function setVcsUrl(string $vcsUrl): self
+    public function getGroups(): array
     {
-        $this->vcsUrl = $vcsUrl;
-        return $this;
+        return $this->group;
     }
 
-    public function setVcsRemote(string $vcsRemote): self
+    static public function fromArray(array $data): Project
     {
-        $this->vcsRemote = $vcsRemote;
-        return $this;
+        $path   = array_key_exists('path', $data) ? $data['path'] : null;
+        $name   = array_key_exists('name', $data) ? $data['name'] : null;
+        $group  = array_key_exists('group', $data) ? $data['group'] : null;
+
+        return new Project($path, $name, $group);
     }
 
     public function toArray(): array
     {
         return [
-            "name" => $this->name,
-            "type" => $this->type,
-            "path" => $this->path,
-            "group" => $this->group,
-            "vcsUrl" => $this->vcsUrl,
-            "vcsRemote" => $this->vcsRemote,
+            "name" => $this->getName(),
+            "path" => $this->getPath(),
+            "group" => $this->getGroups(),
         ];
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return $this->toArray();
     }
 }

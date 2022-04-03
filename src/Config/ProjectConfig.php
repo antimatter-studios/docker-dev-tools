@@ -10,6 +10,7 @@ use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
+use DDT\Model\Project;
 
 class ProjectConfig
 {
@@ -30,7 +31,11 @@ class ProjectConfig
 
 	public function listProjects(): array
 	{
-		return $this->config->getKey($this->key) ?? [];
+		$list = $this->config->getKey($this->key) ?? [];
+
+		return array_map(function($item){
+			return container(Project::class, $item);
+		}, $list);
 	}
 
 	public function listProjectsByScript(string $script): array
@@ -187,46 +192,46 @@ class ProjectConfig
 		return $this->removeGroup($project, $group, $first['path']);
 	}
 
-	public function addProject(string $path, string $project, string $type, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): bool
+	public function addProject(string $path, ?string $name=null, ?string $group=null): bool
 	{
 		// Convert group into an array
 		$group = array_filter(explode(',', $group ?? ''));
 
+		// Ensure the name is valid
+		$name = $name ?? basename($path);
+
 		$projectList = $this->listProjects();
 
 		if(array_key_exists($path, $projectList)){
-			throw new ProjectExistsException($project, $path, 'Cannot add same project twice');
+			throw new ProjectExistsException($name, $path, 'Cannot add same project twice');
 		}
 
-		array_filter($projectList, function($config) use ($project, $path, $group) {
+		array_filter($projectList, function($project) use ($name, $path, $group) {
 			// If the name doesn't match, skip over this config
-			if($config['name'] !== $project){
+			if($project->getName() !== $project){
 				return false;
 			}
 
 			if(empty($group)){
-				throw new ProjectExistsException($project, $config['path'], 'Duplicate projects cannot have empty groups');
+				throw new ProjectExistsException($project, $project->getPath(), 'Duplicate projects cannot have empty groups');
 			}
 
 			// If this duplicate group, overlaps one of it's groups, it would create a situation where you'd have the same project
 			// existing in multiple groups with the same name, if you tried to operate upon it, which one would you target? Since
 			// They both have the same name, but different directories, so could have different code too. Hence this situation
 			// Is not possible to tolerate
-			if(count(array_intersect($config['group'], $group)) > 0){
+			if(count(array_intersect($project->getGroups(), $group)) > 0){
 				throw new ProjectExistsException($project, $path, 'Duplicate projects cannot overlap Groups');
 			}
 
 			return false;
 		});
 
-		$projectList[$path] = [
-			'name' => $project,
-			'type' => $type,
-			'path' => $path,
-			'group' => $group,
-			'vcs' => $vcs,
-			'remote' => $remote,
-		];
+		$projectList[$path] = container(Project::class, [
+			'path' => $path, 
+			'name' => $name,
+			'group' => $group, 
+		]);
 
 		$this->config->setKey($this->key, $projectList);
 		
@@ -296,9 +301,9 @@ class ProjectConfig
 				if($class instanceof ProjectConfigInterface){
 					return container($class, array_merge($args, ['filename' => $filename]));
 				}
-				}
+			}
 
-				throw new ProjectNotFoundException($project);
+			throw new ProjectNotFoundException($project);
 		}
 
 		$filteredList = array_filter($projectList, function($v) use ($project) {
