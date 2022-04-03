@@ -4,7 +4,6 @@ namespace DDT\Config;
 
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
-use DDT\Config\External\NoProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
 use DDT\Contract\External\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
@@ -275,6 +274,7 @@ class ProjectConfig
 					throw new ProjectNotFoundException($project);
 				}
 					
+				$class = null;
 				$type = $projectList[$path]['type'];
 				$args = ['filename' => $path, 'project' => $project, 'group' => $group];
 
@@ -293,15 +293,12 @@ class ProjectConfig
 					$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
 				}
 
-				if($type === 'none'){
-					$class = NoProjectConfig::class;
-					$filename = null;
+				if($class instanceof ProjectConfigInterface){
+					return container($class, array_merge($args, ['filename' => $filename]));
+				}
 				}
 
-				return container($class, array_merge($args, ['filename' => $filename]));
-			}else{
 				throw new ProjectNotFoundException($project);
-			}
 		}
 
 		$filteredList = array_filter($projectList, function($v) use ($project) {
