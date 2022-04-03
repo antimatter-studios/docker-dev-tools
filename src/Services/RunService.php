@@ -82,10 +82,10 @@ class RunService
 		$list = [];
 
 		foreach($projectList as $p){
-			$name = $p['name'];
-			$group = current($p['group']) ?: null;
+			$name = $p->getName();
+			$group = current($p->getGroups());
 
-			$key = "{$p['path']}@{$script}";
+			$key = "{$p->getPath()}@{$script}";
 			if(in_array($key, $stack)){
 				continue;
 			}
