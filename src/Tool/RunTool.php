@@ -157,6 +157,8 @@ class RunTool extends Tool
             foreach($runlist as $r){
                 $print($r, 0);
             }
+            // break reference
+            $print = null;
         }catch(ConfigMissingException $e){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
         }catch(ProjectNotFoundException $e){
