@@ -43,13 +43,17 @@ class ProjectConfig
 		$list = [];
 
 		foreach($this->listProjects() as $path => $config){
-            $projectConfig = $this->getProjectConfig($config['name'], $path);
-            foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
-				if($script !== $scriptName){
-					continue;
+			try{
+				$projectConfig = $this->getProjectConfig($config->getName(), $path);
+				foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+					if($script !== $scriptName){
+						continue;
+					}
+	
+					$list[] = $config;
 				}
-
-				$list[] = $config;
+			}catch(ProjectNotFoundException $e){
+				// Any project configuration that isn't found, we just skip over
 			}
 		}
 
@@ -74,6 +78,8 @@ class ProjectConfig
 	public function listProjectsByFilter(array $filter): array
 	{
 		return array_filter($this->listProjects(), function($config) use ($filter) {
+			$config = $config->toArray();
+
 			foreach($filter as $key => $value){
 				if(!array_key_exists($key, $config)) {
 					return false;
@@ -97,21 +103,20 @@ class ProjectConfig
 
 		if(!empty($path)){
 			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]['name'] !== $project){
-					throw new ProjectNotFoundException($project);
+				if($projectList[$path]->getName() !== $project){
+					throw new ProjectNotFoundException($project, 'project name does not match path');
 				}
 
-				$projectList[$path]['group'][] = $group;
-				$projectList[$path]['group'] = array_unique($projectList[$path]['group']);
+				$projectList[$path]->addGroup($group);
 				$this->config->setKey($this->key, $projectList);
 				return $this->config->write();
 			}else{
-				throw new ProjectNotFoundException($project);
+				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
 			}
 		}
 
 		$filteredList = array_filter($projectList, function($v) use ($project) {
-			return $v['name'] === $project;
+			return $v->getName() === $project;
 		});
 
 		if(count($filteredList) > 1){
@@ -120,7 +125,7 @@ class ProjectConfig
 
 		$first = array_shift($filteredList);
 
-		return $this->addGroup($project, $group, $first['path']);
+		return $this->addGroup($project, $group, $first->getPath());
 	}
 
 	public function removeGroup(string $project, string $group, ?string $path=null): bool
@@ -129,24 +134,21 @@ class ProjectConfig
 
 		if(!empty($path)){
 			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]['name'] !== $project){
-					throw new ProjectNotFoundException($project);
+				if($projectList[$path]->getName() !== $project){
+					throw new ProjectNotFoundException($project, 'project name does not match path');
 				}
 
-				$projectList[$path]['group'] = array_filter(
-					$projectList[$path]['group'], 
-					function($v) use ($group) { return $group !== $v; }
-				);
+				$projectList[$path]->removeGroup($group);
 
 				$this->config->setKey($this->key, $projectList);
 				return $this->config->write();
 			}else{
-				throw new ProjectNotFoundException($project);
+				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
 			}
 		}
 
 		$filteredList = array_filter($projectList, function($v) use ($project) {
-			return $v['name'] === $project;
+			return $v->getName() === $project;
 		});
 
 		if(count($filteredList) > 1){
@@ -155,7 +157,7 @@ class ProjectConfig
 
 		$first = array_shift($filteredList);
 
-		return $this->removeGroup($project, $group, $first['path']);
+		return $this->removeGroup($project, $group, $first->getPath());
 	}
 
 	public function addProject(string $path, ?string $name=null, ?string $group=null): bool
@@ -210,20 +212,20 @@ class ProjectConfig
 
 		if(!empty($path)){
 			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]['name'] !== $project){
-					throw new ProjectNotFoundException($project);
+				if($projectList[$path]->getName() !== $project){
+					throw new ProjectNotFoundException($project, 'project name does not match path');
 				}
 
 				unset($projectList[$path]);
 				$this->config->setKey($this->key, $projectList);
 				return $this->config->write();
 			}else{
-				throw new ProjectNotFoundException($project);
+				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
 			}
 		}
 
 		$filteredList = array_filter($projectList, function($v) use ($project) {
-			return $v['name'] === $project;
+			return $v->getName() === $project;
 		});
 
 		if(count($filteredList) > 1){
@@ -232,21 +234,23 @@ class ProjectConfig
 
 		$first = array_shift($filteredList);
 
-		return $this->removeProject($project, $first['path']);
+		return $this->removeProject($project, $first->getPath());
 	}
 
 	public function getProjectConfig(string $project, ?string $path=null, ?string $group=null): ProjectConfigInterface
 	{
 		$projectList = $this->listProjects();
 
+		$reason = null;
+
 		if(!empty($path)){
 			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]['name'] !== $project){
-					throw new ProjectNotFoundException($project);
+				if($projectList[$path]->getName() !== $project){
+					throw new ProjectNotFoundException($project, 'project name does not match path');
 				}
 					
 				$class = null;
-				$type = $projectList[$path]['type'];
+				$type = $projectList[$path]->getType();
 				$args = ['filename' => $path, 'project' => $project, 'group' => $group];
 
 				if($type === 'ddt'){
@@ -264,16 +268,20 @@ class ProjectConfig
 					$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
 				}
 
-				if($class instanceof ProjectConfigInterface){
+				if(is_subclass_of($class, ProjectConfigInterface::class)){
 					return container($class, array_merge($args, ['filename' => $filename]));
 				}
+				
+				$reason = "Project type '$type' does not match any allowed type";
+			}else{
+				$reason = "project with given path '$path' was not found";
 			}
 
-			throw new ProjectNotFoundException($project);
+			throw new ProjectNotFoundException($project, $reason);
 		}
 
 		$filteredList = array_filter($projectList, function($v) use ($project) {
-			return $v['name'] === $project;
+			return $v->getName() === $project;
 		});
 
 		if(count($filteredList) > 1){
@@ -286,6 +294,6 @@ class ProjectConfig
 
 		$first = array_shift($filteredList);
 
-		return $this->getProjectConfig($project, $first['path'], $group);
+		return $this->getProjectConfig($project, $first->getPath(), $group);
 	}
 }
