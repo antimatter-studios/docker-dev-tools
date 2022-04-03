@@ -105,7 +105,23 @@ class ProjectTool extends Tool
             // If there are no groups, we just output an empty column
             $group = empty($groupList) ? '' : array_shift($groupList);
 
-            $table->addRow([$project->getName(), $group, $project->getPath(), $project->getType(), $this->repoService->remote($project->getPath())]);
+            // Obtain path and test whether it exists or not (show to the user invalid paths)
+            $path = $project->getPath();
+            if(!is_dir($path)){
+                $path = "{red}error, path not found:{end} $path";
+            }
+
+            $type = $project->getType();
+            if($type === "none"){
+                $type = "{red}invalid{end}";
+            }
+
+            $url = $this->repoService->remote($project->getPath());
+            if(!is_dir($path)){
+                $url = "{red}error, path not found{end}";
+            }
+
+            $table->addRow([$project->getName(), $group, $path, $type, $url]);
 
             // For every EXTRA group, we render an empty row with just the "+ group" name to indicate it's an extra group
             foreach($groupList as $group){
