@@ -32,6 +32,12 @@ class DockerContainer
 
         try{
             $this->id = $this->getId();
+            
+            if($this->isRunning() === false){
+                $this->stop();
+                $this->delete();
+                throw new DockerContainerNotFoundException("Restarting dead container");
+            }
         }catch(DockerContainerNotFoundException $e){
             if(empty($image)){
                 throw $e;
