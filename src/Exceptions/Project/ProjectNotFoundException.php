@@ -6,9 +6,10 @@ class ProjectNotFoundException extends \Exception
     /** @var string */
     private $project;
 
-    public function __construct(string $project, $code = 0, \Throwable $previous = null)
+    public function __construct(string $project, string $reason=null, $code = 0, \Throwable $previous = null)
     {
-        parent::__construct("Could not find project '$project' with given parameters", $code, $previous);
+        $reason = $reason ?? 'no reason given';
+        parent::__construct("Could not find project '$project', $reason", $code, $previous);
 
         $this->project = $project;
     }
