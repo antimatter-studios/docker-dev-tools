@@ -1,5 +1,0 @@
-#!/usr/bin/env sh
-
-composer install
-
-docker run -v ${PWD}:/tools -w /tools php:7.3-cli-alpine3.13 ./vendor/bin/phpunit $@

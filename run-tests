@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+if [ -z "$(docker image ls | grep ddt-phpunit)" ]; then
+docker build -t ddt-phpunit:latest . -f - <<EOF
+FROM php:7.3-cli-alpine3.13
+RUN apk add --no-cache composer
+EOF
+fi
+
+docker run -v ${PWD}:/tools -w /tools ddt-phpunit:latest sh -c "composer install && ./vendor/bin/phpunit $@"
