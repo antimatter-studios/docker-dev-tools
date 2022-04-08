@@ -7,7 +7,6 @@ use DDT\CLI\ArgumentList;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerImage;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
-use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerImageBuildFailureException;
 use DDT\Exceptions\Docker\DockerImageNotFoundException;
 use DDT\Text\Template;
@@ -17,53 +16,16 @@ class AwsTool extends Tool
     private $image = null;
     private $container = null;
 
-    private $containerName = "ddt-awscli";    
-    private $imageName = 'ddt-awscli:{{DOCKER_ARCH}}';
+    private $containerName = "ddt-awscli";
 
-    private $localAws = false;
     private $dockerfile = '/docker/awscli.dockerfile';
 
     public function __construct(CLI $cli)
     {
     	parent::__construct('aws', $cli);
         $this->setToolCommand('run', null, true);
-        
-        $this->setArch($this->getArch());
-        $this->localAws = $this->cli->isCommand('aws');
     }
 
-    public function getArch(): string
-    {
-        $arch = $this->cli->exec('uname -m');
-        $rosetta = false;
-
-        if($this->cli->exec('uname -s') === "Darwin"){
-            $rosetta = (int)$this->cli->exec('sysctl -in sysctl.proc_translated');
-            if($arch === 'x86_64' && $rosetta === 1){
-                $arch = 'arm64';
-            }
-        }
-
-        $this->cli->debug('cpu arch', $arch);
-        $this->cli->debug('cpu rosetta', $rosetta ? 'yes' : 'no');
-
-        return $arch;
-    }
-
-    public function setArch(string $dockerArch): void
-    {
-        $awsArch = strpos($dockerArch,'arm64') !== false ? 'aarch64' : 'x86_64';
-        $awsVersion = "2.0.30";
-
-        $params = ['DOCKER_ARCH' => $dockerArch, 'AWS_ARCH' => $awsArch, 'AWS_VERSION' => $awsVersion];
-
-        $this->dockerfile = file_get_contents(config('tools.path').$this->dockerfile);
-        $this->dockerfile = str_replace('$', '\$', $this->dockerfile);
-
-        $this->imageName = (string)new Template($this->imageName, $params);
-        $this->dockerfile = (string)new Template($this->dockerfile, $params);
-    }
-    
     public function getToolMetadata(): array
     {
         return [
@@ -90,14 +52,26 @@ class AwsTool extends Tool
         }
 
         try{
-            $this->image = DockerImage::get($this->imageName);
+            $dockerArch = $this->cli->getArch();
+            $imageName = $this->containerName . ":" . $dockerArch;
+
+            $awsArch = strpos($dockerArch,'arm64') !== false ? 'aarch64' : 'x86_64';
+            $awsVersion = "2.0.30";
+
+            $params = ['DOCKER_ARCH' => $dockerArch, 'AWS_ARCH' => $awsArch, 'AWS_VERSION' => $awsVersion];
+
+            $this->dockerfile = file_get_contents(config('tools.path').$this->dockerfile);
+            $this->dockerfile = str_replace('$', '\$', $this->dockerfile);
+            $this->dockerfile = (string)new Template($this->dockerfile, $params);
+            
+            $this->image = DockerImage::get($imageName);
             return $this->image;
         }catch(DockerImageNotFoundException $e){
             // do nothing I guess?             
         }
 
-        $this->cli->print("AWSCli Docker Image: '$this->imageName' Not Found, building...");
-        $this->image = DockerImage::build($this->imageName, $this->dockerfile, false);
+        $this->cli->print("AWSCli Docker Image: '$imageName' Not Found, building...");
+        $this->image = DockerImage::build($imageName, $this->dockerfile, false);
         return $this->image;
     }
 
@@ -147,7 +121,9 @@ class AwsTool extends Tool
             $input = implode(' ', func_get_args());
             $arguments = empty($input) ? new ArgumentList($this->cli->getArgList()) : $input;
 
-            if(false && $this->localAws){
+            $localAws = $this->cli->isCommand('aws');
+
+            if(false && $localAws){
                 $this->cli->passthru("aws $arguments");
             }else{
                 $env = $this->getEnv();
@@ -155,7 +131,7 @@ class AwsTool extends Tool
                 $container->passthru("aws $arguments", $env);
             }
         }catch(DockerImageBuildFailureException $e){
-            $this->cli->failure("The '$this->imageName' has failed to build for unknown reasons\n");
+            $this->cli->failure("The '{$e->getImageName()}' has failed to build for unknown reasons\n");
         }
     }
 }
