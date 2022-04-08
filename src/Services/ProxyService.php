@@ -209,7 +209,7 @@ class ProxyService
 	{
 		$image = $this->config->getDockerImage();
 		$name = $this->config->getContainerName();
-		$path = $this->config->getToolsPath();
+		$path = config('tools.path');
 
 		try{
 			// Remove the container that was previously built
