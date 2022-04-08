@@ -78,7 +78,18 @@ class Autowire
             
         // Resolve parameter data to a simple array
         $params = array_map(function($p) {
-            $temp = ['name' => $p->getName(), 'type' => $p->getType()];
+            $temp = ['name' => $p->getName()];
+
+            $type = $p->getType();
+            if($type instanceof \ReflectionNamedType){
+                $temp['type'] = $type->getName();
+            }else if($type instanceof \ReflectionUnionType){
+                $temp['type'] = implode(',', $p->getTypes());
+            }else{
+                // ?? This should never happen
+                $temp['type'] = 'string';
+            }
+            
             if($p->isOptional()){
                 $temp['default'] = $p->getDefaultValue();
             }
@@ -134,6 +145,7 @@ class Autowire
         Debug::dump("autowire", ["AUTOWIRING INPUT: " => $inputParameters]);
         foreach($signatureParameters as $search){
             $name = $search['name'];
+            // FIXME: I'm not sure how to handle union types, which are represented here as a csv of variable types
             $type = trim((string)$search['type'], '?');
 
             if(empty($type)){
