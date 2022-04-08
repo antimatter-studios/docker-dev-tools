@@ -17,33 +17,27 @@ class IpService implements IpServiceInterface
 
     public function set(string $ipAddress): bool
     {
-        try{
-			if(!empty($ipAddress)){
-                $this->cli->sudo("ip addr add $ipAddress/24 dev lo label lo:40");
-                return true;
-            }
-		}catch(\Exception $e){
-            $this->cli->debug("ip service", $e->getMessage());
+        if($this->cli->isCommand('ip')){
+            $manager = container(IpCommand::class);
+            return $manager->set($ipAddress);
+        }else if($this->cli->isCommand('ifconfig')){
+            $manager = container(IfconfigCommand::class);
+            return $manager->set($ipAddress);
         }
 
-        return false;
+        throw new \Exception("No supported linux ip configuration tool found");
     }
 
     public function remove(string $ipAddress): bool
     {
-        try{
-			if(in_array($ipAddress, ['127.001', '127.0.0.1'])){
-				return false;
-			}
-
-			if(!empty($ipAddress)){
-				$this->cli->sudo("ip addr del $ipAddress/24 dev lo");
-				return true;
-			}
-		}catch(\Exception $e){
-            $this->cli->debug("ip service", $e->getMessage());
+        if($this->cli->isCommand('ip')){
+            $manager = container(IpCommand::class);
+            return $manager->remove($ipAddress);
+        }else if($this->cli->isCommand('ifconfig')){
+            $manager = container(IfconfigCommand::class);
+            return $manager->remove($ipAddress);
         }
 
-		return false;
+        throw new \Exception("No supported linux ip configuration tool found");
     }
 }
