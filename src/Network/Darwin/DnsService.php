@@ -73,7 +73,7 @@ class DnsService implements DnsServiceInterface
 		return $this->setDNS('Docker Container', $ipAddress);
     }
 
-    public function disable(): bool
+    public function disable(string $dnsIpAddress): bool
     {
         return $this->setDNS('Reset back to router', 'empty');
     }

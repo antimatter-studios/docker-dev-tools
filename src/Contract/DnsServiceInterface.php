@@ -6,6 +6,6 @@ interface DnsServiceInterface
 {
     public function listIpAddress(): array;
     public function enable(string $dnsIpAddress): bool;
-    public function disable(): bool;
+    public function disable(string $dnsIpAddress): bool;
     public function flush(): void;
 }
