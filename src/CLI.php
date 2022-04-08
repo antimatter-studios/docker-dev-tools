@@ -55,7 +55,7 @@ class CLI
 		$isRoot = $this->exec('whoami') === 'root';
 		
 		if($isRoot){
-			$this->stderr("{yel}[SYSTEM]:{end} Root user detected\n");
+			$this->debug("{yel}[SYSTEM]:{end} Root user detected\n");
 		}
 
 		return $isRoot;
