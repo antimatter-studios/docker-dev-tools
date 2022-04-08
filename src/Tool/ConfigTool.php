@@ -137,13 +137,14 @@ class ConfigTool extends Tool
 
 	public function set(SystemConfig $config, string $key, string $value): void
 	{
-		$value = json_decode($value, true);
+		$json = json_decode($value, true);
+		if($json !== null) $value = $json;
 
 		if(!empty($value)){
 			$config->setKey($key, $value);
 			$config->write();
 		}else{
-			$this->cli->debug("config", "Attempting to set an empty config key '$key'");
+			$this->cli->debug("config", "Attempting to set an empty config key '$key' value '$value'");
 		}
 	}
 
