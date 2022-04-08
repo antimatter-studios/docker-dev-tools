@@ -27,14 +27,24 @@ class DnsService implements DnsServiceInterface
 		throw new \Exception("TODO: write method " . __METHOD__);
 	}
 
-    public function enable(string $dnsIpAddress): bool
+    public function enable(string $ipAddress): bool
     {
-        throw new \Exception("Implement method: " . __METHOD__);
+        if(file_exists('/etc/resolv.conf')){
+            $manager = container(ResolvConfFile::class);
+            return $manager->enable($ipAddress);
+        }
+
+        throw new \Exception("No linux dns enable method found");
     }
 
-    public function disable(): bool
+    public function disable(string $ipAddress): bool
     {
-        throw new \Exception("Implement method: " . __METHOD__);
+        if(file_exists('/etc/resolv.conf')){
+            $manager = container(ResolvConfFile::class);
+            return $manager->disable($ipAddress);
+        }
+
+        throw new \Exception("No linux dns disable method found");
     }
 
     public function flush(): void
