@@ -115,7 +115,14 @@ class DnsTool extends Tool
     public function disable()
     {
         $this->cli->print("{red}Disabling:{end} DNS...\n");
-        $this->dnsService->disable();
+
+        $dnsIpAddress = $this->ipConfig->get();
+
+        if(empty($dnsIpAddress)){
+            throw new \Exception('The system configuration had no usable ip address for this system configured');
+        }
+
+        $this->dnsService->disable($dnsIpAddress);
     }
 
     public function refresh()
