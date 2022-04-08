@@ -7,6 +7,7 @@ use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Autowire\CannotAutowireParameterException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
+use Exception;
 
 class EntrypointTool extends Tool implements ToolRegistryInterface
 {
@@ -147,13 +148,16 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
                     continue;
                 }
 
-                /** @var Tool */
-                $instance = $this->getToolByClass($tool['name']);
+                try{
+                    /** @var Tool */
+                    $instance = $this->getToolByClass($tool['name']);
+                    $metadata = $instance->getToolMetadata();
+                    $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
 
-                $metadata = $instance->getToolMetadata();
-                $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
-
-                $options[] = "\t - {yel}{$instance->getToolName()}{end}: {$shortDescription}";
+                    $options[] = "\t - {yel}{$instance->getToolName()}{end}: {$shortDescription}";
+                }catch(Exception $e){
+                    // do nothing because we just want to list the tools, not run them
+                }
             }
             $options[] = "";
         }
@@ -179,8 +183,6 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         }, $tools);
 
         $this->tools[] = ['name' => $name, 'tools' => $tools];
-
-        //var_dump($this->tools);
 
         return $this->tools;
     }
