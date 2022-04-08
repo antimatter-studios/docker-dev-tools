@@ -31,10 +31,15 @@ class Autowire
         try{
             $rc = new \ReflectionClass($ref);
             $rm = $rc->getConstructor();
-            $params = $this->getReflectionParameters($rm);
+
+            if($rm){
+                $params = $this->getReflectionParameters($rm);
             
-            $args = $this->reformatArgs($args);
-            $args = $this->resolveArgs($params, $args);
+                $args = $this->reformatArgs($args);
+                $args = $this->resolveArgs($params, $args);   
+            }else{
+                $args = [];
+            }
     
             return $rc->newInstanceArgs($args);
         }catch(CannotAutowireParameterException $e){
