@@ -190,6 +190,15 @@ class DockerContainer
         }, []);
     }
 
+    public function copyFile(string $src, $dst): bool
+    {
+        $this->docker->exec("cp $src {$this->getId()}:$dst");
+
+        $this->exitCode = $this->docker->getExitCode();
+
+        return $this->exitCode === 0;
+    }
+
     public function run(string $image, string $name, string $command = '', array $volumes = [], array $options = [], array $env = [], array $ports = [], array $labels = [], bool $background=false): int
 	{
 		$exec = ["run"];
