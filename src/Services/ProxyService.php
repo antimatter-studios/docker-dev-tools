@@ -246,8 +246,6 @@ class ProxyService
 					'ddt_proxy_vhost:/etc/nginx/vhost.d',
 					'ddt_proxy_html:/usr/share/nginx/html',
 					'ddt_config_gen:/config',
-					$path . '/proxy-config/global.conf:/etc/nginx/conf.d/global.conf',
-					$path . '/proxy-config/nginx-proxy.conf:/etc/nginx/proxy.conf',
 				],
 				[], // options
 				['NGINX_CONF=/config/docker-proxy/nginx.conf'],
@@ -260,6 +258,9 @@ class ProxyService
 			);
 
 			$id = $container->getId();
+
+			$container->copyFile($path . '/proxy-config/global.conf', '/etc/nginx/conf.d/global.conf');
+			$container->copyFile($path . '/proxy-config/nginx-proxy.conf', '/etc/nginx/proxy.conf');
 
 			if(empty($networkList)){
 				// use the networks from the configuration
