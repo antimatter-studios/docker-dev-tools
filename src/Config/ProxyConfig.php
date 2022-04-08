@@ -35,11 +35,6 @@ class ProxyConfig
 		}
     }
 
-	public function getToolsPath(?string $subpath=''): string
-	{
-		return $this->config->getPath('tools', $subpath);
-	}
-
 	public function getDockerImage(): string
 	{
 		return $this->config->getKey($this->keys['docker_image']);
