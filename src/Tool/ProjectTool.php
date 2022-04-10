@@ -215,6 +215,10 @@ class ProjectTool extends Tool
             $this->cli->print("Auto-detecting project type: '$type'\n");
         }
 
+        if($type === 'none'){
+            $this->cli->failure("{red}It is not possible to manage projects with an unrecognised project type{end}\n");
+        }
+
         if($this->isProjectType($type) === false){
             $this->cli->failure("{red}The project type '$type' given or auto-detected, can not be recognised. See help for options{end}\n");
         }
