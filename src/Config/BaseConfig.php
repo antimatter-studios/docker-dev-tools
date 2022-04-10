@@ -148,6 +148,14 @@ abstract class BaseConfig implements ConfigInterface
         }
         
         $topLevelPart = array_shift($parts);
+
+        // NOTE: we do this because we want to only store plain arrays
+        // NOTE: this seems to be the easiest way to strip out models, or arrays of models
+        // NOTE: encoding -> decoding, seems to be the most universal way to deal with various conditions
+        // NOTE: without having to resort to detecting each type of condition and handling them individually
+        if(!is_scalar($value)){
+            $value = json_decode(json_encode($value), true);
+        }
         
         if(empty($topLevelPart)) $array = $value;
         else $array[$topLevelPart] = $value;
