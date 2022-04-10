@@ -79,6 +79,16 @@ class CLI
         return $arch;
     }
 
+	public function isDarwin(): bool
+	{
+		return strtolower(PHP_OS) === 'darwin';
+	}
+
+	public function isLinux(): bool
+	{
+		return strtolower(PHP_OS) === 'linux';
+	}
+
 	public function enableErrors(bool $showErrors=false)
 	{
 		if($showErrors){
