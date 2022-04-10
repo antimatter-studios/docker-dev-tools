@@ -115,11 +115,10 @@ class TerraformTool extends Tool
             $this->getImage()->getName(), 
             [realpath($_SERVER['HOME'].'/.ssh').":/root/.ssh:ro", "$path:/app"], 
             ["-w " . $this->getWorkDir($path, $workspaceDir)],
-            array_filter([
+            array_filter(array_merge([
                 $this->getEnvLog(),
                 $this->getEnvWorkspace($workspaceProfile, $arguments),
-                ...$this->getEnv()
-            ])
+            ], ...$this->getEnv()))
         );
 
         return $this->container;
@@ -249,10 +248,10 @@ class TerraformTool extends Tool
             "--env TF_INPUT=false",
         ];
 
-        return [
-            ...$aws,
-            ...$general,
-        ];
+        return array_merge([
+            $aws,
+            $general,
+        ]);
     }
 
     private function getWorkspace(string $workspaceProfile, ArgumentList $arguments): string
