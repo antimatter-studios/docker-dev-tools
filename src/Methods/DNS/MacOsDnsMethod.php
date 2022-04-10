@@ -86,7 +86,7 @@ class MacOsDnsMethod
 
     public function add(string $dnsIpAddress): bool
     {
-		$existing = $this->listIpAddress();
+		$existing = $this->get();
 		$ipAddress = implode(' ', array_unique(array_merge([$dnsIpAddress], $existing)));
 
 		return $this->set('Docker Container', $ipAddress);
