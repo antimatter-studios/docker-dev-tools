@@ -45,11 +45,14 @@ class Address
     {
         try{
             $count = 20;
-            $delay = 0.1;
+            $delay = 0.2;
 			$result = $this->cli->exec("ping $this->address -c $count -i $delay 2>&1");
+            $this->cli->debug('address raw', $result);
 		}catch(\Exception $e){
 			$result = $e->getMessage();
 		}
+
+        // FIXME: I have on linux seen this code return output with errors and yet say everything passed successfully
 
         if(preg_match("/^PING\s+([^\s]+)\s\(([^\)]+)\)/", $result, $matches)){
             $this->hostname = $matches[1];
@@ -94,11 +97,25 @@ class Address
         throw new \Exception("The property named '$name' is not available");
     }
 
+    public function toArray(): array
+    {
+        return [
+            'status' => $this->status,
+            'address' => $this->address,
+            'hostname' => $this->hostname,
+            'ip_address' => $this->ip_address,
+            'packet_loss' => $this->packet_loss,
+            'can_resolve' => $this->can_resolve,
+        ];
+    }
+
     public function __toString(): string
     {
         $output = '';
 
         $temp = [];
+
+        $this->cli->debug('address raw', json_encode($this->toArray()));
 
         if($this->status){
 			$temp[] = "Ping: {grn}SUCCESS{end}";
