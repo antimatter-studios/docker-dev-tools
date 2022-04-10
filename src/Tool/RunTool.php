@@ -108,7 +108,7 @@ class RunTool extends Tool
                         continue;
                     }
     
-                    if($project !==null && $project !== $config['name']){
+                    if($project !==null && $project !== $config->getname()){
                         continue;
                     }
     
