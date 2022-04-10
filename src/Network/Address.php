@@ -44,7 +44,7 @@ class Address
     public function ping(): bool
     {
         try{
-            $count = 20;
+            $count = 10;
             $delay = 0.2;
 			$result = $this->cli->exec("ping $this->address -c $count -i $delay 2>&1");
             $this->cli->debug('address raw', $result);
