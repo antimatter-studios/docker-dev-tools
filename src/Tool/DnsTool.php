@@ -41,6 +41,7 @@ class DnsTool extends Tool
             'add-domain', 'remove-domain',
             'ip', 'ping', 'status',
             'container-name', 'docker-image',
+            'config',
             // These are commands I think I need to re-add in the future
             // 'list-devices', 'set-device', 'remove-device'
         ] as $command){
@@ -398,6 +399,24 @@ class DnsTool extends Tool
         }
         
         $this->cli->print("\n".$table->render(true));
+    }
+
+    public function config(): void
+    {
+        $container = $this->dnsMasq->getContainer();
+
+        $fileList = ['/etc/dnsmasq.conf'];
+        
+        $configList = array_map(function($v) {
+            return "/etc/dnsmasq.d/$v";
+        }, explode("\n", $container->exec('ls /etc/dnsmasq.d')));
+
+        $fileList = array_merge($fileList, $configList);
+
+        foreach($fileList as $file){
+            $this->cli->print("{blu}$file{end}:\n");
+            $this->cli->print($container->exec("cat $file")."\n\n");
+        }
     }
 
     // public function listDevices() {
