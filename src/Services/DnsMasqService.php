@@ -41,7 +41,7 @@ class DnsMasqService
         return DockerContainer::get($this->config->getContainerName());
     }
 
-    public function startContainer(): DockerContainer
+    public function startContainer(string $dnsIpAddress): DockerContainer
     {
         return DockerContainer::background(
             $this->config->getContainerName(), 
@@ -50,7 +50,7 @@ class DnsMasqService
             [],
             [],
             [],
-            ["10.254.254.254:53:53/udp"],
+            ["$dnsIpAddress:53:53/udp"],
         );
     }
 
@@ -128,9 +128,9 @@ class DnsMasqService
 		$this->docker->pull($dockerImage);
 	}
 
-    public function start(): string
+    public function start(string $dnsIpAddress): string
     {
-        $container = $this->startContainer();
+        $container = $this->startContainer($dnsIpAddress);
         
         if($container->isRunning() === false){
             $this->cli->debug("{red}[DNSMASQ]{end}: Container was found, but doesn't appear to be running, delete it and try again");
@@ -139,7 +139,7 @@ class DnsMasqService
             $container->delete();
 
             // Now create a brand new container
-            $container = $this->startContainer();
+            $container = $this->startContainer($dnsIpAddress);
         }
 
 		sleep(2);

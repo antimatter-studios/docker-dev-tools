@@ -143,7 +143,9 @@ class DnsTool extends Tool
             $this->dnsMasq->pull();
         }
 
-        $id = $this->dnsMasq->start();
+        $dnsIpAddress = $this->ipConfig->get();
+
+        $id = $this->dnsMasq->start($dnsIpAddress);
         
         $this->cli->print("{blu}Started{end}: container id '$id'...{end}\n");
         
