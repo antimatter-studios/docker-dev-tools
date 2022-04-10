@@ -260,15 +260,13 @@ class CLI
 		return $this->getExitCode() === 0;
 	}
 
-	public function sudo(?string $command='echo'): CLI
+	public function sudo(?string $command='echo'): string
 	{
 		if($this->isRoot() === false){
 			$command = "sudo $command";
 		}
 
-		$this->exec($command);
-
-		return $this;
+		return $this->exec($command);
 	}
 
 	public function getExitCode(): int
@@ -276,7 +274,7 @@ class CLI
 		return $this->exitCode;
 	}
 
-	public function runProcess(string $command, ChannelInterface $stdout, ChannelInterface $stderr)
+	public function runProcess(string $command, ChannelInterface $stdout, ChannelInterface $stderr): string
 	{
 		unset($pipes);
 		$pipes = [];
@@ -323,7 +321,7 @@ class CLI
 		return trim(self::$stdout);
 	}
 
-	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
+	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null): string
 	{
 		static $ctr = 0;
 
