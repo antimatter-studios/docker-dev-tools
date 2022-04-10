@@ -236,8 +236,8 @@ class ProjectTool extends Tool
         }
 
         try{
-            if($this->config->addProject($path, $project, $type, $group, $vcs, $remote)){
-                $this->cli->print("{grn}The project '$project' with type '$type' was successfully added with the path '$path'{end}\n");
+            if($this->config->addProject($path, null, $group)){
+                $this->cli->print("{grn}The project '$project' with type '$type' in group '$group' was successfully added with the path '$path'{end}\n");
                 return true;
             }
         }catch(ProjectExistsException $e){
