@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Network\Linux;
+namespace DDT\Methods\IP;
 
 use DDT\CLI;
 
-class IpCommand
+class IpMethod
 {
     /** @var CLI */
     private $cli;
@@ -13,8 +13,13 @@ class IpCommand
     {
         $this->cli = $cli;
     }
+
+    static public function supported(CLI $cli): bool 
+    {
+        return $cli->isCommand('ip');
+    }
     
-    public function set(string $ipAddress): bool
+    public function add(string $ipAddress): bool
     {
         try{
 			if(!empty($ipAddress)){

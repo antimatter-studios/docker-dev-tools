@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Network\Linux;
+namespace DDT\Methods\IP;
 
 use DDT\CLI;
 
-class IfconfigCommand
+class IfconfigMethod
 {
     /** @var CLI */
     private $cli;
@@ -14,7 +14,12 @@ class IfconfigCommand
         $this->cli = $cli;
     }
 
-    public function set(string $ipAddress): bool
+    static public function supported(CLI $cli): bool
+    {
+        return $cli->isCommand('ifconfig');
+    }
+
+    public function add(string $ipAddress): bool
     {
         try{
 			if(!empty($ipAddress)){

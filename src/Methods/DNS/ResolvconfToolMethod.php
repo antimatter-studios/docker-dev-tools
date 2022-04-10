@@ -1,11 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Network\Ubuntu_16;
+namespace DDT\Methods\DNS;
 
 use DDT\CLI;
-use DDT\Contract\DnsServiceInterface;
 
-class DnsService implements DnsServiceInterface
+// FIXME: this code is all busted, but I've left it here cause I want to implement a working implementation in the future
+
+class ResolvConfToolMethod
 {
     /** @var CLI */
     private $cli;
@@ -14,6 +15,11 @@ class DnsService implements DnsServiceInterface
     {
         $this->cli = $cli;
     }
+
+	static public function supported(CLI $cli): bool 
+	{
+		return false;
+	}
 
 	public function listIpAddress(): array
 	{

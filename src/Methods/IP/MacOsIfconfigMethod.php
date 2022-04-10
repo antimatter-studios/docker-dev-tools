@@ -1,11 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Network\Darwin;
+namespace DDT\Methods\IP;
 
 use DDT\CLI;
-use DDT\Contract\IpServiceInterface;
 
-class IpService implements IpServiceInterface
+class MacOsIfConfigMethod
 {
     /** @var CLI */
     private $cli;
@@ -15,7 +14,20 @@ class IpService implements IpServiceInterface
         $this->cli = $cli;
     }
 
-    public function set(string $ipAddress): bool
+	static public function supported(CLI $cli): bool 
+    {
+		if(!$cli->isDarwin()){
+			return false;
+		}
+
+        if(!$cli->isCommand('iconfig')){
+			return false;
+		}
+
+		return true;
+    }
+
+    public function add(string $ipAddress): bool
 	{
 		try{
 			if(!empty($ipAddress)){
