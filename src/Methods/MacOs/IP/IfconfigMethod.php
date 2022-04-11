@@ -20,7 +20,7 @@ class IfconfigMethod
 			return false;
 		}
 
-        if(!$cli->isCommand('iconfig')){
+        if(!$cli->isCommand('ifconfig')){
 			return false;
 		}
 
