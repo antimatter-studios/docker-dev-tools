@@ -385,7 +385,7 @@ class DnsTool extends Tool
                 $address->ping();
 
                 $exists = array_key_exists($ipAddress, $ipDomainMap);
-                $found = in_array($domain, $ipDomainMap[$ipAddress]);
+                $found = array_key_exists($ipAddress, $ipDomainMap) ? in_array($domain, $ipDomainMap[$ipAddress]) : false;
                 $enabled = $exists && $found ? 'yes' : '{red}no{end}';
 
                 $status = '{grn}good{end}';
