@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Methods\DNS;
+namespace DDT\Methods\MacOs\DNS;
 
 use DDT\CLI;
 
@@ -11,7 +11,7 @@ use DDT\CLI;
  * - arp eu-west-1.s3.aws.develop = show information about a specific hostname
  */
 
-class MacOsDnsMethod
+class NetworkSetupMethod
 {
     /** @var CLI $cli */
     private $cli;
