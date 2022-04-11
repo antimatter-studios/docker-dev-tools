@@ -368,6 +368,7 @@ class DnsTool extends Tool
                 return $a;
             }, []);
         }catch(DockerContainerNotFoundException $e){
+            $this->cli->print("\n{red}Error{red}: The DNS service is not running, cannot query information\n");
             $ipDomainMap = [];
         }
 
