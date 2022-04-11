@@ -142,24 +142,8 @@ try{
 		return $c;
 	});
 
-	// $detect = $container->get(DistroDetect::class);
-
 	$container->singleton(IpServiceInterface::class, \DDT\Network\IpService::class);
 	$container->singleton(DnsServiceInterface::class, \DDT\Network\DnsService::class);
-
-	// if($detect->isDarwin()){
-		
-	// }else if($detect->isLinux()){
-	// 	$container->singleton(IpServiceInterface::class, \DDT\Network\Linux\IpService::class);
-
-	// 	if($detect->isUbuntu('16.04') || $detect->isUbuntu('16.10')){
-	// 		$container->singleton(DnsServiceInterface::class, \DDT\Network\Ubuntu_16\DnsService::class);
-	// 	}else if($detect->isUbuntu('18.04') || $detect->isUbuntu('18.10')){
-	// 		$container->singleton(DnsServiceInterface::class, \DDT\Network\Ubuntu_18\DnsService::class);
-	// 	}else{
-	// 		$container->singleton(DnsServiceInterface::class, \DDT\Network\Linux\DnsService::class);
-	// 	}
-	// }
 
 	$entrypoint = container(EntrypointTool::class);
 	$container->singleton(ToolRegistryInterface::class, $entrypoint);
