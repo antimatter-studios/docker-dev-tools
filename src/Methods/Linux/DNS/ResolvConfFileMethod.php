@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Methods\DNS;
+namespace DDT\Methods\Linux\DNS;
+
+use DDT\CLI;
 
 class ResolvConfFileMethod
 {

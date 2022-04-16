@@ -4,9 +4,9 @@ namespace DDT\Network;
 
 use DDT\CLI;
 use DDT\Contract\DnsServiceInterface;
-use DDT\Methods\DNS\MacOsDnsMethod;
-use DDT\Methods\DNS\ResolvConfFileMethod;
-use DDT\Methods\DNS\SystemdResolvedMethod;
+use DDT\Methods\MacOs\DNS\NetworkSetupMethod;
+use DDT\Methods\Linux\DNS\ResolvConfFileMethod;
+use DDT\Methods\Linux\DNS\SystemdResolvedMethod;
 
 // apt-get install network-manager
 
@@ -22,7 +22,7 @@ class DnsService implements DnsServiceInterface
 
     private function getSupportedMethod()
     {
-        if(MacOsDnsMethod::supported($this->cli)){
+        if(NetworkSetupMethod::supported($this->cli)){
             return container(MacOsDnsMethod::class);
         }
 

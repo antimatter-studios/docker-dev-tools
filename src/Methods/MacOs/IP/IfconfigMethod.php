@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Methods\IP;
+namespace DDT\Methods\MacOs\IP;
 
 use DDT\CLI;
 
-class MacOsIfConfigMethod
+class IfconfigMethod
 {
     /** @var CLI */
     private $cli;
@@ -20,7 +20,7 @@ class MacOsIfConfigMethod
 			return false;
 		}
 
-        if(!$cli->isCommand('iconfig')){
+        if(!$cli->isCommand('ifconfig')){
 			return false;
 		}
 

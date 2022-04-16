@@ -4,9 +4,9 @@ namespace DDT\Network;
 
 use DDT\CLI;
 use DDT\Contract\IpServiceInterface;
-use DDT\Methods\IP\MacOsIfConfigMethod;
-use DDT\Methods\IP\IpMethod;
-use DDT\Methods\IP\IfconfigMethod;
+use DDT\Methods\MacOs\IP\IfconfigMethod as MacIfconfigMethod;
+use DDT\Methods\Linux\IP\IfconfigMethod as LinuxIfconfigMethod;
+use DDT\Methods\Linux\IP\IpMethod;
 
 class IpService implements IpServiceInterface
 {
@@ -20,16 +20,16 @@ class IpService implements IpServiceInterface
 
     private function getSupportedMethod()
     {
-        if(MacOsIfConfigMethod::supported($this->cli)){
-            return container(MacOsIfConfigMethod::class);
+        if(MacIfconfigMethod::supported($this->cli)){
+            return container(MacIfconfigMethod::class);
         }
 
         if(IpMethod::supported($this->cli)){
             return container(IpMethod::class);
         }
 
-        if(IfconfigMethod::supported($this->cli)){
-            return container(IfconfigMethod::class);
+        if(LinuxIfconfigMethod::supported($this->cli)){
+            return container(LinuxIfconfigMethod::class);
         }
 
         throw new \Exception("No supported ip configuration method found");

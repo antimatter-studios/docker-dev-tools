@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Methods\IP;
+namespace DDT\Methods\Linux\IP;
 
 use DDT\CLI;
 
-class IfconfigMethod
+class IpMethod
 {
     /** @var CLI */
     private $cli;
@@ -14,20 +14,20 @@ class IfconfigMethod
         $this->cli = $cli;
     }
 
-    static public function supported(CLI $cli): bool
+    static public function supported(CLI $cli): bool 
     {
-        return $cli->isCommand('ifconfig');
+        return $cli->isCommand('ip');
     }
-
+    
     public function add(string $ipAddress): bool
     {
         try{
 			if(!empty($ipAddress)){
-                $this->cli->sudo("ifconfig lo:0 $ipAddress up");
+                $this->cli->sudo("ip addr add $ipAddress/24 dev lo label lo:40");
                 return true;
             }
 		}catch(\Exception $e){
-            $this->cli->debug("ifconfig command", $e->getMessage());
+            $this->cli->debug("ip command", $e->getMessage());
         }
 
         return false;
@@ -36,12 +36,16 @@ class IfconfigMethod
     public function remove(string $ipAddress): bool
     {
         try{
+			if(in_array($ipAddress, ['127.001', '127.0.0.1'])){
+				return false;
+			}
+
 			if(!empty($ipAddress)){
-				$this->cli->sudo("ifconfig lo:0 $ipAddress down");
+				$this->cli->sudo("ip addr del $ipAddress/24 dev lo");
 				return true;
 			}
 		}catch(\Exception $e){
-            $this->cli->debug("ifconfig command", $e->getMessage());
+            $this->cli->debug("ip command", $e->getMessage());
         }
 
 		return false;

@@ -368,6 +368,7 @@ class DnsTool extends Tool
                 return $a;
             }, []);
         }catch(DockerContainerNotFoundException $e){
+            $this->cli->print("\n{red}Error{red}: The DNS service is not running, cannot query information\n");
             $ipDomainMap = [];
         }
 
@@ -385,7 +386,7 @@ class DnsTool extends Tool
                 $address->ping();
 
                 $exists = array_key_exists($ipAddress, $ipDomainMap);
-                $found = in_array($domain, $ipDomainMap[$ipAddress]);
+                $found = array_key_exists($ipAddress, $ipDomainMap) ? in_array($domain, $ipDomainMap[$ipAddress]) : false;
                 $enabled = $exists && $found ? 'yes' : '{red}no{end}';
 
                 $status = '{grn}good{end}';
