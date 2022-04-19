@@ -23,7 +23,7 @@ class DnsService implements DnsServiceInterface
     private function getSupportedMethod()
     {
         if(NetworkSetupMethod::supported($this->cli)){
-            return container(MacOsDnsMethod::class);
+            return container(NetworkSetupMethod::class);
         }
 
         if(SystemdResolvedMethod::supported($this->cli)){
