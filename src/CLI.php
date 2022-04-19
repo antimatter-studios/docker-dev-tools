@@ -343,22 +343,12 @@ class CLI
 
 	public function passthru(string $command, bool $throw=true): int
 	{
-		static $ctr = 0;
-
 		$stdout = $this->getChannel('stdout');
 		$stderr = $this->getChannel('stderr');
+		
+		$this->exec($command, $stdout, $stderr);
 
-		$this->channels['debug']->write("{red}[PASSTHRU(>>ctr:$ctr)]:{end} $command\n");
-
-		$this->runProcess($command, $stdout, $stderr);
-
-		$code = $this->getExitCode();
-
-		$this->channels['debug']->write("{red}[PASSTHRU(<<ctr:$ctr)]:{end} {blu}Return Code:{end} $code {blu}Error Output:{end} '".self::$stderr."'");
-
-		$ctr++;
-
-		return $code;
+		return $this->getExitCode();
 	}
 
 	public function print(?string $string=''): string
