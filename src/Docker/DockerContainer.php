@@ -116,20 +116,16 @@ class DockerContainer
 
     public function getId(): string
     {
-        try{
-            if($this->id) return $this->id;
+        if($this->id) return $this->id;
 
-            $id = $this->docker->inspect('container', $this->name, '{{json .Id}}');
-            $id = current($id);
+        $id = $this->docker->inspect('container', $this->name, '{{json .Id}}');
+        $id = current($id);
 
-            if(empty($id)){
-                throw new \Exception("There was no container found");
-            }
-
-            return $id;
-        }catch(\Exception $e){
+        if(empty($id)){
             throw new DockerContainerNotFoundException($this->name);
         }
+
+        return $id;
     }
 
     public function getName(): string
