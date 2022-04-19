@@ -8,4 +8,9 @@ class DockerNotRunningException extends \Exception
     {
         parent::__construct("Docker is not running. $message", $code, $previous);
     }
+
+    static public function match($input): bool
+    {
+        return strpos($input, 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock') !== false;
+    }
 }
