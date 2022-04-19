@@ -51,7 +51,6 @@ class DnsMasqService
             [],
             [],
             ["$dnsIpAddress:53:53/udp"],
-            //["53:53/udp"],
         );
     }
 
