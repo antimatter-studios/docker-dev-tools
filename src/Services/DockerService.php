@@ -6,10 +6,12 @@ use DDT\CLI;
 use DDT\CLI\Output\DockerFilterChannel;
 use DDT\CLI\Output\StringChannel;
 use DDT\Config\DockerConfig;
+use DDT\Contract\ChannelInterface;
 use DDT\Docker\DockerRunProfile;
 use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerMissingException;
+use DDT\Exceptions\Docker\DockerNotRunningException;
 
 class DockerService
 {
@@ -27,26 +29,11 @@ class DockerService
 	const DOCKER_PORT_ALREADY_IN_USE = "Something is already using port '{port}' on this machine, please stop that service and try again";
 	const DOCKER_NETWORK_ALREADY_ATTACHED = "/endpoint with name (?<container>[^\s].*) already exists in network (?<network>[^\s].*)/";
 
-	// TODO: I don't like this function much
-	private function parseErrors(string $message, array $tokens = []): string
+	private function parseErrors(string $message): void
 	{
-
-		if(strpos($message, "Got permission denied while trying to connect to the Docker daemon socket") !== false){
-			$message = self::DOCKER_NOT_RUNNING;
+		if(DockerNotRunningException::match($message)){
+			throw new DockerNotRunningException();
 		}
-
-		if(strpos($message, "address already in use") !== false){
-			$message = self::DOCKER_PORT_ALREADY_IN_USE;
-		}
-
-		foreach($tokens as $search => $replace){
-			if(is_array($replace)){
-				$replace = implode(", ", $replace);
-			}
-			$message = str_replace($search, $replace, $message);
-		}
-
-		return $message;
 	}
 
 	private function isError(string $message, string $pattern): bool
@@ -114,15 +101,17 @@ class DockerService
 		return $this->exitCode;
 	}
 
-	public function exec(string $command)
+	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
 	{
 		$command = $this->toCommandLine($command);
 
-		$stdout = new StringChannel();
-		$stderr = new StringChannel();
+		$stdout = $stdout ?? new StringChannel();
+		$stderr = $stderr ?? new StringChannel();
 		$filter = new DockerFilterChannel($stderr);
 		$output = $this->cli->exec($command, $stdout, $filter);
-		
+
+		$this->parseErrors($output);
+
 		$this->exitCode = $this->cli->getExitCode();
 		
 		return $output;
@@ -130,21 +119,14 @@ class DockerService
 
 	public function passthru(string $command): int
 	{
-		try{
-			$command = $this->toCommandLine($command);
+		$stdout = $this->cli->getChannel('stdout');
+		$stderr = $this->cli->getChannel('stderr');
+		
+		$this->exec($command, $stdout, $stderr);
 
-			$stdout = $this->cli->getChannel('stdout');
-			$stderr = $this->cli->getChannel('stderr');
-			$filter = new DockerFilterChannel($stderr);
-			$this->cli->exec($command, $stdout, $filter);
-			
-			$this->exitCode = $this->cli->getExitCode();
-
-			return $this->exitCode;
-		}catch(\Exception $e){
-			throw new DockerException($e->getMessage(), $e->getCode(), $e->getPrevious());
-		}
+		return $this->getExitCode();
 	}
+
 	public function stop(string $containerId): bool 
 	{
 		try{
