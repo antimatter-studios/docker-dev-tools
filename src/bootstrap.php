@@ -6,13 +6,11 @@ use DDT\Debug;
 use DDT\Text\Text;
 use DDT\Text\Table;
 use DDT\Container;
-use DDT\DistroDetect;
 use DDT\Tool\EntrypointTool;
 use DDT\Config\SystemConfig;
 use DDT\Contract\IpServiceInterface;
 use DDT\Contract\DnsServiceInterface;
 use DDT\Contract\ToolRegistryInterface;
-use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Container\ContainerNotInstantiatedException;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
@@ -30,57 +28,55 @@ try{
 	if (version_compare(phpversion(), '7.2', '<')) {
 		die("Sorry but the tools require at least PHP 7.2, you have ".phpversion()." installed\n");
 	}
-
+	
 	spl_autoload_register(function ($fqcn) {
 		if(in_array($fqcn, ['string'])) return false;
-
+	
 		// Chop off the DDT namespace to get the right filename
 		$class = array_slice(explode('\\', $fqcn), 1);
 		$class = implode('/', $class);
-
+	
 		$file = __DIR__ . '/' . $class . '.php';
-
+	
 		if (strlen($class) && file_exists($file)) {
 			return require_once($file);
 		}
-		
+	
 		return false;
 	});
-
+	
 	register_shutdown_function(function(){
+		//print("HERE!!!");
 		$error = error_get_last();
-
+	
 		//check if it's a core/fatal error, otherwise it's a normal shutdown
 		if($error !== NULL && $error['type'] === E_ERROR) {
 			print("There was a fatal error that could not be handled: " . $error['message'] . "\n");
 		}
 	});
-
+	
 	function container(?string $ref = null, ?array $args = [])
 	{
 		if(Container::$instance === null){
 			throw new ContainerNotInstantiatedException();
 		}
-
+	
 		return is_string($ref)
 			? Container::$instance->get($ref, $args)
 			: Container::$instance;
 	}
-
+	
 	function config(string $key)
 	{
 		return container("config.$key");
 	}
-
-	$text = new Text([
-		// NOTE: look in the text renderer for the array keys if you want to customise the colour palette
-	]);
-
+	
+	$text = new Text();
 	$cli = new CLI($argv, $text);
-
+	
 	$container = new Container($cli, [Autowire::class, 'instantiator']);
 	$container->singleton(CLI::class, $cli);
-
+	
 	// Add all the services which we only want to instantiate once since they are singular in nature
 	$container->singleton(ConfigGeneratorService::class, ConfigGeneratorService::class);
 	$container->singleton(DnsMasqService::class, DnsMasqService::class);
@@ -88,25 +84,25 @@ try{
 	$container->singleton(GitService::class, GitService::class);
 	$container->singleton(ProxyService::class, ProxyService::class);
 	$container->singleton(RunService::class, RunService::class);
-
+	
 	// We have to set this value really early so it's useful when the autowirer starts using it
 	Debug::setState($cli->getArg('--debug', false));
-
+	
 	$container->bind(Table::class, function() use ($text) {
 		$table = new Table($text);
 		$table->setRightPadding(5);
 		$table->setBorder('|', '-');
 		$table->setNumHeaderRows(1);    
-		
+	
 		return $table;
 	});
-
+	
 	// This should move into the entrypoint but for now I'll specify this here
 	// and mark it up as a future TODO item
 	if((bool)$cli->getArg('--version', false, true)){
 		die("1.0\n");
 	}
-
+	
 	// Set the container to have some default values which can be extracted on demand
 	// This just centralises all the defaults in one place, there are other ways to do it
 	// But this just seems to be a nice place since you're also setting up the rest of the di-container
@@ -127,52 +123,50 @@ try{
 	
 	$container->singleton(SystemConfig::class, function() {
 		static $c = null;
-		
+	
 		if($c === null) {
 			$installConfig = config('file.system');
 			$defaultConfig = config('file.default');
-
+	
 			if(file_exists($installConfig)){
 				$c = new SystemConfig($installConfig, false);
 			}else{
 				$c = new SystemConfig($defaultConfig, true);
 			}
 		}
-
+	
 		return $c;
 	});
-
+	
 	$container->singleton(IpServiceInterface::class, \DDT\Network\IpService::class);
 	$container->singleton(DnsServiceInterface::class, \DDT\Network\DnsService::class);
-
+	
 	$entrypoint = container(EntrypointTool::class);
 	$container->singleton(ToolRegistryInterface::class, $entrypoint);
-
+	
 	$entrypoint->registerTools("Built-in Tools", __DIR__, "\\DDT\\Tool\\");
 	
 	$extensionBootstraps = glob(__DIR__ . '/../extensions/**/src/bootstrap.php');
+	
 	foreach($extensionBootstraps as $bootstrap){
 		require_once($bootstrap);
 	}
 	
 	// Before handling the request, check to see if the timeout passes and self update
 	$entrypoint->getTool('self-update')->run();
-
+	
 	// But in the end, handle the request made by the user
 	$entrypoint->handle();
-}catch(ConfigMissingException $e){
-	$cli->print($e->getTraceAsString());
-	$cli->failure(get_class($e) . $text->box($e->getMessage(), "wht", "red"));
-}catch(ConfigInvalidException $e){
-	$cli->failure($text->box($e->getMessage(), "wht", "red"));
-}catch(ToolNotFoundException $e){
-	$cli->failure($text->box($e->getMessage(), "wht", "red"));
-}catch(ToolNotSpecifiedException $e){
-	$cli->failure($text->box($e->getMessage(), "wht", "red"));
-}catch(ToolCommandNotFoundException $e){
-	$cli->failure($text->box($e->getMessage(), "wht", "red"));
-}catch(ProjectConfigUpgradeException $e){
-	$cli->failure($text->box($e->getMessage(), "wht", "red"));
-}catch(Exception $e){
-	$cli->failure($text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), "wht", "red"));
+}catch(\Throwable $e){
+	$cli->debug(get_class($e), $e->getTraceAsString());
+
+	$message = $text->box(get_class($e) . ":\n" . $e->getMessage(), "wht", "red");
+
+	switch(true){
+		case $e instanceof Exception:
+			$message = $text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), "wht", "red");
+			break;
+	}
+
+	$cli->failure($message);
 }
