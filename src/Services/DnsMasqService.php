@@ -105,7 +105,6 @@ class DnsMasqService
 
         $filename = "/etc/dnsmasq.d/upstream_dns_".str_replace(['.',':'],'_',$ipAddress).".conf";
         $container->exec("/bin/sh -c 'echo 'server=$ipAddress' >> $filename'");
-        $container->exec("/bin/sh -c 'echo 'dns-loop-detect' >> $filename'");
 
         return $container->getExitCode() === 0;
     }

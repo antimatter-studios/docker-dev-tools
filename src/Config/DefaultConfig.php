@@ -8,11 +8,16 @@ class DefaultConfig extends BaseConfig
 
     public function __construct ()
     {
-        parent::__construct(container('config.tools.path') . '/' . $this->getDefaultFilename(), true);
+        parent::__construct(config('tools.path') . '/' . $this->getDefaultFilename(), true);
     }
 
 	public function getDefaultFilename(): string
 	{
 		return self::defaultFilename;
+	}
+
+	static public function instance(): DefaultConfig
+	{
+		return container(DefaultConfig::class);
 	}
 }
