@@ -1,7 +1,7 @@
 {
     "description": "The Tools Configuration file",
     "type": "system",
-    "version": "1.0",
+    "version": "3",
     "ip_address": "10.254.254.254",
     "dns": {
         "docker_image": "ghcr.io/antimatter-studios\/docker-dns:latest",
@@ -16,5 +16,20 @@
         "docker_image": "ghcr.io/antimatter-studios\/docker-config-gen:latest",
         "container_name": "ddt-config-gen",
         "network": []
+    },
+    "projects": {
+        "paths": [
+            {
+                "path": "$HOME/projects"
+            },{ 
+                "path": "$HOME/projects/another-folder", 
+                "group": "personal" 
+            }
+        ],
+        "list": {
+            "project-a": {},
+            "project-b": {},
+            "project-c": {}
+        }
     }
 }
