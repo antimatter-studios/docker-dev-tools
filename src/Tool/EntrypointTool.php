@@ -179,7 +179,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
         $tools = glob($path . "/Tool/?*Tool.php");
         $tools = array_map(function($file) use ($namespace) {
-            return ['name' => str_replace(['tool', '.php'], '', strtolower(basename($file))), 'namespace' => $namespace, 'path' => realpath($file)];
+            return ['name' => str_replace(['Tool', '.php'], '', basename($file)), 'namespace' => $namespace, 'path' => realpath($file)];
         }, $tools);
 
         $this->tools[] = ['name' => $name, 'tools' => $tools];
@@ -190,7 +190,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     public function listTools(): array
     {
         $list = array_map(function($t){ 
-            return ['name' => str_replace(['tool', '.php'], '', strtolower(basename($t))), 'path' => $t];
+            return ['name' => str_replace(['Tool', '.php'], '', basename($t)), 'path' => $t];
         }, glob(__DIR__ . "/../Tool/?*Tool.php"));
         
         return [];
@@ -213,7 +213,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
         foreach($this->tools as $group){
             foreach($group['tools'] as $tool){
-                if($tool['name'] === strtolower($name)){
+                if($tool['name'] === $name){
                     return container("{$tool['namespace']}\\{$name}Tool");
                 }
             }
