@@ -25,7 +25,7 @@ class TerraformTool extends Tool
 
     public function __construct(CLI $cli, AwsCredsTool $awsCredsTool) 
     {
-    	parent::__construct('aws', $cli);
+    	parent::__construct('terraform', $cli);
         $this->setToolCommand('run', null, true);
         
         $this->awsCredsTool = $awsCredsTool;
@@ -40,19 +40,15 @@ class TerraformTool extends Tool
     {
         return [
             'title' => 'Terraform Docker Wrapper',
-            'short_description' => 'A tool to output into the shells environment AWS credentials from a chosen profile',
+            'short_description' => 'A tool to assist in using terraform with aws profiles together in a simpler way',
             'description' => [
-                "This will extract aws credentials and apply all the arguments in a way which will run terraform correctly",
+                "",
             ],
             'examples' => [
-                "Apply: ddt terraform <aws-profile> <path-to-project> apply [EXTRA_ARGS...]",
-                "Init: ddt terraform <aws-profile> <path-to-project> init",
-                "Destroy: ddt terraform <aws-profile> <path-to-project> apply -destroy [EXTRA_ARGS...]",
-                "Validate: ddt terraform <aws-profile> <path-to-project> validate",
+                
             ],
             'notes' => [
-                "AWS_PROFILE_NAME is the name of the aws profile in the \$HOME/.aws/credentials file",
-                "EXTRA_ARGS are optional, they can be '-var aws_region=eu-west-1' and other terraform parameters that it accepts for the command being run",
+                "This tool is not yet usable by other people",
             ],
         ];
     }
