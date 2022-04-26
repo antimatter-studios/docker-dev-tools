@@ -349,6 +349,13 @@ class CLI
 		return $this->getExitCode();
 	}
 
+	public function varDump(...$expression): void
+	{
+		ob_start();
+		var_dump(func_get_args());
+		$this->print(ob_get_clean());
+	}
+
 	public function print(?string $string=''): string
 	{
 		return $this->channels['stdout']->write($string);
