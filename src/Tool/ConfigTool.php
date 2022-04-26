@@ -185,7 +185,7 @@ class ConfigTool extends Tool
 				if(call_user_func($callback, $config, $print1)){
 					$print1("Upgrade was completed\n\n");
 				}else{
-					$print1("{red}This upgrade was skipping...{end}\n\n");
+					$print1("{red}This upgrade was skipped...{end}\n\n");
 				}
 			}catch(\Exception $e){
 				$print1("{red}" . $e->getMessage() . "{end}\n");
@@ -275,15 +275,26 @@ class ConfigTool extends Tool
 	private function upgrade_v2_projects(SystemConfig $config, callable $print): bool
 	{
 		$version = $config->getVersion();
-		$after = 'projects-v2';
-		
-		$afterConfig = $config->getKey($after);
 
-		if($version < 3){
-			$print("This upgrade only applies to version 1\n");
+		// This upgrade only applies to versions less than 3
+		if($version >= 3){
+			$print("This upgrade only applies to less than version 3\n");
+			return false;
 		}
 
-		$print("We do nothing here\n");
+		$before = '.projects-v2';
+		$after = '.projects.list';
+		
+		$beforeConfig = $config->getKey($before);
+
+		// we put the entire contents of .projects-v2 into .projects.list
+		$config->setKey($after, $beforeConfig);
+		$config->deleteKey($before);
+		$config->setKey('.version', 3);
+
+		if(!$config->write()){
+			throw new ProjectConfigUpgradeFailureException($before, $after);
+		}
 
 		return true;
 	}
