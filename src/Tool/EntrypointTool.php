@@ -148,16 +148,12 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
                     continue;
                 }
 
-                try{
-                    /** @var Tool */
-                    $instance = $this->getToolByClass($tool['name']);
-                    $metadata = $instance->getToolMetadata();
-                    $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
+                /** @var Tool */
+                $instance = $this->getToolByClass($tool['class']);
+                $metadata = $instance->getToolMetadata();
+                $shortDescription = array_key_exists('short_description', $metadata) ? $metadata['short_description'] : $metadata['description'];
 
-                    $options[] = "\t - {yel}{$instance->getToolName()}{end}: {$shortDescription}";
-                }catch(Exception $e){
-                    // do nothing because we just want to list the tools, not run them
-                }
+                $options[] = "\t - {yel}{$instance->getToolName()}{end}: {$shortDescription}";
             }
             $options[] = "";
         }
@@ -173,13 +169,16 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         ];
     }
 
-    public function registerTools($name, $path, $namespace)
+    public function registerTools($name, $path, $namespace): array
     {
         $namespace = rtrim($namespace, "\\");
 
         $tools = glob($path . "/Tool/?*Tool.php");
-        $tools = array_map(function($file) use ($namespace) {
-            return ['name' => str_replace(['Tool', '.php'], '', basename($file)), 'namespace' => $namespace, 'path' => realpath($file)];
+        $tools = array_map(function($path) use ($namespace) {
+            $file = basename($path);
+            $class = str_replace('.php', '', $file);
+            $name = str_replace('tool', '', strtolower($class));
+            return ['name' => $name, 'namespace' => $namespace, 'class' => $class, 'path' => realpath($path)];
         }, $tools);
 
         $this->tools[] = ['name' => $name, 'tools' => $tools];
@@ -205,7 +204,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         $name = ucwords($name);
         $name = str_replace(" ", "", $name);
 
-        return $this->getToolByClass($name);
+        return $this->getToolByClass($name . "Tool");
     }
 
     public function getToolByClass(string $name): Tool
@@ -214,8 +213,8 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
         foreach($this->tools as $group){
             foreach($group['tools'] as $tool){
-                if($tool['name'] === $name){
-                    return container("{$tool['namespace']}\\{$name}Tool");
+                if($tool['class'] === $name){
+                    return container("{$tool['namespace']}\\{$tool['class']}");
                 }
             }
         }
