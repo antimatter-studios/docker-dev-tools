@@ -32,12 +32,6 @@ abstract class Tool
         'getToolName',
     ];
 
-    /** @var bool $debug Whether to write or process any extra debugging info */
-    private $debug = false;
-
-    /** @var bool $quiet Whether or not to silence any output that shouldn't hit the terminal cause it's not wanted */
-    private $quiet = false;
-
     private $autowire;
 
     public function __construct(string $name, CLI $cli)
@@ -68,16 +62,6 @@ abstract class Tool
     public function getToolEntrypoint(): string
     {
         return $this->getEntrypoint() . " " . $this->getToolName();
-    }
-
-    public function setDebug(bool $enable): void
-    {
-        $this->debug = $enable;
-    }
-
-    public function setQuiet(bool $enable): void
-    {
-        $this->quiet = $enable;
     }
 
     public function setToolCommand(string $name, ?string $method=null, bool $isDefault=false): void
