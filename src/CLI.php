@@ -38,9 +38,7 @@ class CLI
 		$this->channels['stderr'] = new StderrChannel($this->terminal, $this->text);
 
 		// These custom channels should not be created here
-		// if some part of teh code wants them, it should create them itself
-		$this->channels['quiet'] = new CustomChannel($this->channels['stdout'], 'quiet');
-		$this->channels['realtime_exec'] = new CustomChannel($this->channels['stdout'], 'realtime_exec');
+		// if some part of the code wants them, it should create them itself
 		$this->channels['debug'] = new DebugChannel($this->channels['stderr'], $this->text);
 
 		$this->isRoot();
@@ -364,11 +362,6 @@ class CLI
 	public function debug(string $type, ?string $string='', ?array $params=[])
 	{
 		return $this->channels['debug']->write("{red}[".strtoupper($type)."]{end}: " . $string, $params);
-	}
-
-	public function quiet(?string $string='')
-	{
-		return $this->channels['quiet']->write($this->text->write($string));
 	}
 
 	public function success(?string $string=null)
