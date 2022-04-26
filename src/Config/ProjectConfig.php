@@ -14,7 +14,8 @@ use DDT\Model\Project;
 
 class ProjectConfig
 {
-	private $key = 'projects-v2';
+	private $version = 3;
+	private $key = 'projects';
 
 	/** @var SystemConfig $config */
 	private $config;
@@ -23,15 +24,15 @@ class ProjectConfig
 	{
 		$this->config = $config;
 
-		// Detect v1 projects and push the user to upgrade the configuration
-		if($this->config->getKey('projects')){
+		// If this object is a higher version than the configuration
+		if($this->version > $this->config->getVersion()){
 			throw new ProjectConfigUpgradeException();
 		}
 	}
 
 	public function listProjects(): array
 	{
-		$list = $this->config->getKey($this->key) ?? [];
+		$list = $this->config->getKey("$this->key.list") ?? [];
 
 		return array_map(function($item){
 			return container(Project::class, $item);
