@@ -7,7 +7,6 @@ use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Autowire\CannotAutowireParameterException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
-use Exception;
 
 class EntrypointTool extends Tool implements ToolRegistryInterface
 {
@@ -16,12 +15,11 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     public function __construct(CLI $cli)
     {
         parent::__construct('entrypoint', $cli);
-        $this->setToolCommand('--version', 'getVersion');
     }
 
     public function getVersion(SystemConfig $config): string
     {
-        return $config->getVersion();
+        return (string)$config->getVersion();
     }
 
     public function handle()
@@ -30,11 +28,14 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
             $requestedCommand = null;
             $methodName = null;
 
-            // TODO: need to support ddt --version commands
-            // right now the entrypoint is too linear in that it assumes everything running is
-            // inside a tool, but what if the entrypoint has it's own functionality too?
-            // so this is too much of a customised setup, I would like to build a more 
-            // generic code which can run with flexible argument streams
+            // If there are no arguments, output the default help
+            if($this->cli->countArgs() === 0){
+                return $this->cli->print($this->help());
+            }
+
+            if($this->cli->getArg('--version', false, true)){
+                return $this->cli->print($this->invoke('getVersion'));
+            }
 
             $toolArg = $this->cli->shiftArg();
 

@@ -97,13 +97,7 @@ try{
 	
 		return $table;
 	});
-	
-	// This should move into the entrypoint but for now I'll specify this here
-	// and mark it up as a future TODO item
-	if((bool)$cli->getArg('--version', false, true)){
-		die("1.0\n");
-	}
-	
+		
 	// Set the container to have some default values which can be extracted on demand
 	// This just centralises all the defaults in one place, there are other ways to do it
 	// But this just seems to be a nice place since you're also setting up the rest of the di-container
