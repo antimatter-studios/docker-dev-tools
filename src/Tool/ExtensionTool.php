@@ -180,7 +180,7 @@ class ExtensionTool extends Tool
 
     public function update(string $name)
     {
-        $this->cli->failure('TODO: tool command: '.__METHOD__." is not implemented");
+        $this->cli->failure('TODO: tool command: '.__METHOD__." for extension '$name' is not implemented");
         /*
         NEW CODE
         if($name = $cli->getArg("update")){
