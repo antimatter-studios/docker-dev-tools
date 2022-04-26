@@ -187,13 +187,14 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         return $this->tools;
     }
 
-    public function listTools(): array
+    public function registerExtensions(): void
     {
-        $list = array_map(function($t){ 
-            return ['name' => str_replace(['Tool', '.php'], '', basename($t)), 'path' => $t];
-        }, glob(__DIR__ . "/../Tool/?*Tool.php"));
-        
-        return [];
+        $extensionBootstraps = glob(config('tools.path') . '/extensions/**/src/bootstrap.php');
+	
+        $entrypoint = $this;
+        foreach($extensionBootstraps as $bootstrap){
+            require_once($bootstrap);
+        }
     }
 
     public function getTool(string $name): Tool

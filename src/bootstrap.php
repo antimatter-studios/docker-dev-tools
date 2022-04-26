@@ -143,14 +143,9 @@ try{
 	
 	$entrypoint = container(EntrypointTool::class);
 	$container->singleton(ToolRegistryInterface::class, $entrypoint);
-	
+
 	$entrypoint->registerTools("Built-in Tools", __DIR__, "\\DDT\\Tool\\");
-	
-	$extensionBootstraps = glob(__DIR__ . '/../extensions/**/src/bootstrap.php');
-	
-	foreach($extensionBootstraps as $bootstrap){
-		require_once($bootstrap);
-	}
+	$entrypoint->registerExtensions();
 	
 	// Before handling the request, check to see if the timeout passes and self update
 	$entrypoint->getTool('self-update')->run();
