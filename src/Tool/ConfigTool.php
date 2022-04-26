@@ -3,6 +3,7 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
+use DDT\CLI\Output\CustomChannel;
 use DDT\Config\SystemConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeFailureException;
 use DDT\Text\Text;
@@ -24,11 +25,7 @@ class ConfigTool extends Tool
 
 		$this->text = $text;
 
-		foreach(['filename', 'reset', 'get', 'delete', 'set', 'validate', 'version'] as $command){
-			$this->setToolCommand($command);
-		}
-
-		foreach(['upgrade-projects'] as $command){
+		foreach(['filename', 'reset', 'get', 'delete', 'set', 'validate', 'version', 'upgrade'] as $command){
 			$this->setToolCommand($command);
 		}
     }
@@ -164,82 +161,130 @@ class ConfigTool extends Tool
 		return $config->getVersion() . "\n";
 	}
 
-	public function upgradeProjects(SystemConfig $config)
+	public function upgrade(SystemConfig $config)
 	{
-		$upgradeSequence = [
-			'projects' => 'projects-v2',
+		$versions = [
+			'version 1 projects to version 2' => [$this, 'upgrade_v1_projects'],
+			'version 2 projects to version 3' => [$this, 'upgrade_v2_projects'],
 		];
-		
-		foreach($upgradeSequence as $before => $after){
-			$beforeConfig = $config->getKey($before);
-			$afterConfig = $config->getKey($after);
 
-			if($beforeConfig && $afterConfig){
-				if($this->cli->ask("This upgrade between '$before' and '$after' has run before, but the old key was left in the configuration file, do you want to delete it?", ['yes', 'no']) === 'yes'){
-					$config->deleteKey($before);
-					$config->write();
-					continue;
+		$print = function(string $text, int $indent = 0) {
+			$prefix = str_repeat('  ', $indent);
+			$prefix = strlen($prefix) ? ($prefix . ' - ') : $prefix;
+			$this->cli->print($prefix . $text);
+		};
+
+		$print1 = function(string $text) use ($print) {
+			$print($text, 1);
+		};
+
+		foreach($versions as $reason => $callback){
+			try{
+				$print("Upgrading '$reason'...\n");
+
+				if(call_user_func($callback, $config, $print1)){
+					$print1("Upgrade was completed\n\n");
 				}else{
-					$this->cli->failure("You have chosen to not delete it, but we cannot continue, either remove it yourself, or agree to delete it and try again");
+					$print1("{red}This upgrade was skipping...{end}\n\n");
 				}
-			}
-
-			if(!$beforeConfig){
-				$this->cli->print("Upgrade between '$before' and '$after' was run previously, skipping...\n");
-				continue;
-			}
-
-			if($afterConfig){
-				throw new \Exception("Cannot upgrade between '$before' to '$after' because the '$after' key already exists, have you manually edited the file? Please (re)move this key and try again");
-			}
-
-			$this->cli->print("{blu}Upgrading{end}: from '$before' to '$after'\n");
-
-			switch($before) {
-				case "projects":
-					$afterConfig = [];
-
-					foreach($beforeConfig as $group => $projectList){
-						foreach($projectList as $name => $project){
-							$project['path'] = rtrim($project['path'], '/');
-
-							if(array_key_exists($project['path'], $afterConfig)){
-								$afterConfig[$project['path']]['group'][] = $group;
-							}else{
-								$newProject = [
-									'name' => $name,
-									'type' => $project['type'],
-									'path' => $project['path'],
-									'group' => [$group],
-								];
-	
-								if(array_key_exists('repo', $project)){
-									if(is_string($project['repo'])){
-										$repo = ['vcs' => $project['repo'], 'remote' => 'origin'];
-									}else if(is_array($project['repo'])){
-										$repo = ['vcs' => $project['repo']['url'], 'remote' => $project['repo']['remote']];
-									}else{
-										$repo = [];
-									}
-	
-									$newProject = array_merge($newProject, $repo);
-								}
-	
-								$afterConfig[$project['path']] = $newProject;
-							}
-						}
-					}
-
-					$config->setKey($after, $afterConfig);
-					if(!$config->write()){
-						throw new ProjectConfigUpgradeFailureException($before, $after);
-					}else{
-						$this->cli->print("{grn}Upgrading '$before' to '$after' was apparently succesful{end}\n");
-					}
-					break;
+			}catch(\Exception $e){
+				$print1("{red}" . $e->getMessage() . "{end}\n");
+				$this->cli->die();
 			}
 		}
 
-		$this->cli->success("All Upgrades were apparently completed\n");
+		$print("{grn}All upgrades were run successfully{end}\n");
+	}
+
+	private function upgrade_v1_projects(SystemConfig $config, callable $print): bool
+	{
+		$version = $config->getVersion();
+		$before = 'projects';
+		$after = 'projects-v2';
+		
+		$beforeConfig = $config->getKey($before);
+		$afterConfig = $config->getKey($after);
+
+		if($version > 1){
+			$print("This upgrade only applies to version 1\n");
+			return false;
+		}
+
+		if($beforeConfig && $afterConfig){
+			if($this->cli->ask("This upgrade between '$before' and '$after' has run before, but the old key was left in the configuration file, do you want to delete it?", ['yes', 'no']) === 'yes'){
+				$config->deleteKey($before);
+				$config->write();
+			}else{
+				$print("{red}You have chosen to not delete it, but we cannot continue, either remove it yourself, or agree to delete it and try again{end}\n");
+			}
+			return false;
+		}
+
+		if(!$beforeConfig){
+			$print("Upgrade between '$before' and '$after' was run previously\n");
+			return false;
+		}
+
+		if($afterConfig){
+			throw new \Exception("Cannot upgrade between '$before' to '$after' because the '$after' key already exists, have you manually edited the file? Please (re)move this key and try again");
+		}
+
+		$print("{blu}Upgrading{end}: from '$before' to '$after'\n");
+
+		$afterConfig = [];
+
+		foreach($beforeConfig as $group => $projectList){
+			foreach($projectList as $name => $project){
+				$project['path'] = rtrim($project['path'], '/');
+
+				if(array_key_exists($project['path'], $afterConfig)){
+					$afterConfig[$project['path']]['group'][] = $group;
+				}else{
+					$newProject = [
+						'name' => $name,
+						'type' => $project['type'],
+						'path' => $project['path'],
+						'group' => [$group],
+					];
+
+					if(array_key_exists('repo', $project)){
+						if(is_string($project['repo'])){
+							$repo = ['vcs' => $project['repo'], 'remote' => 'origin'];
+						}else if(is_array($project['repo'])){
+							$repo = ['vcs' => $project['repo']['url'], 'remote' => $project['repo']['remote']];
+						}else{
+							$repo = [];
+						}
+
+						$newProject = array_merge($newProject, $repo);
+					}
+
+					$afterConfig[$project['path']] = $newProject;
+				}
+			}
+		}
+
+		$config->setKey($after, $afterConfig);
+		if(!$config->write()){
+			throw new ProjectConfigUpgradeFailureException($before, $after);
+		}
+
+		return true;
+	}
+
+	private function upgrade_v2_projects(SystemConfig $config, callable $print): bool
+	{
+		$version = $config->getVersion();
+		$after = 'projects-v2';
+		
+		$afterConfig = $config->getKey($after);
+
+		if($version < 3){
+			$print("This upgrade only applies to version 1\n");
+		}
+
+		$print("We do nothing here\n");
+
+		return true;
 	}
 }
