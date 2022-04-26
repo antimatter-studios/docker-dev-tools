@@ -4,9 +4,10 @@ namespace DDT;
 
 class Debug
 {
-    static public $enabled = false;
-    
-    static public function setState($enabled)
+    static public $enabled = [];
+    static private $cli;
+
+    public function __construct(CLI $cli, $enabled)
     {
         if($enabled === false) return;
 
@@ -16,17 +17,21 @@ class Debug
             self::$enabled = array_map('trim', explode(',', $enabled));
         }
 
+        self::$cli = container(CLI::class);
+        self::$cli->enableErrors(true);
+        self::$cli->toggleChannel('debug', true);
+
         if(is_array(self::$enabled) && in_array('container', self::$enabled)){
-            container(CLI::class)->getChannel('container')->enable(true);
+            $cli->getChannel('container')->enable(true);
         }
     }
-
+    
     static public function dump($filter, $mixed)
     {
-        if(is_array(self::$enabled)){
-            if(in_array($filter, self::$enabled) || in_array('verbose', self::$enabled)){
-                is_scalar($mixed) ? print("$mixed\n") : var_dump($mixed);
-            }
+        $cli = self::$cli ?: container(CLI::class);
+
+        if(in_array($filter, self::$enabled) || in_array('verbose', self::$enabled)){
+            is_scalar($mixed) ? $cli->print("$mixed\n") : $cli->varDump($mixed);
         }
     }
 }

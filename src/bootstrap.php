@@ -75,7 +75,11 @@ try{
 	$cli = new CLI($argv, $text);
 	
 	$container = new Container($cli, [Autowire::class, 'instantiator']);
+	$container->singleton(Container::class, $container);
 	$container->singleton(CLI::class, $cli);
+
+	// We have configure this really early so it's useful when the autowirer starts using it
+	$debug = container(Debug::class, ['cli' => $cli, 'enabled' => $cli->getArg('--debug', false, true)]);
 	
 	// Add all the services which we only want to instantiate once since they are singular in nature
 	$container->singleton(ConfigGeneratorService::class, ConfigGeneratorService::class);
