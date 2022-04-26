@@ -153,6 +153,10 @@ try{
 	$message = $text->box(get_class($e) . ":\n" . $e->getMessage(), "wht", "red");
 
 	switch(true){
+		case $e instanceof ProjectConfigUpgradeException:
+			$message = $text->box("Project Configuration error:\n" . $e->getMessage(), "wht", "red");
+			break;
+
 		case $e instanceof Exception:
 			$message = $text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), "wht", "red");
 			break;
