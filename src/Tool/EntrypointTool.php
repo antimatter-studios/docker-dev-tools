@@ -16,46 +16,12 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     public function __construct(CLI $cli)
     {
         parent::__construct('entrypoint', $cli);
-
-        $this->setDebug((bool)$cli->getArg('--debug', false, true));
-        $this->setQuiet((bool)$cli->getArg('--quiet', false, true));
-
         $this->setToolCommand('--version', 'getVersion');
     }
 
     public function getVersion(SystemConfig $config): string
     {
         return $config->getVersion();
-    }
-
-    public function setDebug(bool $enable): void
-    {
-        $this->debug = $enable;
-        $this->cli->enableErrors($enable);
-        $this->cli->toggleChannel('debug', $enable);
-    }
-
-    public function getDebug(): bool
-    {
-        return $this->debug;
-    }
-
-    // TODO: decide what to do with the quiet mode, I don't think I ever
-    // used it for anything, despite it having a good premise at the beginning
-    // I think it turns out this functionality is not needed
-    public function setQuiet(bool $enable): void
-    {
-        $this->quiet = $enable;
-        $this->cli->toggleChannel('quiet', $enable);
-
-        if($enable){
-            $this->cli->stderr("{yel}[SYSTEM]:{end} Quiet output enabled\n");
-        }
-    }
-
-    public function getQuiet(): bool 
-    {
-        return $this->quiet;
     }
 
     public function handle()
