@@ -25,7 +25,7 @@ class ProjectConfig
 
 		// Detect v1 projects and push the user to upgrade the configuration
 		if($this->config->getKey('projects')){
-			throw new ProjectConfigUpgradeException('upgrade-projects');
+			throw new ProjectConfigUpgradeException();
 		}
 	}
 
