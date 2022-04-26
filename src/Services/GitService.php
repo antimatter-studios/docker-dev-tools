@@ -54,26 +54,22 @@ class GitService
 	 * @return bool
 	 * @throws DirectoryNotExistException
 	 */
-	public function pull(string $path, bool $quiet=false): bool
+	public function pull(string $path): bool
 	{
 		if(!is_dir($path)){
 			throw new DirectoryNotExistException($path);
 		}
 
-		$quiet = $quiet ? "&>/dev/null": "";
-
-		return $this->cli->passthru("git -C $path pull $quiet") === 0;
+		return $this->cli->passthru("git -C $path pull") === 0;
 	}
 
-	public function push(string $path, bool $quiet=false): bool
+	public function push(string $path): bool
 	{
 		if(!is_dir($path)){
 			throw new DirectoryNotExistException($path);
 		}
 
-		$quiet = $quiet ? "&>/dev/null": "";
-
-		return $this->cli->passthru("git -C $path push $quiet") === 0;
+		return $this->cli->passthru("git -C $path push") === 0;
 	}
 
 	public function status(string $path): string
