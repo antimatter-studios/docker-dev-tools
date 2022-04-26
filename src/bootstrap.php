@@ -89,9 +89,6 @@ try{
 	$container->singleton(ProxyService::class, ProxyService::class);
 	$container->singleton(RunService::class, RunService::class);
 	
-	// We have to set this value really early so it's useful when the autowirer starts using it
-	Debug::setState($cli->getArg('--debug', false));
-	
 	$container->bind(Table::class, function() use ($text) {
 		$table = new Table($text);
 		$table->setRightPadding(5);
