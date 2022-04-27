@@ -62,9 +62,9 @@ abstract class BaseConfig implements ConfigInterface
         $this->setKey('version', $version);
     }
     
-    public function getVersion(): string
+    public function getVersion(): int
 	{
-        $version = $this->getKey('version');
+        $version = (int)$this->getKey('version');
 
         if($version === null){
             throw new ConfigInvalidException("Every config must have a version field");
