@@ -109,9 +109,9 @@ class Project implements JsonSerializable
     public function toArray(): array
     {
         return [
-            "name" => $this->getName(),
-            "path" => $this->getPath(),
-            "group" => $this->getGroups(),
+            'name' => $this->getName(),
+            'path' => $this->getPath(),
+            'group' => $this->getGroups(),
         ];
     }
 
