@@ -15,7 +15,9 @@ use DDT\Model\Project;
 class ProjectConfig
 {
 	private $version = 3;
-	private $key = 'projects';
+	private $key = '.projects';
+	private $pathKey = '.projects.paths';
+	private $listKey = '.projects.list';
 
 	/** @var SystemConfig $config */
 	private $config;
@@ -32,7 +34,7 @@ class ProjectConfig
 
 	public function listProjects(): array
 	{
-		$list = $this->config->getKey("$this->key.list") ?? [];
+		$list = $this->config->getKey("$this->listKey") ?? [];
 
 		return array_map(function($item){
 			return container(Project::class, $item);
@@ -202,7 +204,7 @@ class ProjectConfig
 			'group' => $group, 
 		]);
 
-		$this->config->setKey($this->key, $projectList);
+		$this->config->setKey($this->listKey, $projectList);
 		
 		return $this->config->write();
 	}
@@ -218,7 +220,7 @@ class ProjectConfig
 				}
 
 				unset($projectList[$path]);
-				$this->config->setKey($this->key, $projectList);
+				$this->config->setKey($this->listKey, $projectList);
 				return $this->config->write();
 			}else{
 				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
