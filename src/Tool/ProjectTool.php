@@ -226,8 +226,11 @@ class ProjectTool extends Tool
         $path = rtrim($path, '/');
 
         if($project === null){
+            $name = null;
             $project = basename($path);
             $this->cli->print("No project name given, using directory name '$project'\n");
+        }else{
+            $name = $project;
         }
 
         if($vcs === null){
@@ -240,7 +243,7 @@ class ProjectTool extends Tool
         }
 
         try{
-            if($this->config->addProject($path, null, $group)){
+            if($this->config->addProject($path, $name, $group)){
                 $this->cli->print("{grn}The project '$project' with type '$type' in group '$group' was successfully added with the path '$path'{end}\n");
                 return true;
             }
