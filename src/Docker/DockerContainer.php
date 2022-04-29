@@ -118,10 +118,14 @@ class DockerContainer
     {
         if($this->id) return $this->id;
 
-        $id = $this->docker->inspect('container', $this->name, '{{json .Id}}');
-        $id = current($id);
-
-        if(empty($id)){
+        try{
+            $id = $this->docker->inspect('container', $this->name, '{{json .Id}}');
+            $id = current($id);
+    
+            if(empty($id)){
+                throw new DockerContainerNotFoundException($this->name);
+            }
+        }catch(\Exception $e){
             throw new DockerContainerNotFoundException($this->name);
         }
 
