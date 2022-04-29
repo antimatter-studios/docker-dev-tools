@@ -3,6 +3,7 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
+use DDT\CLI\ArgumentList;
 use DDT\Config\DockerConfig;
 use DDT\Services\DockerService;
 use DDT\Docker\DockerRunProfile;
@@ -130,16 +131,9 @@ class DockerTool extends Tool
     public function profile(string $name)
     {
         $profile = $this->config->readProfile($name);
-        $args = $this->cli->getArgList();
-        array_shift($args);
-
-        foreach($args as $index => $item){
-            $args[$index] = $item['value'] !== null ? "{$item['name']}={$item['value']}" : $item['name'];
-        }
-
-        $commandLine = implode(' ', $args);
+        $arguments = new ArgumentList($this->cli->getArgList(), 2);
 
         $this->docker->setProfile($profile);
-        $this->docker->passthru($commandLine);
+        $this->docker->passthru((string)$arguments);
     }
 }
