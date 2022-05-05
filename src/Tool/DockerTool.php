@@ -23,7 +23,11 @@ class DockerTool extends Tool
         $this->docker = $docker;
         $this->config = $config;
 
-        foreach(['add-profile', 'remove-profile', 'list-profile', 'profile'] as $command){
+        foreach(['add-profile', 'remove-profile', 'list-profile'] as $command){
+            $this->setToolCommand($command);
+        }
+
+        foreach(['use', 'sync'] as $command){
             $this->setToolCommand($command);
         }
     }
@@ -128,12 +132,19 @@ class DockerTool extends Tool
         }
     }
 
-    public function profile(string $name)
+    public function use(string $profileName): void
     {
-        $profile = $this->config->readProfile($name);
+        $profile = $this->config->readProfile($profileName);
         $arguments = new ArgumentList($this->cli->getArgList(), 2);
 
         $this->docker->setProfile($profile);
         $this->docker->passthru((string)$arguments);
+    }
+
+    public function sync(string $profileName): void
+    {
+        $profile = $this->config->readProfile($profileName);
+
+        $this->cli->print("we didn't sync anything with profile '$profileName'\n");
     }
 }
