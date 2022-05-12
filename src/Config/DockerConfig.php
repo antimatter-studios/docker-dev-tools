@@ -27,7 +27,8 @@ class DockerConfig
                 $profile['port'], 
                 $profile['tlscacert'], 
                 $profile['tlscert'], 
-                $profile['tlskey']
+                $profile['tlskey'],
+                $profile['tlsverify']
             );
         }
 

@@ -14,12 +14,13 @@ class DockerRunProfile implements \JsonSerializable
     private $tlscacert = null;
     private $tlscert = null;
     private $tlskey = null;
+    private $tlsverify = true;
 
-    public function __construct(string $name, ?string $host=null, ?int $port=null, ?string $tlscacert=null, ?string $tlscert=null, ?string $tlskey=null)
+    public function __construct(string $name, ?string $host=null, ?int $port=null, ?string $tlscacert=null, ?string $tlscert=null, ?string $tlskey=null, ?bool $tlsverify=true)
     {
         $this->setName($name);
         $this->setHost($host, $port);
-        $this->setTLS($tlscacert, $tlscert, $tlskey);
+        $this->setTLS($tlscacert, $tlscert, $tlskey, $tlsverify);
     }
 
     public function setName(string $name): void
@@ -51,7 +52,7 @@ class DockerRunProfile implements \JsonSerializable
         }
     }
 
-    public function setTLS(?string $tlscacert=null, ?string $tlscert=null, ?string $tlskey=null): void
+    public function setTLS(?string $tlscacert=null, ?string $tlscert=null, ?string $tlskey=null, ?bool $tlsverify=true): void
     {
         if($tlscacert !== null && !file_exists($tlscacert)){
             throw new \Exception('tlscacert must be null (disabled) or a file');
@@ -73,6 +74,7 @@ class DockerRunProfile implements \JsonSerializable
             $this->tlscacert = $tlscacert;
             $this->tlscert = $tlscert;
             $this->tlskey = $tlskey;
+            $this->tlsverify = $tlsverify;
         }else{
             throw new \Exception('tlscacert, tlscert, tlskey parameters must all be valid, or all be null');
         }
@@ -97,6 +99,8 @@ class DockerRunProfile implements \JsonSerializable
 			"tlscacert"	=> $this->tlscacert,
 			"tlscert"	=> $this->tlscert,
 			"tlskey"	=> $this->tlskey,
+            "tlsverify" => $this->tlsverify,
+            "tls"       => $this->hasTLS,
 		];
 	}
 
@@ -109,7 +113,12 @@ class DockerRunProfile implements \JsonSerializable
         }
 
         if($this->hasTLS){
-            $command[] = '--tlsverify';
+            $command[] = "--tls";
+
+            if($this->tlsverify){
+                $command[] = '--tlsverify';
+            }
+            
 			$command[] = "--tlscacert=" . $this->tlscacert;
 			$command[] = "--tlscert=" . $this->tlscert;
 			$command[] = "--tlskey=" . $this->tlskey;

@@ -80,7 +80,7 @@ class DockerTool extends Tool
         ];
     }
 
-    public function addProfile(string $name, string $host, int $port, string $tlscacert, string $tlscert, string $tlskey)
+    public function addProfile(string $name, string $host, int $port, string $tlscacert, string $tlscert, string $tlskey, bool $tlsverify)
     {
         $this->cli->print("{blu}Creating new Docker Run Profile:{end}\n\n");
         $this->cli->print(" - name: '$name'\n");
@@ -89,8 +89,9 @@ class DockerTool extends Tool
         $this->cli->print(" - tlscacert: '$tlscacert'\n");
         $this->cli->print(" - tlscert: '$tlscert'\n");
         $this->cli->print(" - tlskey: '$tlskey'\n");
+        $this->cli->print(" - tls enabled: " . ($tlsverify ? "yes" : "no") . "\n");
 
-        $profile = new DockerRunProfile($name, $host, $port, $tlscacert, $tlscert, $tlskey);
+        $profile = new DockerRunProfile($name, $host, $port, $tlscacert, $tlscert, $tlskey, $tlsverify);
         
         if($this->config->writeProfile($profile)){
             $this->cli->success("\nDocker Run Profile '$name' written successfully\n");
@@ -124,7 +125,9 @@ class DockerTool extends Tool
             $this->cli->print(" - port: '{$data['port']}'\n");
             $this->cli->print(" - tlscacert: '{$data['tlscacert']}'\n");
             $this->cli->print(" - tlscert: '{$data['tlscert']}'\n");
-            $this->cli->print(" - tlskey: '{$data['tlskey']}'\n\n");
+            $this->cli->print(" - tlskey: '{$data['tlskey']}'\n");
+            $this->cli->print(" - tlsverify: " . ($data['tlsverify'] ? "yes" : "no") . "\n");
+            $this->cli->print("\n");
         }
 
         if(empty($list)){
