@@ -86,10 +86,10 @@ class DockerTool extends Tool
         $this->cli->print(" - name: '$name'\n");
         $this->cli->print(" - host: '$host'\n");
         $this->cli->print(" - port: '$port'\n");
-        $this->cli->print(" - tlscacert: '$tlscacert'\n");
-        $this->cli->print(" - tlscert: '$tlscert'\n");
-        $this->cli->print(" - tlskey: '$tlskey'\n");
-        $this->cli->print(" - tls enabled: " . ($tlsverify ? "yes" : "no") . "\n");
+        $this->cli->print(" - tls cacert: '$tlscacert'\n");
+        $this->cli->print(" - tls cert: '$tlscert'\n");
+        $this->cli->print(" - tls key: '$tlskey'\n");
+        $this->cli->print(" - tls verify: " . ($tlsverify ? "yes" : "no") . "\n");
 
         $profile = new DockerRunProfile($name, $host, $port, $tlscacert, $tlscert, $tlskey, $tlsverify);
         
@@ -123,10 +123,10 @@ class DockerTool extends Tool
             $this->cli->print("{blu}Profile:{end} {$data['name']}\n");
             $this->cli->print(" - host: '{$data['host']}'\n");
             $this->cli->print(" - port: '{$data['port']}'\n");
-            $this->cli->print(" - tlscacert: '{$data['tlscacert']}'\n");
-            $this->cli->print(" - tlscert: '{$data['tlscert']}'\n");
-            $this->cli->print(" - tlskey: '{$data['tlskey']}'\n");
-            $this->cli->print(" - tlsverify: " . ($data['tlsverify'] ? "yes" : "no") . "\n");
+            $this->cli->print(" - tls cacert: '{$data['tlscacert']}'\n");
+            $this->cli->print(" - tls cert: '{$data['tlscert']}'\n");
+            $this->cli->print(" - tls key: '{$data['tlskey']}'\n");
+            $this->cli->print(" - tls verify: " . ($data['tlsverify'] ? "yes" : "no") . "\n");
             $this->cli->print("\n");
         }
 
