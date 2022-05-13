@@ -141,7 +141,7 @@ class DockerTool extends Tool
         $arguments = new ArgumentList($this->cli->getArgList(), 2);
 
         $this->docker->setProfile($profile);
-        $this->docker->passthru((string)$arguments);
+        $this->docker->passthru((string)$arguments . " > /dev/tty < /dev/tty");
     }
 
     public function sync(string $profileName): void
