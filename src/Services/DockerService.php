@@ -8,7 +8,6 @@ use DDT\CLI\Output\StringChannel;
 use DDT\Config\DockerConfig;
 use DDT\Contract\ChannelInterface;
 use DDT\Docker\DockerRunProfile;
-use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerMissingException;
 use DDT\Exceptions\Docker\DockerNotRunningException;
@@ -49,10 +48,6 @@ class DockerService
 
         // Default empty profile that uses the machines local docker installation
         $this->setProfile(new DockerRunProfile('default'));
-
-        if($this->cli->isCommand('docker') === false){
-            throw new DockerMissingException();
-        }
     }
 
 	public function getVersion(): array
@@ -103,6 +98,10 @@ class DockerService
 
 	public function exec(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null)
 	{
+		if($this->cli->isCommand('docker') === false){
+            throw new DockerMissingException();
+        }
+
 		$command = $this->toCommandLine($command);
 
 		$stdout = $stdout ?? new StringChannel();
