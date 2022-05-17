@@ -93,6 +93,10 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
                 $this->cli->failure("The requested command '$requestedCommand' from tool '$toolName' does not exist, check your spelling against the help");
             }
         }catch(CannotAutowireParameterException $e){
+            // This exception is being caught even when normal autowiring of objects as well as tools
+            // So it's confusing when the message is relating to constructing an object instead of a tool
+            // So I think we need to find a way to separate those things from each other
+
             $this->cli->print($tool->help());
             $commandName = $tool->getToolCommandName($e->getMethodName());
             $commandText = $tool->isToolDefaultCommand($commandName) ? 'tool' : "command '$commandName' on the tool";
