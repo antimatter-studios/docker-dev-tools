@@ -3,6 +3,7 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
+use DDT\Config\ExtensionConfig;
 use DDT\Config\SelfUpdateConfig;
 use DDT\Config\SystemConfig;
 use DDT\Helper\DateTimeHelper;
@@ -14,16 +15,17 @@ use DDT\Services\GitService;
 class SelfUpdateTool extends Tool
 {
     /** @var SelfUpdateConfig */
-    private $config;
+    private $selfUpdateConfig;
     
     /** @var GitService */
     private $gitService;
 
-    public function __construct(CLI $cli, SelfUpdateConfig $config, GitService $gitService)
+    public function __construct(CLI $cli, SelfUpdateConfig $selfUpdateConfig, ExtensionConfig $extensionConfig, GitService $gitService)
     {
     	parent::__construct('self-update', $cli);
 
-        $this->config = $config;
+        $this->selfUpdateConfig = $selfUpdateConfig;
+        $this->extensionConfig = $extensionConfig;
         $this->gitService = $gitService;
 
         $this->setToolCommand('now');
@@ -60,7 +62,7 @@ class SelfUpdateTool extends Tool
 
     public function timeout(): int
     {
-        $timeout = $this->config->getTimeout();
+        $timeout = $this->selfUpdateConfig->getTimeout();
         $text = DateTimeHelper::nicetime($timeout);
         $this->cli->print("{yel}Self Updater Timeout in{end}: $text\n");
 
@@ -69,8 +71,8 @@ class SelfUpdateTool extends Tool
 
     public function period(?string $period=null)
     {
-        if($this->config->setPeriod($period)){
-            $timeout = $this->reset($this->config);
+        if($this->selfUpdateConfig->setPeriod($period)){
+            $timeout = $this->reset($this->selfUpdateConfig);
             $relative = DateTimeHelper::nicetime($timeout);
             $this->cli->print("{yel}Next update{end}: $relative\n");
         }
@@ -78,28 +80,28 @@ class SelfUpdateTool extends Tool
 
     public function enabled(?bool $enable=true)
     {
-        $this->config->setEnabled($enable);
+        $this->selfUpdateConfig->setEnabled($enable);
         
-        $statusText = $this->config->isEnabled() ? 'enabled' : 'disabled';
+        $statusText = $this->selfUpdateConfig->isEnabled() ? 'enabled' : 'disabled';
         $this->cli->print("{yel}Self Updater is{end}: $statusText{end}\n");
     }
 
     public function reset(): int
     {
-        $timeout = strtotime($this->config->getPeriod(), time());
-        $this->config->setTimeout($timeout);
+        $timeout = strtotime($this->selfUpdateConfig->getPeriod(), time());
+        $this->selfUpdateConfig->setTimeout($timeout);
 
         return $this->timeout();
     }
 
     public function run(): void
     {
-        if($this->config->isReadonly()){
+        if($this->selfUpdateConfig->isReadonly()){
             $this->cli->print("{yel}System Configuration is readonly, can not update{end}\n");
             return;
         }
 
-        $timeout = $this->config->getTimeout();
+        $timeout = $this->selfUpdateConfig->getTimeout();
 
         if(time() < $timeout){
             $text = DateTimeHelper::nicetime($timeout);
@@ -107,7 +109,7 @@ class SelfUpdateTool extends Tool
             return;
         }
 
-        if(!$this->config->isEnabled()){
+        if(!$this->selfUpdateConfig->isEnabled()){
             $this->cli->debug("update", "{yel}Self Updater is disabled{end}\n");
             return;
         }
@@ -120,17 +122,24 @@ class SelfUpdateTool extends Tool
         $this->cli->print("========================================\n");
         $this->cli->print("{blu}Docker Dev Tools{end}: Self Updater\n");
 
-        if($this->config->isReadonly()){
+        if($this->selfUpdateConfig->isReadonly()){
             $this->cli->print("{yel}System Configuration is readonly, can not update{end}\n");
             return;
         }
 
-        if(!$this->config->isEnabled()){
+        if(!$this->selfUpdateConfig->isEnabled()){
             $this->cli->print("{yel}Self Updater is disabled{end}\n");
             return;
         }
 
+        $this->cli->print("Updating Tools: ");
         $this->gitService->pull(config('tools.path'));
+
+        $extensionList = $this->extensionConfig->list();
+        foreach($extensionList as $name => $extension){
+            $this->cli->print("Updating extension '$name': ");
+            $this->gitService->pull($extension['path']);
+        }
 
         $timeout = $this->cli->silenceChannel('stdout', function(){
             return $this->reset();
