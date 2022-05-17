@@ -26,10 +26,6 @@
                 "group": "personal" 
             }
         ],
-        "list": {
-            "project-a": {},
-            "project-b": {},
-            "project-c": {}
-        }
+        "list": {}
     }
 }
