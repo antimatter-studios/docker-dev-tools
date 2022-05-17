@@ -10,7 +10,7 @@ use DDT\Docker\DockerRunProfile;
 
 class DockerTool extends Tool
 {
-    /** @var Docker $docker */
+    /** @var DockerService $docker */
     private $docker;
 
     /** @var DockerConfig $config */
@@ -141,7 +141,7 @@ class DockerTool extends Tool
         $arguments = new ArgumentList($this->cli->getArgList(), 2);
 
         $this->docker->setProfile($profile);
-        $this->docker->passthru((string)$arguments . " > /dev/tty < /dev/tty");
+        $this->docker->passthru((string)$arguments);
     }
 
     public function sync(string $profileName): void

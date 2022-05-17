@@ -193,6 +193,17 @@ class DockerService
 		}
 	}
 
+	public function ps(): string
+	{
+		try{
+			return $this->exec("ps");
+		}catch(\Exception $e){
+			$this->cli->print("{red}".$this->parseErrors($e->getMessage())."{end}\n");
+		}
+
+		return "";
+	}
+
 	public function logsFollow(string $containerId, bool $follow, ?string $since=null): int
 	{
 		if(!empty($since)) $since = "--since=$since";

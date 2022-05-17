@@ -58,6 +58,27 @@ class DockerContainer
         return container(DockerContainer::class, ['name' => $name]);
     }
 
+    static public function findByFilter(array $filter): DockerContainer
+    {
+        $docker = container(DockerService::class);
+        
+        $output = array_filter(explode("\n", $docker->ps()), function($row) use ($filter) {
+            foreach($filter as $f){
+                if(strpos($row, $f) === false) return false;
+            }
+            return true;
+        });
+        
+        $output = array_map(function($result) {
+            $result = explode(" ", str_replace("\t", " ", $result));
+            return array_pop($result);
+        }, $output);
+        
+        $name = array_shift($output);
+        
+        return self::get($name);
+    }
+
     static public function foreground(
         string $name, 
         ?string $command = '', 
