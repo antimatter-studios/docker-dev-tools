@@ -7,6 +7,7 @@ use DDT\Config\PhpComposerConfig;
 use DDT\Services\DockerService;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerVolume;
+use DDT\Exceptions\Docker\DockerMissingException;
 use DDT\Exceptions\Docker\DockerVolumeNotFoundException;
 
 class ComposerTool extends Tool
@@ -95,31 +96,31 @@ class ComposerTool extends Tool
                 '$HOME/.ssh:/root/.ssh',
                 getcwd().':/app:delegated'
             ];
-
+    
             if($this->config->isCacheEnabled()){
                 $this->cli->print("{yel}DDT Docker Composer Cache{end}: enabled\n");
                 $volumes[] = $this->config->getCacheName(). ":/tmp:delegated";
             }else{
                 $this->cli->print("{yel}DDT Docker Composer Cache{end}: disabled\n");
             }
-
+    
             $options = [
                 '--entrypoint "sh"',
                 '--rm'
             ];
-
+    
             $env = [
                 'COMPOSER_PROCESS_TIMEOUT=2000'
             ];
-
+    
             $image = 'composer:latest';
             $command = "-c 'php -d memory_limit=-1 $(which composer) $params' 2>&1";
-
+    
             $this->docker->delete($name, true);
-
+    
             DockerContainer::foreground($name, $command, $image, $volumes, $options, $env);
-        }catch(\Exception $e){
-            // NOTE: what should I do here?
+        }catch(DockerMissingException $e){
+            $this->cli->failure($e->getMessage());
         }
     }
 
