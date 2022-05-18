@@ -114,7 +114,7 @@ class ComposerTool extends Tool
             ];
     
             $image = 'composer:latest';
-            $command = "-c 'php -d memory_limit=-1 $(which composer) $params' 2>&1";
+            $command = "-c 'php -d memory_limit=-1 $(which composer) $params 2>&1'";
     
             $this->docker->delete($name, true);
     

@@ -293,7 +293,8 @@ class CLI
 		];
 
 		$feof = false;
-		while ($feof === false && stream_select($read, $write, $except, 10) !== 0)
+		$streamTimeout = 300;
+		while ($feof === false && stream_select($read, $write, $except, $streamTimeout) !== 0)
 		{
 			foreach($read as $index => $stream){
 				if(feof($stream)){
