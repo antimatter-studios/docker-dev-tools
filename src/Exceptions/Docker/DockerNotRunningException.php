@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerNotRunningException extends \Exception
+class DockerNotRunningException extends DockerException
 {
     public function __construct($message = "", $code = 0, \Throwable $previous = null)
     {

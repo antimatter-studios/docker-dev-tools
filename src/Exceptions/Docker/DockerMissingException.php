@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerMissingException extends \Exception
+class DockerMissingException extends DockerException
 {
     public function __construct($message = "", $code = 0, \Throwable $previous = null)
     {

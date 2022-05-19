@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerContainerNotFoundException extends \Exception
+class DockerContainerNotFoundException extends DockerException
 {
     private $name;
     

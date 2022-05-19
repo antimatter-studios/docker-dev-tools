@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerNetworkFailedAttachException extends \Exception
+class DockerNetworkFailedAttachException extends DockerException
 {
     public function __construct(string $network, string $containerId, int $code = 0, \Throwable $previous = null)
     {

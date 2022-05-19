@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerInspectException extends \Exception
+class DockerInspectException extends DockerException
 {
     public function __construct(string $type, string $name, int $code = 0, \Throwable $previous = null)
     {

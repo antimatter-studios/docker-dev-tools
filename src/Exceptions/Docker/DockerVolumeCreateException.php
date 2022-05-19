@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerVolumeCreateException extends \Exception
+class DockerVolumeCreateException extends DockerException
 {
     public function __construct(string $name, int $code = 0, \Throwable $previous = null)
     {

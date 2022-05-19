@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerImageBuildFailureException extends \Exception
+class DockerImageBuildFailureException extends DockerException
 {
     private $imageName;
     
