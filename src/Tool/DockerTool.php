@@ -9,6 +9,7 @@ use DDT\Debug;
 use DDT\Services\DockerService;
 use DDT\Model\Docker\RunProfile;
 use DDT\Model\Docker\SyncProfile;
+use DDT\Text\Table;
 
 class DockerTool extends Tool
 {
@@ -91,22 +92,15 @@ class DockerTool extends Tool
 
     public function addProfile(string $name, string $host, int $port, string $tlscacert, string $tlscert, string $tlskey, bool $tlsverify)
     {
-        $this->cli->print("{blu}Creating new Docker Run Profile:{end}\n\n");
-        $this->cli->print(" - name: '$name'\n");
-        $this->cli->print(" - host: '$host'\n");
-        $this->cli->print(" - port: '$port'\n");
-        $this->cli->print(" - tls cacert: '$tlscacert'\n");
-        $this->cli->print(" - tls cert: '$tlscert'\n");
-        $this->cli->print(" - tls key: '$tlskey'\n");
-        $this->cli->print(" - tls verify: " . ($tlsverify ? "yes" : "no") . "\n");
-
         $profile = new RunProfile($name, $host, $port, $tlscacert, $tlscert, $tlskey, $tlsverify);
         
         if($this->config->writeRunProfile($profile)){
-            $this->cli->success("\nDocker Run Profile '$name' written successfully\n");
+            $this->cli->print("{grn}Docker Run Profile '$name' written successfully{grn}\n");
         }else{
-            $this->cli->failure("\nDocker Run Profile '$name' did not write successfully\n");
+            $this->cli->print("{red}Docker Run Profile '$name' did not write successfully{end}\n");
         }
+
+        $this->listProfile();
     }
 
     public function removeProfile(string $name)
@@ -114,10 +108,12 @@ class DockerTool extends Tool
         $this->cli->print("{blu}Removing Docker Run Profile:{end} '$name'\n\n");
 
         if($this->config->deleteRunProfile($name)){
-            $this->cli->success("\nDocker Run Profile '$name' removed successfully\n");
+            $this->cli->print("{grn}Docker Run Profile '$name' removed successfully{end}");
         }else{
-            $this->cli->failure("\nDocker Run Profile '$name' could not be removed successfully\n");
+            $this->cli->print("{red}Docker Run Profile '$name' could not be removed successfully{end}\n");
         }
+
+        $this->listProfile();
     }
 
     public function listProfile()
@@ -126,38 +122,43 @@ class DockerTool extends Tool
 
         $list = $this->config->listRunProfile();
 
+        $table = Table::getInstance();
+        $table->addRow([
+            "{yel}Profile{end}", 
+            "{yel}Host{end}", 
+            "{yel}Port{end}", 
+            "{yel}TLS{end}", 
+            "{yel}TLS Verify{end}"
+        ]);
+
         foreach($list as $profile){
             $data = $profile->get();
 
-            $this->cli->print("{blu}Profile:{end} {$data['name']}\n");
-            $this->cli->print(" - host: '{$data['host']}'\n");
-            $this->cli->print(" - port: '{$data['port']}'\n");
-            $this->cli->print(" - tls cacert: '{$data['tlscacert']}'\n");
-            $this->cli->print(" - tls cert: '{$data['tlscert']}'\n");
-            $this->cli->print(" - tls key: '{$data['tlskey']}'\n");
-            $this->cli->print(" - tls verify: " . ($data['tlsverify'] ? "yes" : "no") . "\n");
+            $table->addRow([$data['name'], $data['host'], $data['port'], $data['tlscacert'], "{grn}" . ($data['tlsverify'] ? "yes" : "no") . "{end}"]);
+            $table->addRow([null, null, null, $data['tlscert'], null]);
+            $table->addRow([null, null, null, $data['tlskey'], null]); 
         }
 
         if(empty($list)){
-            $this->cli->print("There are no registered Docker Run Profiles\n");
+            $this->cli->print("There are no registered Docker Run Profiles");
+        }else{
+            $this->cli->print($table->render());
         }
     }
 
     public function addProject(string $name, string $containerName, string $localDir, string $remoteDir)
     {
         $this->cli->print("{blu}Creating new Docker Sync Project:{end}\n\n");
-        $this->cli->print(" - name: '$name'\n");
-        $this->cli->print(" - container name: '$containerName'\n");
-        $this->cli->print(" - local dir: '$localDir'\n");
-        $this->cli->print(" - remote dir: '$remoteDir'\n");
 
         $profile = new SyncProfile($name, $containerName, $localDir, $remoteDir);
         
         if($this->config->writeSyncProfile($profile)){
-            $this->cli->success("\nDocker Sync Project '$name' written successfully\n");
+            $this->cli->print("{grn}Docker Sync Project '$name' written successfully{end}\n");
         }else{
-            $this->cli->failure("\nDocker Sync Project '$name' did not write successfully\n");
+            $this->cli->print("{red}Docker Sync Project '$name' did not write successfully{end}\n");
         }
+
+        $this->listProject();
     }
 
     public function removeProject(string $name)
@@ -165,10 +166,12 @@ class DockerTool extends Tool
         $this->cli->print("{blu}Removing Docker Sync Project:{end} '$name'\n\n");
 
         if($this->config->deleteSyncProfile($name)){
-            $this->cli->success("\nDocker Sync Profile '$name' removed successfully\n");
+            $this->cli->print("{grn}Docker Sync Profile '$name' removed successfully{end}\n");
         }else{
-            $this->cli->failure("\nDocker Sync Profile '$name' could not be removed successfully\n");
+            $this->cli->print("{red}Docker Sync Profile '$name' could not be removed successfully{end}\n");
         }
+
+        $this->listProject();
     }
 
     public function listProject()
@@ -177,18 +180,25 @@ class DockerTool extends Tool
 
         $list = $this->config->listSyncProfile();
 
+        $table = Table::getInstance();
+        
+        $table->addRow([
+            "{yel}Project{end}", 
+            "{yel}Container Name{end}", 
+            "{yel}Local Dir{end}", 
+            "{yel}Remote Dir{end}"
+        ]);
+
         foreach($list as $profile){
             $data = $profile->get();
 
-            $this->cli->print("{blu}Project:{end} {$data['name']}\n");
-            $this->cli->print(" - name: '{$data['name']}'\n");
-            $this->cli->print(" - container name: '{$data['container_name']}'\n");
-            $this->cli->print(" - local dir: '{$data['local_dir']}'\n");
-            $this->cli->print(" - remote dir: '{$data['remote_dir']}'\n");
+            $table->addRow([$data['name'], $data['container_name'], $data['local_dir'], $data['remote_dir']]);
         }
 
         if(empty($list)){
             $this->cli->print("There are no registered Docker Sync Projects\n");
+        }else{
+            $this->cli->print($table->render());
         }
     }
 
@@ -247,4 +257,59 @@ class DockerTool extends Tool
             }
         }
     }
+
+    /* 
+     * This is all the code which was in the previous version that would allow you to filter uploaded files against an ignore list
+     * meaning it wouldn't just upload every and any file
+    public function listIgnoreRules(): array
+	{
+		return $this->config->getKey($this->ignoreRuleKey);
+	}
+
+	public function setIgnoreRules(array $rules): void
+	{
+		$this->config->setKey($this->ignoreRuleKey, $rules);
+		$this->config->write();
+	}
+
+	public function addIgnoreRule(string $rule): void
+	{
+		$list = $this->listIgnoreRules();
+		$list[] = $rule;
+		$this->setIgnoreRules(array_unique($list));
+	}
+
+	public function removeIgnoreRule(string $rule): void
+	{
+		$list = $this->listIgnoreRules();
+		foreach(array_keys($list) as $test){
+			if($list[$test] === $rule) unset($list[$test]);
+		}
+		$this->setIgnoreRules($list);
+	}
+
+	public function shouldIgnore(DockerSyncProfile $syncProfile, string $filename): bool
+	{
+		$list = $this->listIgnoreRules();
+
+		if(strpos($filename, $syncProfile->getLocalDir()) === 0){
+			$filename = substr($filename, strlen($syncProfile->getLocalDir()));
+		}
+
+		foreach($list as $rule){
+			$la		= substr_compare($rule, "^", 0, 1) === 0 ? "^" : "";
+			$ra		= substr_compare($rule, "$", -1) === 0 ? "$": "";
+			$rule 	= rtrim(ltrim($rule,"^"),"$");
+			$rule 	= ltrim($rule, '/');
+			$rule 	= preg_quote("/$rule",'/');
+			$rule 	= "/".$la.$rule.$ra."/";
+
+			if(preg_match($rule, $filename)){
+				return true;
+			}
+		}
+
+		return false;
+	}
+    */
 }
