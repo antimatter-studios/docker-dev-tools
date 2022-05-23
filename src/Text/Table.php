@@ -16,7 +16,7 @@ class Table
 	private $callback = [];
 	private $columnMapping = [];
 
-    public function __construct(Text $text, ?array $data=[], int $tabWidth=2)
+    public function __construct(Text $text, array $data=[], int $tabWidth=2)
     {
         $this->text = $text;
 		$this->data = $data;
@@ -38,6 +38,11 @@ class Table
 		$this->setCallback('empty', function(Text $renderer, $null, string $field) {
 			return $renderer->write('');
 		});
+	}
+
+	static public function getInstance(): Table
+	{
+		return container(Table::class);
 	}
 
 	public function setDebug(bool $state)
@@ -166,8 +171,8 @@ class Table
 			return $this->callback['object']($this->text, $text, $field);
 		}
 		
-		if(is_string($text)) {
-			return $this->callback['text']($this->text, $text, $field);
+		if(is_scalar($text)) {
+			return $this->callback['text']($this->text, (string)$text, $field);
 		}
 
 		if(empty($text)) {
