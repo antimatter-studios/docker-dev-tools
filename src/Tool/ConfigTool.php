@@ -41,6 +41,7 @@ class ConfigTool extends Tool
 				"filename: Returns a single string containing the filename",
 				"reset: Will reset your configuration file to the default 'empty' configuration, {red}it will destroy any setup you already have{end}",
 				"get: Will retrieve a specific key, if no key is specified, the entire config is shown",
+				"delete: Remove a specific given key",
 				"validate: Only validate the file can be read without errors",
 				"version: Output some information about the configuration that is deemed useful",
 				"help: This information, also if no sub command is given help is automatically shown",
