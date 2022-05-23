@@ -25,6 +25,19 @@ class Debug
             $cli->getChannel('container')->enable(true);
         }
     }
+
+    static public function is($mode=true): bool
+    {
+        if(is_bool(self::$enabled)){
+            return $mode === self::$enabled;
+        }
+
+        if(is_array(self::$enabled)){
+            return in_array($mode, self::$enabled);
+        }
+        
+        return false;
+    }
     
     static public function dump($filter, $mixed)
     {
