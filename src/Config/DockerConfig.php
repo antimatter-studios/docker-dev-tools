@@ -2,26 +2,30 @@
 
 namespace DDT\Config;
 
-use DDT\Docker\DockerRunProfile;
+use DDT\Model\Docker\RunProfile;
+use DDT\Model\Docker\SyncProfile;
 
 class DockerConfig
 {
     /** @var SystemConfig $config */
     private $config;
 
-    private $key = 'docker';
+    private $key = [
+        'run' => 'docker.run-profile', 
+        'sync' => 'docker.sync-profile'
+    ];
 
     public function __construct(SystemConfig $config)
     {
         $this->config = $config;
     }
 
-    public function listProfile(): array
+    public function listRunProfile(): array
     {
-        $list = $this->config->getKey("$this->key.profile") ?? [];
+        $list = $this->config->getKey($this->key['run']) ?? [];
 
         foreach($list as $index => $profile){
-            $list[$index] = new DockerRunProfile(
+            $list[$index] = new RunProfile(
                 $profile['name'], 
                 $profile['host'], 
                 $profile['port'], 
@@ -35,9 +39,9 @@ class DockerConfig
         return $list;
     }
 
-    public function readProfile(string $name): DockerRunProfile
+    public function readRunProfile(string $name): RunProfile
     {
-        $list = $this->listProfile();
+        $list = $this->listRunProfile();
 
         if(array_key_exists($name, $list)){
             return $list[$name];
@@ -46,30 +50,79 @@ class DockerConfig
         throw new \Exception("Docker Run Profile named '$name' does not exist");
     }
 
-    public function writeProfile(DockerRunProfile $profile): bool
+    public function writeRunProfile(RunProfile $profile): bool
     {
-        $list = $this->listProfile();
+        $list = $this->listRunProfile();
         $data = $profile->get();
 
         $list[$data['name']] = $data;
         
-        $this->config->setKey("$this->key.profile", $list);
+        $this->config->setKey($this->key['run'], $list);
 
         return $this->config->write();
     }
 
-    public function deleteProfile(string $name): bool
+    public function deleteRunProfile(string $name): bool
     {
-        $list = $this->listProfile();
+        $list = $this->listRunProfile();
 
         if(array_key_exists($name, $list)){
             unset($list[$name]);
         
-            $this->config->setKey("$this->key.profile", $list);
+            $this->config->setKey($this->key['run'], $list);
     
             return $this->config->write();
         }
 
         throw new \Exception("Docker Run Profile named '$name' does not exist");
+    }
+
+    public function listSyncProfile(): array
+    {
+        $list = $this->config->getKey($this->key['sync']) ?? [];
+
+        foreach($list as $index => $profile){
+            $list[$index] = new SyncProfile($profile['name'], $profile['container_name'], $profile['local_dir'], $profile['remote_dir']);
+        }
+
+        return $list;
+    }
+
+    public function readSyncProfile(string $name): SyncProfile
+    {
+        $list = $this->listSyncProfile();
+
+        if(array_key_exists($name, $list)){
+            return $list[$name];
+        }
+
+        throw new \Exception("Docker Sync Profile named '$name' does not exist");
+    }
+
+    public function writeSyncProfile(SyncProfile $profile): bool
+    {
+        $list = $this->listSyncProfile();
+        $data = $profile->get();
+
+        $list[$data['name']] = $data;
+        
+        $this->config->setKey($this->key['sync'], $list);
+
+        return $this->config->write();
+    }
+
+    public function deleteSyncProfile(string $name): bool
+    {
+        $list = $this->listSyncProfile();
+
+        if(array_key_exists($name, $list)){
+            unset($list[$name]);
+        
+            $this->config->setKey($this->key['sync'], $list);
+    
+            return $this->config->write();
+        }
+
+        throw new \Exception("Docker Sync Profile named '$name' does not exist");
     }
 }

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Docker;
+namespace DDT\Model\Docker;
 
-class DockerRunProfile implements \JsonSerializable
+class RunProfile implements \JsonSerializable
 {
     private $name;
     
@@ -30,6 +30,11 @@ class DockerRunProfile implements \JsonSerializable
         }
 
         $this->name = $name;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
     }
 
     public function setHost(?string $host=null, ?int $port=null): void
