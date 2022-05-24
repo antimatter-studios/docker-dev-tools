@@ -229,9 +229,10 @@ class DockerTool extends Tool
         }
 
         if(empty($localFilename)){
+            $this->cli->print("Watching '{$sync->getLocalDir()}' for changes\n");
             $debug = Debug::is(true) ? '--debug' : '';
             $script = "{$this->getEntrypoint()} {$debug} {$this->getToolName()} sync {$run->getName()} {$sync->getName()} \"\$file\"";
-            $command = "fswatch {$sync->getLocalDir()} | while read file; do file=$(echo \"\$file\" | sed '/\~$/d'); $script; done";
+            $command = "fswatch {$sync->getLocalDir()} | while read file; do file=$(echo \"\$file\" | sed '/\~$/d') && [ ! -z \"\$file\" ] && $script; done";
 
             $this->cli->passthru($command);
         }else{
