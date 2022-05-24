@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerNetworkNotFoundException extends \Exception
+class DockerNetworkNotFoundException extends DockerException
 {
     public function __construct(string $name, int $code = 0, \Throwable $previous = null)
     {

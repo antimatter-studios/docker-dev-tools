@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Docker;
 
-class DockerImageNotFoundException extends \Exception
+class DockerImageNotFoundException extends DockerException
 {
     public function __construct(string $name, int $code = 0, \Throwable $previous = null)
     {
