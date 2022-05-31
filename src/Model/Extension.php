@@ -25,6 +25,5 @@ class Extension
         }
 
         // read the .ddt-extension.json file and check it's valid
-        
     }
 }

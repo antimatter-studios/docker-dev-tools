@@ -6,8 +6,11 @@ use DDT\CLI;
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
+use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 use DDT\Exceptions\Project\ProjectExistsException;
+use DDT\Model\Project\ProjectModel;
+use DDT\Model\Project\ProjectPathModel;
 use DDT\Services\GitService;
 use DDT\Services\ProjectService;
 use DDT\Text\Table;
@@ -112,7 +115,7 @@ class ProjectTool extends Tool
             $table->addRow(['There are no projects']);
         }
 
-        /** @var Project $project */
+        /** @var ProjectModel $project */
         foreach($projectList as $project) {
             $groupList = $project->getGroups();
 
@@ -146,8 +149,31 @@ class ProjectTool extends Tool
         $this->cli->print($table->render());
     }
 
-    public function addPath(): void {}
-    public function removePath(): void {}
+    public function addPath(string $path, ?string $group=null): void 
+    {
+        try{
+            if($this->projectService->addPath($path, $group)){
+                $this->cli->success("Added the project path '$path' and group '$group'\n");
+            }
+        }catch(DirectoryNotExistException $e){
+            $this->cli->failure($e->getMessage());
+        }
+        
+        $this->cli->failure("Could not add the project path '$path' with the group '$group'\n");
+    }
+
+    public function removePath(string $path): void 
+    {
+        try{
+            if($this->projectService->removePath($path)){
+                $this->cli->success("Removed the project path '$path'\n");
+            }
+        }catch(DirectoryNotExistException $e){
+            $this->cli->failure($e->getMessage());
+        }
+
+        $this->cli->failure("Could not remove the project path '$path'\n");
+    }
 
     public function addGroup(string $project, string $group, ?string $path=null): void
     {

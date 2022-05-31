@@ -4,6 +4,7 @@ namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\Config\ProjectConfig;
+use DDT\Model\Project\ProjectPathModel;
 
 class ProjectService
 {
@@ -42,5 +43,15 @@ class ProjectService
     public function removeProject(string $project, ?string $path=null): bool
     {
         return $this->config->removeProject($project, $path);
+    }
+
+    public function addPath(string $path, ?string $group=null): bool
+    {
+        return $this->config->addPath($path, $group);
+    }
+
+    public function removePath(string $path): bool
+    {
+        return $this->config->removepath($path);
     }
 }

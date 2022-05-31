@@ -2,7 +2,9 @@
 
 namespace DDT\Model\Project;
 
-class ProjectListModel implements \JsonSerializable
+use DDT\Model\Model;
+
+class ProjectListModel extends Model
 {
     private $list = [];
 
@@ -18,17 +20,7 @@ class ProjectListModel implements \JsonSerializable
         return new self($data);
     }
 
-	public function __toString(): string
-	{
-		return json_encode($this->get(), JSON_PRETTY_PRINT);
-	}
-
-	public function jsonSerialize(): array
-	{
-		return $this->get();
-	}
-
-	public function get(): array
+	public function toArray(): array
 	{
 		return [];
 	}

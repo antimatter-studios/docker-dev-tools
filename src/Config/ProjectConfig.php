@@ -11,6 +11,7 @@ use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Project\ProjectModel;
+use DDT\Model\Project\ProjectPathModel;
 
 class ProjectConfig
 {
@@ -39,7 +40,7 @@ class ProjectConfig
 		$list = $this->config->getKey("$this->listKey") ?? [];
 
 		return array_map(function($item){
-			return container(ProjectModel::class, $item);
+			return ProjectModel::fromArray($item);
 		}, $list);
 	}
 
@@ -300,5 +301,39 @@ class ProjectConfig
 		$first = array_shift($filteredList);
 
 		return $this->getProjectConfig($project, $first->getPath(), $group);
+	}
+
+	public function listPaths(): array
+	{
+		$list = $this->config->getKey("$this->pathKey") ?? [];
+
+		return array_map(function($item){
+			return ProjectPathModel::fromArray($item);
+		}, $list);
+	}
+
+	public function addPath(string $path, ?string $group=null): bool
+	{
+		$list = $this->listPaths();
+		$list[$path] = new ProjectPathModel($path, $group);
+
+        $this->config->setKey($this->pathKey, $list);
+
+        return $this->config->write();
+	}
+
+	public function removePath(string $path): bool
+	{
+		$list = $this->listPaths();
+
+        if(array_key_exists($path, $list)){
+            unset($list[$path]);
+        
+            $this->config->setKey($this->pathKey, $list);
+    
+            return $this->config->write();
+        }
+
+        throw new \Exception("Project path '$path' does not exist");
 	}
 }

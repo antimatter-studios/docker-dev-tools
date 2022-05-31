@@ -25,15 +25,7 @@ class DockerConfig
         $list = $this->config->getKey($this->key['run']) ?? [];
 
         foreach($list as $index => $profile){
-            $list[$index] = new RunProfileModel(
-                $profile['name'], 
-                $profile['host'], 
-                $profile['port'], 
-                $profile['tlscacert'], 
-                $profile['tlscert'], 
-                $profile['tlskey'],
-                $profile['tlsverify']
-            );
+            $list[$index] = RunProfileModel::fromArray($profile);
         }
 
         return $list;
@@ -53,9 +45,7 @@ class DockerConfig
     public function writeRunProfile(RunProfileModel $profile): bool
     {
         $list = $this->listRunProfile();
-        $data = $profile->get();
-
-        $list[$data['name']] = $data;
+        $list[$profile->getName()] = $profile;
         
         $this->config->setKey($this->key['run'], $list);
 
@@ -82,7 +72,7 @@ class DockerConfig
         $list = $this->config->getKey($this->key['sync']) ?? [];
 
         foreach($list as $index => $profile){
-            $list[$index] = new SyncProfileModel($profile['name'], $profile['container_name'], $profile['local_dir'], $profile['remote_dir']);
+            $list[$index] = SyncProfileModel::fromArray($profile);
         }
 
         return $list;
@@ -102,10 +92,8 @@ class DockerConfig
     public function writeSyncProfile(SyncProfileModel $profile): bool
     {
         $list = $this->listSyncProfile();
-        $data = $profile->get();
+        $list[$profile->getName()] = $profile;
 
-        $list[$data['name']] = $data;
-        
         $this->config->setKey($this->key['sync'], $list);
 
         return $this->config->write();

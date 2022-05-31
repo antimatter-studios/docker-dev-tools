@@ -5,9 +5,9 @@ namespace DDT\Model\Project;
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
-use JsonSerializable;
+use DDT\Model\Model;
 
-class ProjectModel implements JsonSerializable
+class ProjectModel extends Model
 {
     private $name;
     private $path;
@@ -20,7 +20,7 @@ class ProjectModel implements JsonSerializable
         $this->setGroup($group);
     }
 
-    static public function fromArray(array $data): ProjectModel
+    static public function fromArray(array $data): self
     {
         $path   = array_key_exists('path', $data) ? $data['path'] : null;
         $name   = array_key_exists('name', $data) ? $data['name'] : null;
@@ -115,11 +115,5 @@ class ProjectModel implements JsonSerializable
             //'type' => $this->getType(),
             //'repo_url' => ... something to get repo url
         ];
-    }
-
-    #[\ReturnTypeWillChange]
-    public function jsonSerialize()
-    {
-        return $this->toArray();
     }
 }

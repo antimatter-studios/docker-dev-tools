@@ -2,7 +2,9 @@
 
 namespace DDT\Model\Docker;
 
-class RunProfileModel implements \JsonSerializable
+use DDT\Model\Model;
+
+class RunProfileModel extends Model
 {
     private $name;
     
@@ -85,17 +87,20 @@ class RunProfileModel implements \JsonSerializable
         }
     }
 
-	public function __toString(): string
-	{
-		return json_encode($this->get(), JSON_PRETTY_PRINT);
-	}
+    static public function fromArray(array $data): self
+    {
+        return new self(
+            $data['name'], 
+            $data['host'], 
+            $data['port'], 
+            $data['tlscacert'], 
+            $data['tlscert'], 
+            $data['tlskey'],
+            $data['tlsverify']
+        );
+    }
 
-	public function jsonSerialize(): array
-	{
-		return $this->get();
-	}
-
-	public function get(): array
+	public function toArray(): array
 	{
 		return [
 			"name"		=> $this->name,
