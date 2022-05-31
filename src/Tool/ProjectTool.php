@@ -34,7 +34,8 @@ class ProjectTool extends Tool
             'list', 
             'add-path', 'remove-path',
             'add-group', 'remove-group',
-            'add-project', 'remove-project'
+            'add-project', 'remove-project',
+            'pull', 'push',
         ] as $command){
             $this->setToolCommand($command);
         }
@@ -308,5 +309,22 @@ class ProjectTool extends Tool
             $this->cli->print("{red}The project '$project' failed to be remove{end}\n");
             return false;
         }
+    }
+
+    public function pull(?string $filter=null): void
+    {
+        // for the first version, ignore the filter
+        // list every path
+        // list every project one level deep inside every path
+        // for each project found, test if it's a repository
+        // if it's a repo, do a git pull on that repo
+        // use the same output semantics as in the previous sync command
+        $this->cli->failure("The pull method for '$filter' is not yet implemented");
+    }
+
+    public function push(?string $filter=null): void
+    {
+        // the same as pull, but git push instead
+        $this->cli->failure("The push method for '$filter' is not yet implemented");
     }
 }
