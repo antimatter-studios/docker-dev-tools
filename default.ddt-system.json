@@ -18,14 +18,12 @@
         "network": []
     },
     "projects": {
-        "paths": [
-            {
-                "path": "$HOME/projects"
-            },{ 
-                "path": "$HOME/projects/another-folder", 
-                "group": "personal" 
-            }
-        ],
+        "paths": [],
         "list": {}
+    },
+    "self_update": {
+        "timeout": 0,
+        "period": "+7 day",
+        "enabled": true
     }
 }

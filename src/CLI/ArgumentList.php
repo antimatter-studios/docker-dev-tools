@@ -28,7 +28,31 @@ class ArgumentList
         }, $this->argList));
     }
 
-    public function get(): array
+    public function search(string $name, ?string $value=null): ?array
+    {
+        foreach($this->argList as $a){
+            if(!preg_match("/$name/", $a['name'], $nameMatches)){
+                continue;
+            }
+
+            if($value !== null && array_key_exists('value', $a)){
+                if(!preg_match("/$value/", $a['value'], $valueMatches)){
+                    continue;
+                }
+            }else{
+                $valueMatches = [$a['value']];
+            }
+
+            return [
+                'name' => array_pop($nameMatches), 
+                'value' => array_pop($valueMatches)
+            ];
+        }
+
+        return null;
+    }
+
+    public function all(): array
     {
         return $this->argList;
     }
@@ -36,6 +60,11 @@ class ArgumentList
     public function shift()
     {
         return array_shift($this->argList);
+    }
+
+    public function add(string $name, string $value)
+    {
+        $this->argList[] = ['name' => $name, 'value' => $value];
     }
 
     public function remove(?string $name, ?string $value=null)

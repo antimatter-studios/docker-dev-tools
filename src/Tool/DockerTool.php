@@ -262,6 +262,7 @@ class DockerTool extends Tool
     /* 
      * This is all the code which was in the previous version that would allow you to filter uploaded files against an ignore list
      * meaning it wouldn't just upload every and any file
+     * I wanted to keep this until i was very sure to delete it
     public function listIgnoreRules(): array
 	{
 		return $this->config->getKey($this->ignoreRuleKey);
@@ -314,3 +315,189 @@ class DockerTool extends Tool
 	}
     */
 }
+
+/*
+try{
+    $config = \DDT\Config\SystemConfig::instance()
+    $docker = new Docker($config);
+    $watcher = new Watcher($cli->getScript(false), $config, $docker);
+}catch(DockerNotRunningException $e){
+    $this->cli->failure($e->getMessage());
+}catch(DockerMissingException $e){
+    $this->cli->failure($e->getMessage());
+}catch(Exception $e){
+    if(!$this->cli->isCommand('fswatch')){
+        $answer = $this->cli->ask("fswatch is not installed, install it?", ['yes', 'no']);
+        if($answer === 'yes'){
+            $os = strtolower(PHP_OS);
+            if($os === 'darwin') $this->cli->passthru('brew install fswatch');
+            if($os === 'linux') $this->cli->passthru('api-get install fswatch');
+        }
+    }
+
+    if(!$this->cli->isCommand('fswatch')){
+        $this->cli->print($this->text->box($e->getMessage(), 'white', 'red'));
+        exit(1);
+    }
+}
+
+function help(CLI $cli)
+{
+	$script = $cli->getScript(false);
+
+	$this->cli->print(<<<EOF
+    {yel}Usage Examples: {end}
+
+    {blu}Description:{end}
+
+    {blu}Options:{end}     
+    {blu}Notes:{end}
+        
+
+
+EOF
+    );
+
+	exit(0);
+}
+
+if($cli->hasArg('help') || $cli->countArgs() === 0){
+    help($cli);
+}
+
+if($cli->hasArg(['list-ignore-rule','list-ignore-rules'])){
+    $ignoreRuleList = $watcher->listIgnoreRules();
+
+    $this->cli->print("{blu}Ignore Rules{end}:\n");
+    foreach($ignoreRuleList as $ignoreRule){
+        $this->cli->print("Rule: '{yel}$ignoreRule{end}'\n");
+    }
+    if(empty($ignoreRuleList)){
+        $this->cli->print("There are no ignore rules in place\n");
+    }
+
+    exit(0);
+}
+
+if($ignoreRule = $cli->getArgWithVal('add-ignore-rule')){
+    $watcher->addIgnoreRule($ignoreRule);
+    exit(0);
+}
+
+if($ignoreRule = $cli->getArgWithVal('remove-ignore-rule')){
+    $watcher->removeIgnoreRule($ignoreRule);
+    exit(0);
+}
+
+///////////////////////////////////////////////////////////////
+// EVERYTHING BELOW HERE REQUIRES A VALID DOCKER PROFILE
+///////////////////////////////////////////////////////////////
+
+$name = $cli->getArgWithVal('docker');
+if($name !== null){
+	$dockerProfile = $docker->getProfile($name);
+
+	if($dockerProfile === null){
+		$this->cli->failure("Docker profile '$name' did not exist");
+	}
+
+	$docker->setProfile($dockerProfile);
+}else{
+    $this->cli->failure("No valid docker profile given");
+}
+
+if($cli->hasArg(['list-profile', 'list-profiles'])){
+    try{
+		$profileList = $watcher->listProfiles($dockerProfile);
+    }catch(Exception $e){
+        $this->cli->failure($e->getMessage());
+    }
+
+    $this->cli->print("{blu}Profile List{end}:\n");
+    foreach($profileList as $name => $profile){
+        $this->cli->print("{cyn}$name{end}: to container '{yel}{$profile->getContainer()}{end}' with local dir '{yel}{$profile->getLocalDir()}{end}' and remote dir '{yel}{$profile->getRemoteDir()}{end}'\n");
+    }
+    if(empty($profileList)){
+        $this->cli->print("There were no profiles with this docker configuration\n");
+    }
+
+    exit(0);
+}
+
+if(($syncProfile = $cli->getArgWithVal('add-profile')) !== null){
+    $container = $cli->getArgWithVal('container', $syncProfile);
+    $localDir = $cli->getArgWithVal('local-dir');
+    $remoteDir = $cli->getArgWithVal('remote-dir');
+
+    if($container === null) $this->cli->failure("--container parameter was not valid");
+    if($localDir === null) $this->cli->failure("--local-dir parameter was not valid");
+    if($remoteDir === null) $this->cli->failure("--remote-dir parameter was not valid");
+
+    if($watcher->addProfile($dockerProfile, $syncProfile, $container, $localDir, $remoteDir)){
+		$this->cli->success("Docker Sync Profile '$syncProfile' using docker '{$dockerProfile->getName()}' and target container '$container' between '$localDir' to '$remoteDir' was written successfully");
+	}else{
+		$this->cli->failure("Docker Sync Profile '$syncProfile' using docker '{$dockerProfile->getName()}' did not write successfully");
+    }
+}
+
+if(($syncProfile = $cli->getArgWithVal('remove-profile')) !== null){
+    if($watcher->removeProfile($dockerProfile, $syncProfile)){
+		$this->cli->success("Docker Sync Profile '$syncProfile' using docker '{$dockerProfile->getName()}' was removed successfully");
+	}else{
+		$this->cli->failure("Docker Sync Profile '$syncProfile' using docker '{$dockerProfile->getName()}' did not remove successfully");
+    }
+}
+
+///////////////////////////////////////////////////////////////
+// EVERYTHING BELOW HERE REQUIRES A VALID SYNC PROFILE
+///////////////////////////////////////////////////////////////
+
+$name = $cli->getArgWithVal('profile');
+if($name !== null){
+	$syncProfile = $watcher->getProfile($dockerProfile, $name);
+
+	if($syncProfile === null){
+		$this->cli->failure("Docker profile '$name' did not exist");
+	}
+}else{
+	$this->cli->failure("No valid sync profile given");
+}
+
+if($cli->hasArg('watch')){
+    try{
+        $this->cli->print("{blu}Starting watcher process using docker '{$dockerProfile->getName()}' and container '{$syncProfile->getContainer()}'...{end}\n");
+        if($watcher->watch($dockerProfile, $syncProfile)){
+            $this->cli->success("Terminated successfully");
+        }else{
+            $this->cli->failure("Error: fswatch failed with an unknown error");
+        }
+    }catch(Exception $e){
+        $this->cli->failure("The watcher process has exited abnormally");
+    }
+}
+
+if(($localFilename = $cli->getArgWithVal('write')) !== null){
+    try{
+        $relativeFilename = str_replace($syncProfile->getLocalDir(), "", $localFilename);
+		$remoteFilename = $syncProfile->getRemoteFilename($localFilename);
+		$now = (new DateTime())->format("Y-m-d H:i:s");
+		$this->cli->print("$now - $relativeFilename => $remoteFilename ");
+
+		if(is_dir($localFilename)){
+			$this->cli->success("{yel}IGNORED (WAS DIRECTORY){end}");
+        }else if(!file_exists($localFilename)){
+			$this->cli->success("{yel}IGNORED (FILE NOT FOUND){end}");
+		}else if($watcher->shouldIgnore($syncProfile, $localFilename)){
+			$this->cli->success("{yel}IGNORED (DUE TO RULES){end}");
+        }else if($watcher->write($syncProfile, $localFilename)){
+			$this->cli->success("SUCCESS");
+        }else{
+			$this->cli->failure("FAILURE");
+        }
+    }catch(Exception $e){
+        $this->cli->failure("EXCEPTION: ".$e->getMessage());
+    }
+}
+
+$this->cli->failure('no action taken');
+*/
