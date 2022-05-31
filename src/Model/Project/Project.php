@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Model;
+namespace DDT\Model\Project;
 
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
@@ -18,6 +18,15 @@ class Project implements JsonSerializable
         $this->setPath($path);
         $this->setName($name ?? basename($path));
         $this->setGroup($group);
+    }
+
+    static public function fromArray(array $data): Project
+    {
+        $path   = array_key_exists('path', $data) ? $data['path'] : null;
+        $name   = array_key_exists('name', $data) ? $data['name'] : null;
+        $group  = array_key_exists('group', $data) ? $data['group'] : null;
+
+        return new self($path, $name, $group);
     }
 
     public function setName(string $name): self
@@ -97,21 +106,14 @@ class Project implements JsonSerializable
         return $this->group;
     }
 
-    static public function fromArray(array $data): Project
-    {
-        $path   = array_key_exists('path', $data) ? $data['path'] : null;
-        $name   = array_key_exists('name', $data) ? $data['name'] : null;
-        $group  = array_key_exists('group', $data) ? $data['group'] : null;
-
-        return new Project($path, $name, $group);
-    }
-
     public function toArray(): array
     {
         return [
             'name' => $this->getName(),
             'path' => $this->getPath(),
             'group' => $this->getGroups(),
+            //'type' => $this->getType(),
+            //'repo_url' => ... something to get repo url
         ];
     }
 

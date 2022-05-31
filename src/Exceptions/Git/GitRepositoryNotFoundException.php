@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Git;
 
-class GitNotARepositoryException extends \Exception
+class GitRepositoryNotFoundException extends \Exception
 {
     public function __construct(string $path, $code = 0, \Throwable $previous = null)
     {

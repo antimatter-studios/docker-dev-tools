@@ -10,7 +10,7 @@ use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
-use DDT\Model\Project;
+use DDT\Model\Project\Project;
 
 class ProjectConfig
 {
@@ -34,6 +34,8 @@ class ProjectConfig
 
 	public function listProjects(): array
 	{
+		// $this->readModel($this->listKey, ProjectList::class);
+
 		$list = $this->config->getKey("$this->listKey") ?? [];
 
 		return array_map(function($item){

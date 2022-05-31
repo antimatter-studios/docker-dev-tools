@@ -26,6 +26,17 @@
                 "group": "personal" 
             }
         ],
-        "list": {}
+        "list": {
+            "the-project": {
+                "name": "the-project",
+                "path": "$HOME/somewhere",
+                "group": "personal"
+            }
+        }
+    },
+    "self_update": {
+        "timeout": 0,
+        "period": "+7 day",
+        "enabled": true
     }
 }

@@ -6,29 +6,34 @@ use DDT\CLI;
 use DDT\Config\External\ComposerProjectConfig;
 use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
-use DDT\Config\ProjectConfig;
-use DDT\Exceptions\Git\GitNotARepositoryException;
+use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 use DDT\Exceptions\Project\ProjectExistsException;
-use DDT\Model\Project;
+use DDT\Model\Project\Project;
 use DDT\Services\GitService;
+use DDT\Services\ProjectService;
 use DDT\Text\Table;
 
 class ProjectTool extends Tool
 {
-    /** @var \DDT\Config\ProjectConfig  */
-    private $config;
+    /** @var \DDT\Services\ProjectService */
+    private $projectService;
 
     /** @var \DDT\Services\GitService */
     private $repoService;
 
-    public function __construct(CLI $cli, ProjectConfig $config, GitService $repoService)
+    public function __construct(CLI $cli, ProjectService $projectService, GitService $repoService)
     {
     	parent::__construct('project', $cli);
 
-        $this->config = $config;
         $this->repoService = $repoService;
+        $this->projectService = $projectService;
 
-        foreach(['list', 'add-group', 'remove-group', 'add-project', 'remove-project'] as $command){
+        foreach([
+            'list', 
+            'add-path', 'remove-path',
+            'add-group', 'remove-group',
+            'add-project', 'remove-project'
+        ] as $command){
             $this->setToolCommand($command);
         }
     }
@@ -46,6 +51,10 @@ class ProjectTool extends Tool
             'options' => [
                 "{cyn}General Functionality{end}:",
                 "\tlist: Will list a table with all the registered projects with their groups, paths, vcs info etc",
+
+                "\n\t{cyn}Managing Paths{end}:",
+                "\tadd-path {yel}<path> [optional: <group>]{end}: Will add a path and automatically include all projects one level deep",
+                "\tremove-path {yel}<path>: Will remove a matching path from the list",
                 
                 "\n\t{cyn}Managing Projects{end}:",
                 "\tadd-project {yel}<path> [optional: <project-name> <type> <group> <vcs> <remote-name>]{end}: Will add a new project that already exists on the disk.",
@@ -54,27 +63,33 @@ class ProjectTool extends Tool
                 "\t\t{yel}<group>{end}: Can be empty, but groups may become required when two projects have the same name, or you can use path in other functionality to reduce the ambiguity",
                 "\t\t{yel}<vcs>{end}: Can be autodetected from the projects contents. But Git is only supported right now, but this is the clone url",
                 "\t\t{yel}<remote-name>{end}: Defaults to 'origin', but this is very git-centric and may change if other vcs systems are supported in the future",
-                "\tremove-project {yel}<project-name> [optional: <path>]{end}: Remove a project, path is optional because maybe there are multiple projects with the same name",
+                "\tremove-project {yel}<project-name> [optional: <path>]{end}: Remove a project, see notes regarding path parameter",
 
                 "\n\t{cyn}Managing Groups{end}:",
-                "\tadd-group {yel}<project-name> <group> [optional: <path>]{end}: Add a project to a group, path is optional because if you have two projects with the same name, you can add the path to reduce the ambiguity which project to manipulate",
-                "\tremove-group {yel}<project-name> <group> [optional: <path>]{end}: Remove a project from a group, path is optional because of the same reasons as with add-project",
+                "\tadd-group {yel}<project-name> <group> [optional: <path>]{end}: Add a project to a group, see notes regarding path parameter",
+                "\tremove-group {yel}<project-name> <group> [optional: <path>]{end}: Remove a project from a group, see notes regarding path parameter",
 
                 "\n\t{cyn}Project Types{end}:",
                 "\tThese just define where the configuration will be stored, it has one of the following values:\n",
-                "\tnone: {yel}There is no project type detected or configuration that could be read' file",
+                "\tnone: There is no project type detected or configuration that could be read",
                 "\tnode: This project type will use the 'package.json' file.",
                 "\tcomposer: This project type will use the 'composer.json' file.",
                 "\tddt: {yel}(default if no type given){end} This project will use the 'ddt-project.json' file",
             ],
             'notes' => [
+                "- If a project has package.json and composer.json, it will default to using composer.json",
                 "- If adding a new project which already exists, you have to be careful that the groups over",
                 "\toverlap. As it would create a situation where you would have the same project existing in",
                 "\tmultiple groups with the same name, if you tried to operate upon it, which one would",
                 "\tyou target? Since they both have the same name, but different directories, so could have",
-                "\tdifferent code too. Hence this situation is not possible to tolerate",
+                "\tdifferent code too. Hence this situation is not possible to handle and will fail",
                 "- If adding a new project which already exists, you cannot leave the groups empty, as again",
                 "\tit makes it hard or impossible to know how to work with it.",
+                "- A project with the same name might exist in multiple locations on the disk and whereas it might",
+                "\tbe the same project, might have a different version or branch. Therefore just cause it's the same",
+                "\tproject doesn't mean it is treated the same. Therefore the path optional parameter can be used to",
+                "\tselect which project to operate on and manipulate. So when using the following commands",
+                "\t'remove-project, add-group, and remove-group', the path parameter is used to do that"
             ]
         ];
     }
@@ -88,7 +103,7 @@ class ProjectTool extends Tool
     {
         $this->cli->print("{blu}Project Group List:{end}\n");
 
-        $projectList = $this->config->listProjects();
+        $projectList = $this->projectService->list();
 
         $table = container(Table::class);
         $table->setColumnMapping(['project', 'group', 'path', 'type', 'vcs', 'remote']);
@@ -132,13 +147,16 @@ class ProjectTool extends Tool
         $this->cli->print($table->render());
     }
 
+    public function addPath(): void {}
+    public function removePath(): void {}
+
     public function addGroup(string $project, string $group, ?string $path=null): void
     {
         $pathText = !empty($path) ? " with given path '$path'" : "";
 
         $this->cli->print("{blu}Adding group '$group' to project '$project' $pathText{end}\n");
 
-        if($this->config->addGroup($project, $group, $path)){
+        if($this->projectService->addGroup($project, $group, $path)){
             $this->cli->print("{grn}Group was added, listing projects{end}...\n");
 
             $this->list();
@@ -153,7 +171,7 @@ class ProjectTool extends Tool
 
         $this->cli->print("{blu}Removing group '$group' from project '$project' $pathText{end}\n");
 
-        if($this->config->removeGroup($project, $group, $path)){
+        if($this->projectService->removeGroup($project, $group, $path)){
             $this->cli->print("{grn}Project was removed, listing projects{end}...\n");
             $this->list();
         }else{
@@ -178,6 +196,8 @@ class ProjectTool extends Tool
         }else{
             $type = 'none';
         }
+        
+        $this->cli->print("Auto-detecting project type: '$type'\n");
 
         return $type;
     }
@@ -210,10 +230,7 @@ class ProjectTool extends Tool
 
         $path = $updatedPath;
 
-        if($type === null){
-            $type = $this->autoDetectProjectType($path);
-            $this->cli->print("Auto-detecting project type: '$type'\n");
-        }
+        $type = $type ?? $this->autoDetectProjectType($path);
 
         if($type === 'none'){
             $this->cli->failure("{red}It is not possible to manage projects with an unrecognised project type{end}\n");
@@ -235,15 +252,15 @@ class ProjectTool extends Tool
 
         if($vcs === null){
             try{
-                $vcs = $this->repoService->getRemote($path, $remote);
-            }catch(GitNotARepositoryException $e){
+                $vcs = $this->repoService->remote($path, $remote);
+            }catch(GitRepositoryNotFoundException $e){
                 // do nothing
                 $this->cli->print("No git repository was found, nor one was given through the command line\n");
             }
         }
 
         try{
-            if($this->config->addProject($path, $name, $group)){
+            if($this->projectService->addProject($path, $name, $group)){
                 $this->cli->print("{grn}The project '$project' with type '$type' in group '$group' was successfully added with the path '$path'{end}\n");
                 return true;
             }
@@ -259,7 +276,7 @@ class ProjectTool extends Tool
         $this->cli->print("{blu}Removing Project{end}\n");
         $this->cli->debug("project", "Delete functionality is not written yet\n");
 
-        if($this->config->removeProject($project, $path)){
+        if($this->projectService->removeProject($project, $path)){
             $this->cli->print("{grn}The project '$project' was successfully removed'{end}\n");
             return true;
         }else{
