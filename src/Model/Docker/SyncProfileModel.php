@@ -4,7 +4,7 @@ namespace DDT\Model\Docker;
 
 use Exception;
 
-class SyncProfile implements \JsonSerializable
+class SyncProfileModel implements \JsonSerializable
 {
     private $name;
     private $containerName;

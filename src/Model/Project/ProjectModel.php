@@ -7,7 +7,7 @@ use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
 use JsonSerializable;
 
-class Project implements JsonSerializable
+class ProjectModel implements JsonSerializable
 {
     private $name;
     private $path;
@@ -20,7 +20,7 @@ class Project implements JsonSerializable
         $this->setGroup($group);
     }
 
-    static public function fromArray(array $data): Project
+    static public function fromArray(array $data): ProjectModel
     {
         $path   = array_key_exists('path', $data) ? $data['path'] : null;
         $name   = array_key_exists('name', $data) ? $data['name'] : null;

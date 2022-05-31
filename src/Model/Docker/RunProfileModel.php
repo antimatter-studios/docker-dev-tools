@@ -2,7 +2,7 @@
 
 namespace DDT\Model\Docker;
 
-class RunProfile implements \JsonSerializable
+class RunProfileModel implements \JsonSerializable
 {
     private $name;
     

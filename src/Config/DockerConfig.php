@@ -2,8 +2,8 @@
 
 namespace DDT\Config;
 
-use DDT\Model\Docker\RunProfile;
-use DDT\Model\Docker\SyncProfile;
+use DDT\Model\Docker\RunProfileModel;
+use DDT\Model\Docker\SyncProfileModel;
 
 class DockerConfig
 {
@@ -25,7 +25,7 @@ class DockerConfig
         $list = $this->config->getKey($this->key['run']) ?? [];
 
         foreach($list as $index => $profile){
-            $list[$index] = new RunProfile(
+            $list[$index] = new RunProfileModel(
                 $profile['name'], 
                 $profile['host'], 
                 $profile['port'], 
@@ -39,7 +39,7 @@ class DockerConfig
         return $list;
     }
 
-    public function readRunProfile(string $name): RunProfile
+    public function readRunProfile(string $name): RunProfileModel
     {
         $list = $this->listRunProfile();
 
@@ -50,7 +50,7 @@ class DockerConfig
         throw new \Exception("Docker Run Profile named '$name' does not exist");
     }
 
-    public function writeRunProfile(RunProfile $profile): bool
+    public function writeRunProfile(RunProfileModel $profile): bool
     {
         $list = $this->listRunProfile();
         $data = $profile->get();
@@ -82,13 +82,13 @@ class DockerConfig
         $list = $this->config->getKey($this->key['sync']) ?? [];
 
         foreach($list as $index => $profile){
-            $list[$index] = new SyncProfile($profile['name'], $profile['container_name'], $profile['local_dir'], $profile['remote_dir']);
+            $list[$index] = new SyncProfileModel($profile['name'], $profile['container_name'], $profile['local_dir'], $profile['remote_dir']);
         }
 
         return $list;
     }
 
-    public function readSyncProfile(string $name): SyncProfile
+    public function readSyncProfile(string $name): SyncProfileModel
     {
         $list = $this->listSyncProfile();
 
@@ -99,7 +99,7 @@ class DockerConfig
         throw new \Exception("Docker Sync Profile named '$name' does not exist");
     }
 
-    public function writeSyncProfile(SyncProfile $profile): bool
+    public function writeSyncProfile(SyncProfileModel $profile): bool
     {
         $list = $this->listSyncProfile();
         $data = $profile->get();

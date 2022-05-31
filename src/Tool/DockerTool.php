@@ -7,8 +7,8 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\DockerConfig;
 use DDT\Debug;
 use DDT\Services\DockerService;
-use DDT\Model\Docker\RunProfile;
-use DDT\Model\Docker\SyncProfile;
+use DDT\Model\Docker\RunProfileModel;
+use DDT\Model\Docker\SyncProfileModel;
 use DDT\Text\Table;
 
 class DockerTool extends Tool
@@ -92,7 +92,7 @@ class DockerTool extends Tool
 
     public function addProfile(string $name, string $host, int $port, string $tlscacert, string $tlscert, string $tlskey, bool $tlsverify)
     {
-        $profile = new RunProfile($name, $host, $port, $tlscacert, $tlscert, $tlskey, $tlsverify);
+        $profile = new RunProfileModel($name, $host, $port, $tlscacert, $tlscert, $tlskey, $tlsverify);
         
         if($this->config->writeRunProfile($profile)){
             $this->cli->print("{grn}Docker Run Profile '$name' written successfully{grn}\n");
@@ -150,7 +150,7 @@ class DockerTool extends Tool
     {
         $this->cli->print("{blu}Creating new Docker Sync Project:{end}\n\n");
 
-        $profile = new SyncProfile($name, $containerName, $localDir, $remoteDir);
+        $profile = new SyncProfileModel($name, $containerName, $localDir, $remoteDir);
         
         if($this->config->writeSyncProfile($profile)){
             $this->cli->print("{grn}Docker Sync Project '$name' written successfully{end}\n");

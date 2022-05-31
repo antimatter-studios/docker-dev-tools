@@ -2,18 +2,18 @@
 
 namespace DDT\Model\Project;
 
-class ProjectList implements \JsonSerializable
+class ProjectListModel implements \JsonSerializable
 {
     private $list = [];
 
     public function __construct(array $projectList=[])
     {
         foreach($projectList as $project){
-            $this->list[] = Project::fromArray($project);
+            $this->list[] = ProjectModel::fromArray($project);
         }
     }
 
-    static public function fromArray(array $data): ProjectList
+    static public function fromArray(array $data): ProjectListModel
     {
         return new self($data);
     }

@@ -8,7 +8,6 @@ use DDT\Config\External\NodeProjectConfig;
 use DDT\Config\External\StandardProjectConfig;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 use DDT\Exceptions\Project\ProjectExistsException;
-use DDT\Model\Project\Project;
 use DDT\Services\GitService;
 use DDT\Services\ProjectService;
 use DDT\Text\Table;
