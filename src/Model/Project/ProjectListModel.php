@@ -22,6 +22,6 @@ class ProjectListModel extends Model
 
 	public function toArray(): array
 	{
-		return [];
+		return $this->list;
 	}
 }

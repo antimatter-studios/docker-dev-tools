@@ -20,15 +20,6 @@ class ProjectModel extends Model
         $this->setGroup($group);
     }
 
-    static public function fromArray(array $data): self
-    {
-        $path   = array_key_exists('path', $data) ? $data['path'] : null;
-        $name   = array_key_exists('name', $data) ? $data['name'] : null;
-        $group  = array_key_exists('group', $data) ? $data['group'] : null;
-
-        return new self($path, $name, $group);
-    }
-
     public function setName(string $name): self
     {
         $this->name = $name;
@@ -104,6 +95,15 @@ class ProjectModel extends Model
     public function getGroups(): array
     {
         return $this->group;
+    }
+
+    static public function fromArray(array $data): self
+    {
+        $path   = array_key_exists('path', $data) ? $data['path'] : null;
+        $name   = array_key_exists('name', $data) ? $data['name'] : null;
+        $group  = array_key_exists('group', $data) ? $data['group'] : null;
+
+        return new self($path, $name, $group);
     }
 
     public function toArray(): array
