@@ -7,7 +7,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
-use DDT\Model\RunConfiguration;
+use DDT\Model\RunConfigurationModel;
 use DDT\Services\RunService;
 use DDT\Text\Table;
 
@@ -145,7 +145,7 @@ class RunTool extends Tool
             // Resolve the project list and dependency tree into a final run list
             [$runlist] = $this->runService->resolve($script, $projectList);
 
-            $print = function(RunConfiguration $r, int $indentLevel) use (&$print): void {
+            $print = function(RunConfigurationModel $r, int $indentLevel) use (&$print): void {
                 $this->cli->print(str_repeat("\t", $indentLevel) . "- {blu}" . $r->getName()."{end}\n");
                 foreach($r->getCommandList() as $script => $commandLine){
                     $this->cli->print(str_repeat("\t", $indentLevel + 1) . "{yel}script{end}: '$script' => '$commandLine'\n");

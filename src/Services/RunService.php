@@ -6,7 +6,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Contract\External\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectScriptInvalidException;
-use DDT\Model\RunConfiguration;
+use DDT\Model\RunConfigurationModel;
 
 class RunService
 {
@@ -117,7 +117,7 @@ class RunService
 				}
 			}
 
-			$list[] = new RunConfiguration($name, $group, array_filter($command), $subtree);
+			$list[] = new RunConfigurationModel($name, $group, array_filter($command), $subtree);
 		}
 
 		return [$list, $stack];
@@ -156,7 +156,7 @@ class RunService
 		return $this->projectConfig->getProjectConfig($project, null, $group);
 	}
 
-	public function run(RunConfiguration $runConfig, ?ArgumentList $extraArgs=null)
+	public function run(RunConfigurationModel $runConfig, ?ArgumentList $extraArgs=null)
 	{
 		try{
 			$project = $runConfig->getName();
