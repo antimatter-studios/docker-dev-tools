@@ -2,7 +2,7 @@
 
 namespace DDT\Model;
 
-class Extension
+class ExtensionModel
 {
     /** @var string */
     private $name;

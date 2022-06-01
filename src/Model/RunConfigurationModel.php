@@ -2,7 +2,7 @@
 
 namespace DDT\Model;
 
-class RunConfiguration
+class RunConfigurationModel
 {
     private $name;
     private $group;
