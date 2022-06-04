@@ -134,9 +134,13 @@ class ProjectTool extends Tool
                 $type = "{red}invalid{end}";
             }
 
-            $url = $this->repoService->remote($project->getPath());
-            if(!is_dir($path)){
-                $url = "{red}error, path not found{end}";
+            try{
+                $url = $this->repoService->remote($project->getPath());
+                if(!is_dir($path)){
+                    $url = "{red}error, path not found{end}";
+                }
+            }catch(GitRepositoryNotFoundException $e){
+                $url = "{red}error, path not a git repository{end}";
             }
 
             $table->addRow([$project->getName(), $group, $path, $type, $url]);
