@@ -201,7 +201,7 @@ class ProjectConfig
 			return false;
 		});
 
-		$projectList[$path] = container(Project::class, [
+		$projectList[$path] = ProjectModel::fromArray([
 			'path' => $path, 
 			'name' => $name,
 			'group' => $group, 
