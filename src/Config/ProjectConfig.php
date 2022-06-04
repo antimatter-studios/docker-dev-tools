@@ -37,7 +37,7 @@ class ProjectConfig
 	{
 		// $this->readModel($this->listKey, ProjectList::class);
 
-		$list = $this->config->getKey("$this->listKey") ?? [];
+		$list = $this->config->getKey($this->listKey) ?? [];
 
 		return array_map(function($item){
 			return ProjectModel::fromArray($item);
@@ -106,6 +106,7 @@ class ProjectConfig
 	public function addGroup(string $project, string $group, ?string $path=null): bool
 	{
 		$projectList = $this->listProjects();
+		var_dump($projectList);
 
 		if(!empty($path)){
 			if(array_key_exists($path, $projectList)){
@@ -114,7 +115,7 @@ class ProjectConfig
 				}
 
 				$projectList[$path]->addGroup($group);
-				$this->config->setKey($this->key, $projectList);
+				$this->config->setKey($this->listKey, $projectList);
 				return $this->config->write();
 			}else{
 				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
@@ -146,7 +147,7 @@ class ProjectConfig
 
 				$projectList[$path]->removeGroup($group);
 
-				$this->config->setKey($this->key, $projectList);
+				$this->config->setKey($this->listKey, $projectList);
 				return $this->config->write();
 			}else{
 				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
