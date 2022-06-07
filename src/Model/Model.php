@@ -4,18 +4,7 @@ namespace DDT\Model;
 
 use JsonSerializable;
 
-abstract class Model implements JsonSerializable
+abstract class Model implements ModelInterface, JsonSerializable
 {
-    public function __toString(): string
-	{
-		return json_encode($this->toArray(), JSON_PRETTY_PRINT);
-	}
-
-    abstract public function toArray(): array;
-
-    #[\ReturnTypeWillChange]
-    public function jsonSerialize()
-    {
-        return $this->toArray();
-    }
+    use JsonSerializableTrait;
 }

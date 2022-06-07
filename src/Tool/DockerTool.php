@@ -190,7 +190,7 @@ class DockerTool extends Tool
         ]);
 
         foreach($list as $profile){
-            $data = $profile->get();
+            $data = $profile->getData();
 
             $table->addRow([$data['name'], $data['container_name'], $data['local_dir'], $data['remote_dir']]);
         }

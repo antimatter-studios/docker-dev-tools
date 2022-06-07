@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Model;
+namespace DDT\Model\Vcs;
+
+use DDT\Model\Model;
 
 class VcsModel extends Model
 {
@@ -11,7 +13,7 @@ class VcsModel extends Model
         $this->name = $name;
     }
 
-    public function toArray(): array
+    public function getData()
     {
         return [
             'url' => $this->url,

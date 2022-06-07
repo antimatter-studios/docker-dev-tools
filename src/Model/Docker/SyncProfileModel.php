@@ -73,7 +73,7 @@ class SyncProfileModel extends Model
         return new self($data['name'], $data['container_name'], $data['local_dir'], $data['remote_dir']);
     }
 
-	public function toArray(): array
+	public function getData()
 	{
 		return [
             'name' => $this->name,

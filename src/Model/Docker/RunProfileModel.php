@@ -100,7 +100,7 @@ class RunProfileModel extends Model
         );
     }
 
-	public function toArray(): array
+	public function getData()
 	{
 		return [
 			"name"		=> $this->name,

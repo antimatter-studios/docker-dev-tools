@@ -10,13 +10,19 @@ use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
+use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectModel;
+use DDT\Model\Project\ProjectPathListModel;
 use DDT\Model\Project\ProjectPathModel;
+use Exception;
 
 class ProjectConfig
 {
+	const LIST_PATHS = 1;
+	const LIST_PROJECTS = 2;
+	const LIST_ALL = 3;
+
 	private $version = 3;
-	private $key = '.projects';
 	private $pathKey = '.projects.paths';
 	private $listKey = '.projects.list';
 
@@ -33,15 +39,30 @@ class ProjectConfig
 		}
 	}
 
-	public function listProjects(): array
+	public function readModel(string $key, string $className)
 	{
-		// $this->readModel($this->listKey, ProjectList::class);
+		$data = $this->config->getKey($key) ?? [];
 
-		$list = $this->config->getKey($this->listKey) ?? [];
+		if(is_callable("$className::fromArray")){
+			return $className::fromArray($data);
+		}
 
-		return array_map(function($item){
-			return ProjectModel::fromArray($item);
-		}, $list);
+		throw new Exception("Cannot read data into model because no static fromArray method was defined on it to accept the data");
+	}
+
+	public function listProjects(int $mode=self::LIST_ALL): ProjectListModel
+	{
+		$path = $list = [];
+
+		if($mode & self::LIST_PATHS){
+			$path = $this->readModel($this->pathKey, ProjectPathListModel::class);
+		}
+
+		if($mode & self::LIST_PROJECTS){
+			$list = $this->readModel($this->listKey, ProjectListModel::class);	
+		}
+
+		return ProjectListModel::fromArray($path, $list);
 	}
 
 	public function listProjectsByScript(string $script): array
@@ -66,36 +87,35 @@ class ProjectConfig
 		return $list;
 	}
 
-	public function listProjectsInGroup(string $group): array
+	public function listProjectsInGroup(string $group): iterable
 	{
 		return $this->listProjectsByKey('group', $group);
 	}
 
-	public function listProjectsByName(string $project): array
+	public function listProjectsByName(string $project): iterable
 	{
 		return $this->listProjectsByKey('name', $project);
 	}
 
-	public function listProjectsByKey(string $key, string $value): array
+	public function listProjectsByKey(string $key, string $value): iterable
 	{
 		return $this->listProjectsByFilter([$key => $value]);
 	}
 
-	public function listProjectsByFilter(array $filter): array
+	public function listProjectsByFilter(array $filter): iterable
 	{
-		return array_filter($this->listProjects(), function($config) use ($filter) {
-			$config = $config->toArray();
-
+		return $this->listProjects()->filter(function($project) use ($filter) {
 			foreach($filter as $key => $value){
-				if(!array_key_exists($key, $config)) {
+				if($key === 'name' && $project->getName() !== $value){
 					return false;
-				}else if(is_scalar($config[$key]) && $config[$key] !== $value){
+				}
+
+				if($key === 'path' && $project->getPath() !== $value){
 					return false;
-				}else if(is_array($config[$key]) && !in_array($value, $config[$key])){
-					// But additionally; if you requested an empty group and the group list is empty, then this is a match
-					if(!(empty($config[$key]) && empty($value))){
-						return false;
-					}
+				}
+
+				if($key === 'group' && !$project->hasGroup($value)){
+					return false;
 				}
 			}
 
@@ -106,23 +126,22 @@ class ProjectConfig
 	public function addGroup(string $project, string $group, ?string $path=null): bool
 	{
 		$projectList = $this->listProjects();
-		var_dump($projectList);
 
 		if(!empty($path)){
-			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]->getName() !== $project){
-					throw new ProjectNotFoundException($project, 'project name does not match path');
-				}
+			$p = $projectList->findProjectByPath($path, $project);
 
-				$projectList[$path]->addGroup($group);
-				$this->config->setKey($this->listKey, $projectList);
-				return $this->config->write();
-			}else{
-				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
+			if($p->getName() !== $project){
+				throw new ProjectNotFoundException($project, 'project name does not match path');
 			}
+
+			$p->addGroup($group);
+			$projectList->addProject($p);
+
+			$this->config->setKey($this->listKey, $projectList);
+			return $this->config->write();
 		}
 
-		$filteredList = array_filter($projectList, function($v) use ($project) {
+		$filteredList = $projectList->filter(function($v) use ($project) {
 			return $v->getName() === $project;
 		});
 
@@ -130,7 +149,7 @@ class ProjectConfig
 			throw new ProjectFoundMultipleException($project);
 		}
 
-		$first = array_shift($filteredList);
+		$first = current($filteredList);
 
 		return $this->addGroup($project, $group, $first->getPath());
 	}
@@ -140,21 +159,20 @@ class ProjectConfig
 		$projectList = $this->listProjects();
 
 		if(!empty($path)){
-			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]->getName() !== $project){
-					throw new ProjectNotFoundException($project, 'project name does not match path');
-				}
+			$p = $projectList->findProjectByPath($path, $project);
 
-				$projectList[$path]->removeGroup($group);
-
-				$this->config->setKey($this->listKey, $projectList);
-				return $this->config->write();
-			}else{
-				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
+			if($p->getName() !== $project){
+				throw new ProjectNotFoundException($project, 'project name does not match path');
 			}
+
+			$p->removeGroup($group);
+			$projectList->addProject($p);
+
+			$this->config->setKey($this->listKey, $projectList);
+			return $this->config->write();
 		}
 
-		$filteredList = array_filter($projectList, function($v) use ($project) {
+		$filteredList = $projectList->filter(function($v) use ($project) {
 			return $v->getName() === $project;
 		});
 
@@ -162,7 +180,7 @@ class ProjectConfig
 			throw new ProjectFoundMultipleException($project);
 		}
 
-		$first = array_shift($filteredList);
+		$first = current($filteredList);
 
 		return $this->removeGroup($project, $group, $first->getPath());
 	}
@@ -177,18 +195,18 @@ class ProjectConfig
 
 		$projectList = $this->listProjects();
 
-		if(array_key_exists($path, $projectList)){
+		if($projectList->findProjectByPath($path, $name)){
 			throw new ProjectExistsException($name, $path, 'Cannot add same project twice');
 		}
 
-		array_filter($projectList, function($project) use ($name, $path, $group) {
+		$projectList->filter(function($project) use ($name, $path, $group) {
 			// If the name doesn't match, skip over this config
-			if($project->getName() !== $project){
+			if($project->getName() !== $name){
 				return false;
 			}
 
 			if(empty($group)){
-				throw new ProjectExistsException($project, $project->getPath(), 'Duplicate projects cannot have empty groups');
+				throw new ProjectExistsException($name, $project->getPath(), 'Duplicate projects cannot have empty groups');
 			}
 
 			// If this duplicate group, overlaps one of it's groups, it would create a situation where you'd have the same project
@@ -196,17 +214,17 @@ class ProjectConfig
 			// They both have the same name, but different directories, so could have different code too. Hence this situation
 			// Is not possible to tolerate
 			if(count(array_intersect($project->getGroups(), $group)) > 0){
-				throw new ProjectExistsException($project, $path, 'Duplicate projects cannot overlap Groups');
+				throw new ProjectExistsException($name, $path, 'Duplicate projects cannot overlap Groups');
 			}
 
 			return false;
 		});
 
-		$projectList[$path] = ProjectModel::fromArray([
+		$projectList->addProject(ProjectModel::fromArray([
 			'path' => $path, 
 			'name' => $name,
 			'group' => $group, 
-		]);
+		]));
 
 		$this->config->setKey($this->listKey, $projectList);
 		
@@ -218,20 +236,15 @@ class ProjectConfig
 		$projectList = $this->listProjects();
 
 		if(!empty($path)){
-			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]->getName() !== $project){
-					throw new ProjectNotFoundException($project, 'project name does not match path');
-				}
+			$p = $projectList->findProjectByPath($path, $project);
 
-				unset($projectList[$path]);
-				$this->config->setKey($this->listKey, $projectList);
-				return $this->config->write();
-			}else{
-				throw new ProjectNotFoundException($project, 'project with given path \'$path\' was not found');
-			}
+			$projectList->removeProject($p);
+			
+			$this->config->setKey($this->listKey, $projectList);
+			return $this->config->write();
 		}
 
-		$filteredList = array_filter($projectList, function($v) use ($project) {
+		$filteredList = $projectList->filter(function($v) use ($project) {
 			return $v->getName() === $project;
 		});
 
@@ -239,7 +252,7 @@ class ProjectConfig
 			throw new ProjectFoundMultipleException($project);
 		}
 
-		$first = array_shift($filteredList);
+		$first = current($filteredList);
 
 		return $this->removeProject($project, $first->getPath());
 	}
@@ -251,43 +264,37 @@ class ProjectConfig
 		$reason = null;
 
 		if(!empty($path)){
-			if(array_key_exists($path, $projectList)){
-				if($projectList[$path]->getName() !== $project){
-					throw new ProjectNotFoundException($project, 'project name does not match path');
-				}
-					
-				$class = null;
-				$type = $projectList[$path]->getType();
-				$args = ['filename' => $path, 'project' => $project, 'group' => $group];
+			$p = $projectList->findProjectByPath($path, $project);
 
-				if($type === 'ddt'){
-					$class = StandardProjectConfig::class;
-					$filename = $path . '/' . StandardProjectConfig::defaultFilename;
-				}
-				
-				if($type === 'node'){
-					$class = NodeProjectConfig::class;
-					$filename = $path . '/' . NodeProjectConfig::defaultFilename;
-				}
-				
-				if($type === 'composer'){
-					$class = ComposerProjectConfig::class;
-					$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
-				}
+			$class = null;
+			$type = $p->getType();
+			$args = ['filename' => $path, 'project' => $project, 'group' => $group];
 
-				if(is_subclass_of($class, ProjectConfigInterface::class)){
-					return container($class, array_merge($args, ['filename' => $filename]));
-				}
-				
-				$reason = "Project type '$type' does not match any allowed type";
-			}else{
-				$reason = "project with given path '$path' was not found";
+			if($type === 'ddt'){
+				$class = StandardProjectConfig::class;
+				$filename = $path . '/' . StandardProjectConfig::defaultFilename;
 			}
+			
+			if($type === 'node'){
+				$class = NodeProjectConfig::class;
+				$filename = $path . '/' . NodeProjectConfig::defaultFilename;
+			}
+			
+			if($type === 'composer'){
+				$class = ComposerProjectConfig::class;
+				$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
+			}
+
+			if(is_subclass_of($class, ProjectConfigInterface::class)){
+				return container($class, array_merge($args, ['filename' => $filename]));
+			}
+			
+			$reason = "Project type '$type' does not match any allowed type";
 
 			throw new ProjectNotFoundException($project, $reason);
 		}
 
-		$filteredList = array_filter($projectList, function($v) use ($project) {
+		$filteredList = $projectList->filter(function($v) use ($project) {
 			return $v->getName() === $project;
 		});
 
@@ -299,7 +306,7 @@ class ProjectConfig
 			throw new ProjectNotFoundException($project);
 		}
 
-		$first = array_shift($filteredList);
+		$first = current($filteredList);
 
 		return $this->getProjectConfig($project, $first->getPath(), $group);
 	}
@@ -316,7 +323,7 @@ class ProjectConfig
 	public function addPath(string $path, ?string $group=null): bool
 	{
 		$list = $this->listPaths();
-		$list[$path] = new ProjectPathModel($path, $group);
+		$list[$path] = ProjectPathModel::fromPath($path, $group);
 
         $this->config->setKey($this->pathKey, $list);
 

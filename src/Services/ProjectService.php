@@ -4,6 +4,7 @@ namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\Config\ProjectConfig;
+use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectPathModel;
 
 class ProjectService
@@ -20,7 +21,7 @@ class ProjectService
         $this->config = $config;
     }
 
-    public function list(): array
+    public function list(): ProjectListModel
     {
         return $this->config->listProjects();   
     }

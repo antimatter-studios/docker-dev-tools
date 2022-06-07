@@ -13,11 +13,11 @@ class ProjectModel extends Model
     private $path;
     private $group;
 
-    public function __construct(string $path, ?string $name=null, ?array $group=[])
+    public function __construct(string $path, ?string $name=null, ?ProjectGroupModel $group=null)
     {
         $this->setPath($path);
         $this->setName($name ?? basename($path));
-        $this->setGroup($group);
+        $this->setGroup($group ?? new ProjectGroupModel([]));
     }
 
     public function setName(string $name): self
@@ -65,34 +65,30 @@ class ProjectModel extends Model
         return $this->path;
     }
 
-    public function setGroup(array $groupList): self
+    public function setGroup(ProjectGroupModel $group): self
     {
-        $this->group = $groupList;
+        $this->group = $group;
         return $this;
     }
 
-    public function addGroup(string $groupName): self
+    public function addGroup(string $name): self
     {
-        $this->group[] = $groupName;
-        $this->group = array_unique($this->group);
+        $this->group = $this->group->add($name);
         return $this;
     }
 
-    public function removeGroup(string $groupName): self
+    public function removeGroup(string $name): self
     {
-        $this->group = array_filter($this->groupList, function($v) use ($groupName) {
-            return $v !== $groupName;
-        });
-
+        $this->group = $this->group->remove($name);
         return $this;
     }
 
-    public function hasGroup(string $groupName): bool
+    public function hasGroup(string $name): bool
     {
-        return in_array($groupName, $this->group);
+        return $this->hasGroup($name);
     }
 
-    public function getGroups(): array
+    public function getGroups(): ProjectGroupModel
     {
         return $this->group;
     }
@@ -103,15 +99,19 @@ class ProjectModel extends Model
         $name   = array_key_exists('name', $data) ? $data['name'] : null;
         $group  = array_key_exists('group', $data) ? $data['group'] : null;
 
+        if($group !== null){
+            $group = new ProjectGroupModel($group);
+        }
+
         return new self($path, $name, $group);
     }
 
-    public function toArray(): array
+    public function getData()
     {
         return [
             'name' => $this->getName(),
             'path' => $this->getPath(),
-            'group' => $this->getGroups(),
+            'group' => $this->getGroups()->getData(),
             //'type' => $this->getType(),
             //'repo_url' => ... something to get repo url
         ];

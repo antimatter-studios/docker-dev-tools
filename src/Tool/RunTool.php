@@ -7,7 +7,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
-use DDT\Model\RunConfigurationModel;
+use DDT\Model\Script\RunConfigurationModel;
 use DDT\Services\RunService;
 use DDT\Text\Table;
 

@@ -118,7 +118,7 @@ class ProjectTool extends Tool
 
         /** @var ProjectModel $project */
         foreach($projectList as $project) {
-            $groupList = $project->getGroups();
+            $groupList = (array)$project->getGroups();
 
             // If there are no groups, we just output an empty column
             $group = empty($groupList) ? '' : array_shift($groupList);

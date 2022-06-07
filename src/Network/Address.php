@@ -97,25 +97,20 @@ class Address
         throw new \Exception("The property named '$name' is not available");
     }
 
-    public function toArray(): array
-    {
-        return [
-            'status' => $this->status,
-            'address' => $this->address,
-            'hostname' => $this->hostname,
-            'ip_address' => $this->ip_address,
-            'packet_loss' => $this->packet_loss,
-            'can_resolve' => $this->can_resolve,
-        ];
-    }
-
     public function __toString(): string
     {
         $output = '';
 
         $temp = [];
 
-        $this->cli->debug('address raw', json_encode($this->toArray()));
+        $this->cli->debug('address raw', json_encode([
+            'status' => $this->status,
+            'address' => $this->address,
+            'hostname' => $this->hostname,
+            'ip_address' => $this->ip_address,
+            'packet_loss' => $this->packet_loss,
+            'can_resolve' => $this->can_resolve,
+        ]));
 
         if($this->status){
 			$temp[] = "Ping: {grn}SUCCESS{end}";

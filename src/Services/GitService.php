@@ -5,7 +5,7 @@ use DDT\CLI;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
-use DDT\Model\VcsModel;
+use DDT\Model\Vcs\VcsModel;
 use InvalidArgumentException;
 
 class GitService

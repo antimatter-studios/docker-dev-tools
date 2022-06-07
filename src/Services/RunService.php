@@ -6,7 +6,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Contract\External\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectScriptInvalidException;
-use DDT\Model\RunConfigurationModel;
+use DDT\Model\Script\RunConfigurationModel;
 
 class RunService
 {
@@ -77,7 +77,7 @@ class RunService
 		return true;
 	}
 
-	public function resolve(string $script, array $projectList, ?array $stack=[]): array
+	public function resolve(string $script, iterable $projectList, ?array $stack=[]): array
 	{
 		$list = [];
 
