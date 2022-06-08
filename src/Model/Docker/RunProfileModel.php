@@ -90,11 +90,11 @@ class RunProfileModel extends Model
     static public function fromArray(array $data): self
     {
         return new self(
-            $data['name'], 
-            $data['host'], 
-            $data['port'], 
-            $data['tlscacert'], 
-            $data['tlscert'], 
+            $data['name'],
+            $data['host'],
+            $data['port'],
+            $data['tlscacert'],
+            $data['tlscert'],
             $data['tlskey'],
             $data['tlsverify']
         );

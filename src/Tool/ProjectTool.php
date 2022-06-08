@@ -31,7 +31,7 @@ class ProjectTool extends Tool
         $this->projectService = $projectService;
 
         foreach([
-            'list', 
+            'list',
             'add-path', 'remove-path',
             'add-group', 'remove-group',
             'add-project', 'remove-project',
@@ -58,7 +58,7 @@ class ProjectTool extends Tool
                 "\n\t{cyn}Managing Paths{end}:",
                 "\tadd-path {yel}<path> [optional: <group>]{end}: Will add a path and automatically include all projects one level deep",
                 "\tremove-path {yel}<path>: Will remove a matching path from the list",
-                
+
                 "\n\t{cyn}Managing Projects{end}:",
                 "\tadd-project {yel}<path> [optional: <project-name> <type> <group> <vcs> <remote-name>]{end}: Will add a new project that already exists on the disk.",
                 "\t\t{yel}<project-name>{end}: Can be autodetected from the folder name that is given in the path",
@@ -102,7 +102,7 @@ class ProjectTool extends Tool
         return in_array($type, ['composer', 'node', 'ddt', 'none']);
     }
 
-    public function list(): void
+    public function list(?string $name=null, ?string $group=null): void
     {
         $this->cli->print("{blu}Project Group List:{end}\n");
 
@@ -118,6 +118,14 @@ class ProjectTool extends Tool
 
         /** @var ProjectModel $project */
         foreach($projectList as $project) {
+            if($name !== null && $project->getName() !== $name) {
+                continue;
+            }
+
+            if($group !== null && !$project->hasGroup($group)) {
+                continue;
+            }
+
             $groupList = (array)$project->getGroups();
 
             // If there are no groups, we just output an empty column
@@ -154,7 +162,7 @@ class ProjectTool extends Tool
         $this->cli->print($table->render());
     }
 
-    public function addPath(string $path, ?string $group=null): void 
+    public function addPath(string $path, ?string $group=null): void
     {
         try{
             if($this->projectService->addPath($path, $group)){
@@ -163,11 +171,11 @@ class ProjectTool extends Tool
         }catch(DirectoryNotExistException $e){
             $this->cli->failure($e->getMessage());
         }
-        
+
         $this->cli->failure("Could not add the project path '$path' with the group '$group'\n");
     }
 
-    public function removePath(string $path): void 
+    public function removePath(string $path): void
     {
         try{
             if($this->projectService->removePath($path)){
@@ -226,7 +234,7 @@ class ProjectTool extends Tool
         }else{
             $type = 'none';
         }
-        
+
         $this->cli->print("Auto-detecting project type: '$type'\n");
 
         return $type;
