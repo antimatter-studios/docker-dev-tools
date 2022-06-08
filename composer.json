@@ -1,5 +1,5 @@
 {
-    "name": "christhomas/docker-dev-tools",
+    "name": "antimatter-studios/docker-dev-tools",
     "description": "A toolset for running a local docker environment",
     "require": {
         "phpunit/phpunit": "^9.5"

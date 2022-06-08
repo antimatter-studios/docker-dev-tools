@@ -18,7 +18,7 @@
         "network": []
     },
     "projects": {
-        "paths": [],
+        "paths": {},
         "list": {}
     },
     "self_update": {

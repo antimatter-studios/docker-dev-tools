@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Model;
+namespace DDT\Model\Extension;
 
-class Extension
+class ExtensionModel
 {
     /** @var string */
     private $name;
@@ -25,6 +25,5 @@ class Extension
         }
 
         // read the .ddt-extension.json file and check it's valid
-        
     }
 }

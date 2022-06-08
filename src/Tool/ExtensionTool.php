@@ -109,7 +109,7 @@ class ExtensionTool extends Tool
 
             // Found the path, but the url was null, probably this is a reinstallation attempt
             if(is_dir($path) && $url ===null){
-                $url = $this->gitService->getRemote($path, 'origin');
+                $url = $this->gitService->remote($path, 'origin');
             }
 
             $extensionConfig = ExtensionPackageConfig::instance($path . '/' . ExtensionPackageConfig::defautFilename);

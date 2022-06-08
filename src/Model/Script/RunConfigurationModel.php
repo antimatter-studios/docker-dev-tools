@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Model;
+namespace DDT\Model\Script;
 
-class RunConfiguration
+class RunConfigurationModel
 {
     private $name;
     private $group;

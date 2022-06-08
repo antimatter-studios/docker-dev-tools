@@ -4,7 +4,8 @@ namespace DDT\Services;
 use DDT\CLI;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
-use DDT\Exceptions\Git\GitNotARepositoryException;
+use DDT\Exceptions\Git\GitRepositoryNotFoundException;
+use DDT\Model\Vcs\VcsModel;
 use InvalidArgumentException;
 
 class GitService
@@ -16,6 +17,19 @@ class GitService
 	{
 		$this->cli = $cli;
 	}
+
+	static public function fromPath(string $path): VcsModel
+    {
+		$service = container(self::class);
+
+		if($service->isRepository($path)){
+			$url = $service->remote($path);
+			$branch = $service->branch($path);
+			return container(VcsModel::class, ['url' => $url, 'branch' => $branch]);
+		}
+
+		throw new GitRepositoryNotFoundException($path);
+    }
 
 	public function exists(string $url): bool
 	{
@@ -87,19 +101,11 @@ class GitService
 
 	public function remote(string $path, string $name='origin'): string
 	{
-		return $this->cli->exec("git -C $path remote get-url $name");
-	}
-
-	// FIXME: exec no longer throws exceptions, so how can we manage errors now?
-	public function getRemote(string $path, string $remote): string
-	{
-		try{
-			return $this->cli->exec("git -C $path remote get-url $remote");
-		}catch(\Exception $e){
-			if(strpos($e->getMessage(), "not a git repository") !== false){
-				throw new GitNotARepositoryException($path);
-			}
+		if($this->isRepository($path)){
+			return $this->cli->exec("git -C $path remote get-url $name");
 		}
+
+		throw new GitRepositoryNotFoundException($path);
 	}
 
 	public function fetch(string $path, bool $prune=false): bool

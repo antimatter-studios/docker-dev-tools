@@ -2,9 +2,10 @@
 
 namespace DDT\Model\Docker;
 
+use DDT\Model\Model;
 use Exception;
 
-class SyncProfile implements \JsonSerializable
+class SyncProfileModel extends Model
 {
     private $name;
     private $containerName;
@@ -67,17 +68,12 @@ class SyncProfile implements \JsonSerializable
         return $this->remoteDir . str_replace($this->localDir, '', $localFilename);
     }
 
-    public function __toString(): string
-	{
-		return json_encode($this->get(), JSON_PRETTY_PRINT);
-	}
+    static public function fromArray(array $data): self 
+    {
+        return new self($data['name'], $data['container_name'], $data['local_dir'], $data['remote_dir']);
+    }
 
-	public function jsonSerialize(): array
-	{
-		return $this->get();
-	}
-
-	public function get(): array
+	public function getData()
 	{
 		return [
             'name' => $this->name,

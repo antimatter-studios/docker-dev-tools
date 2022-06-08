@@ -7,7 +7,7 @@ use DDT\CLI\Output\DockerFilterChannel;
 use DDT\CLI\Output\StringChannel;
 use DDT\Config\DockerConfig;
 use DDT\Contract\ChannelInterface;
-use DDT\Model\Docker\RunProfile;
+use DDT\Model\Docker\RunProfileModel;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerMissingException;
 use DDT\Exceptions\Docker\DockerNotRunningException;
@@ -44,25 +44,15 @@ class DockerService
 	{
         $this->cli = $cli;
 
-        $this->setConfig($config);
+		$this->config = $config;
 
         // Default empty profile that uses the machines local docker installation
-        $this->setProfile(new RunProfile('default'));
+        $this->setProfile(new RunProfileModel('default'));
     }
 
 	public function getVersion(): array
     {
         return json_decode($this->exec('version --format "{{json .Client.Version}}"'), true);
-    }
-
-    public function setConfig(DockerConfig $config): void
-    {
-        $this->config = $config;
-    }
-
-    public function getConfig(): DockerConfig
-    {
-        return $this->config;
     }
 
 	public function listRunProfile(): array
@@ -75,7 +65,7 @@ class DockerService
 		return $this->config->listSyncProfile();
 	}
 
-    public function setProfile(RunProfile $profile): void
+    public function setProfile(RunProfileModel $profile): void
     {
         $this->profile = $profile;
     }
