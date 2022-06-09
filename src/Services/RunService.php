@@ -6,6 +6,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Contract\External\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectScriptInvalidException;
+use DDT\Model\Project\ProjectModel;
 use DDT\Model\Script\RunConfigurationModel;
 
 class RunService
@@ -81,9 +82,10 @@ class RunService
 	{
 		$list = [];
 
-		foreach($projectList as $p){
+        /** @var ProjectModel $p */
+        foreach($projectList as $p){
 			$name = $p->getName();
-			$group = current($p->getGroups());
+			$group = current($p->getGroups()->getData());
 
 			$key = "{$p->getPath()}@{$script}";
 			if(in_array($key, $stack)){

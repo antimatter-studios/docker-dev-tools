@@ -3,39 +3,42 @@
 namespace DDT\Model\Project;
 
 use DDT\Model\Model;
-use Exception;
 
 class ProjectGroupModel extends Model
 {
-    private $data;
+    private $group;
 
+    /**
+     * @param $group
+     * @throws \InvalidArgumentException
+     */
     public function __construct($group)
     {
         if($group instanceof self){
-            $this->data = $group->getData();
+            $this->group = $group->getData();
         }else if(is_string($group)) {
-            $this->data = [$group];
+            $this->group = [$group];
         }else if(is_array($group)) {
-            $this->data = array_map(function($v) {
+            $this->group = array_map(function($v) {
                 if(!is_string($v)) {
-                    throw new Exception("Elements of the Project Group can only be strings");
+                    throw new \InvalidArgumentException("Elements of the Project Group can only be strings");
                 }
 
                 return $v;
             }, $group);
         }else {
-            throw new Exception("Group parameter must be a string of an array of strings");
+            throw new \InvalidArgumentException("Group parameter must be a string of an array of strings");
         }
     }
 
     public function getData()
     {
-        return $this->data;
+        return $this->group;
     }
 
     public function add(string $name): ProjectGroupModel
     {
-        $g = array_merge($this->data, [$name]);
+        $g = array_merge($this->group, [$name]);
         $g = array_unique($g);
 
         return new ProjectGroupModel($g);
@@ -44,7 +47,7 @@ class ProjectGroupModel extends Model
     public function remove(string $name): ProjectGroupModel
     {
         return new ProjectGroupModel(
-            array_filter($this->data, function($v) use ($name) {
+            array_filter($this->group, function($v) use ($name) {
                 return $v !== $name;
             })
         );
@@ -52,6 +55,6 @@ class ProjectGroupModel extends Model
 
     public function has(string $name)
     {
-        return in_array($name, $this->data);
+        return in_array($name, $this->group);
     }
 }

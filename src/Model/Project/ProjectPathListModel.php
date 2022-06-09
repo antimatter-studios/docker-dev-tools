@@ -7,8 +7,6 @@ use DDT\Model\ListModel;
 
 class ProjectPathListModel extends ListModel
 {
-    private $list;
-
     public function __construct(...$variousPaths)
     {
         $this->list = [];
@@ -22,11 +20,6 @@ class ProjectPathListModel extends ListModel
         }
 
         parent::__construct($this->list, ProjectPathModel::class);
-    }
-
-    public function getData()
-    {
-        return $this->list;
     }
 
     public function listProjects(): ProjectListModel

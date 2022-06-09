@@ -126,7 +126,7 @@ class ProjectTool extends Tool
                 continue;
             }
 
-            $groupList = (array)$project->getGroups();
+            $groupList = $project->getGroups()->getData();
 
             // If there are no groups, we just output an empty column
             $groupName = empty($groupList) ? '' : array_shift($groupList);

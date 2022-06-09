@@ -8,9 +8,6 @@ use DDT\Model\ListModel;
 
 class ProjectListModel extends ListModel
 {
-    /** @var ProjectModel[] $list */
-    private $list = [];
-
     public function __construct(...$projectList)
     {
         foreach($projectList as $arg){
@@ -41,16 +38,6 @@ class ProjectListModel extends ListModel
         }
 
         parent::__construct($this->list, ProjectModel::class);
-    }
-
-    static public function fromArray(...$data): self
-    {
-        return new self(...$data);
-    }
-
-    public function getData()
-    {
-        return $this->list;
     }
 
     public function addProject(ProjectModel $project): void

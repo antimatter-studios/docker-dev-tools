@@ -36,6 +36,12 @@ class ProjectPathModel extends Model
         return new self($path, new ProjectGroupModel($group));
     }
 
+    /**
+     * @param array $data
+     * @return static
+     * @throws DirectoryNotExistException When the path requested does not exist
+     * @throws \InvalidArgumentException When the group information is not in an acceptable format
+     */
     static public function fromArray(array $data): self
     {
         $path = array_key_exists('path', $data) ? $data['path'] : null;

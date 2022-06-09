@@ -10,14 +10,21 @@ use Traversable;
 abstract class ListModel extends IteratorIterator implements ModelInterface, JsonSerializable, Countable
 {
     use JsonSerializableTrait;
+
+    protected $list;
     
     public function __construct(array $data, string $type)
     {
-        $data = array_filter($data, function($item) use ($type) {
+        $this->list = array_filter($data, function($item) use ($type) {
             return $item instanceof $type;
         });
 
-        parent::__construct(new \ArrayIterator($data));
+        parent::__construct(new \ArrayIterator($this->list));
+    }
+
+    public function getData()
+    {
+        return $this->list;
     }
 
     public function count(): int
@@ -55,6 +62,8 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
                 }
             }
         };
+
+        var_dump($inner());
 
         return self::fromArray(...$inner());
     }

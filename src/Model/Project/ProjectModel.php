@@ -13,6 +13,12 @@ class ProjectModel extends Model
     private $path;
     private $group;
 
+    /**
+     * @param string $path
+     * @param string|null $name
+     * @param ProjectGroupModel|null $group
+     * @throws \Exception
+     */
     public function __construct(string $path, ?string $name=null, ?ProjectGroupModel $group=null)
     {
         $this->setPath($path);
