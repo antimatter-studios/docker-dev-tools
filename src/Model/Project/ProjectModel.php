@@ -85,7 +85,7 @@ class ProjectModel extends Model
 
     public function hasGroup(string $name): bool
     {
-        return $this->hasGroup($name);
+        return $this->group->has($name);
     }
 
     public function getGroups(): ProjectGroupModel
