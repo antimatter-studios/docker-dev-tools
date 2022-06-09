@@ -39,7 +39,14 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
 
     public function first(): ModelInterface
     {
-        return $this->current();
+        $this->reset();
+        return current($this->list);
+    }
+
+    public function reset(): self
+    {
+        reset($this->list);
+        return $this;
     }
 
     public function map(callable $callback): self
@@ -49,7 +56,7 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
             $list[$k] = $callback($k, $v);
         }
 
-        return self::fromArray(...$list);
+        return self::fromArray($list);
     }
 
     public function filter(callable $callback): self
@@ -61,7 +68,7 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
             }
         }
 
-        return self::fromArray(...$list);
+        return self::fromArray($list);
     }
 
     public function reduce(callable $reducer, $acc)

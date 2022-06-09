@@ -149,7 +149,7 @@ class ProjectConfig
 			throw new ProjectFoundMultipleException($project);
 		}
 
-		$first = current($filteredList);
+		$first = $filteredList->first();
 
 		return $this->addGroup($project, $group, $first->getPath());
 	}
@@ -180,7 +180,7 @@ class ProjectConfig
 			throw new ProjectFoundMultipleException($project);
 		}
 
-		$first = current($filteredList);
+		$first = $filteredList->first();
 
 		return $this->removeGroup($project, $group, $first->getPath());
 	}
@@ -252,7 +252,7 @@ class ProjectConfig
 			throw new ProjectFoundMultipleException($project);
 		}
 
-		$first = current($filteredList);
+		$first = $filteredList->first();
 
 		return $this->removeProject($project, $first->getPath());
 	}
@@ -306,7 +306,7 @@ class ProjectConfig
 			throw new ProjectNotFoundException($project);
 		}
 
-		$first = current($filteredList);
+		$first = $filteredList->first();
 
 		return $this->getProjectConfig($project, $first->getPath(), $group);
 	}
