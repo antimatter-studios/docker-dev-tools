@@ -4,5 +4,5 @@ namespace DDT\Model;
 
 interface ModelInterface
 {
-    
+    public function getData();
 }

@@ -5,11 +5,9 @@ namespace DDT\Model;
 trait JsonSerializableTrait
 {
     public function __toString(): string
-	{
-		return json_encode($this->jsonSerialize(), JSON_PRETTY_PRINT);
-	}
-
-    abstract public function getData();
+    {
+        return json_encode($this->jsonSerialize(), JSON_PRETTY_PRINT);
+    }
 
     public function jsonSerialize(): mixed
     {
