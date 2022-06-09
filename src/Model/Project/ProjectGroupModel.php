@@ -7,16 +7,16 @@ use Exception;
 
 class ProjectGroupModel extends Model
 {
-    private $group;
+    private $data;
 
     public function __construct($group)
     {
         if($group instanceof self){
-            $this->group = $group->getData();
+            $this->data = $group->getData();
         }else if(is_string($group)) {
-            $this->group = $group;
+            $this->data = [$group];
         }else if(is_array($group)) {
-            $this->group = array_map(function($v) {
+            $this->data = array_map(function($v) {
                 if(!is_string($v)) {
                     throw new Exception("Elements of the Project Group can only be strings");
                 }
@@ -30,12 +30,12 @@ class ProjectGroupModel extends Model
 
     public function getData()
     {
-        return $this->group;
+        return $this->data;
     }
 
     public function add(string $name): ProjectGroupModel
     {
-        $g = array_merge($this->group, [$name]);
+        $g = array_merge($this->data, [$name]);
         $g = array_unique($g);
 
         return new ProjectGroupModel($g);
@@ -44,7 +44,7 @@ class ProjectGroupModel extends Model
     public function remove(string $name): ProjectGroupModel
     {
         return new ProjectGroupModel(
-            array_filter($this->groupList, function($v) use ($name) {
+            array_filter($this->data, function($v) use ($name) {
                 return $v !== $name;
             })
         );
@@ -52,6 +52,6 @@ class ProjectGroupModel extends Model
 
     public function has(string $name)
     {
-        return in_array($name, $this->group);
+        return in_array($name, $this->data);
     }
 }
