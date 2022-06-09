@@ -11,9 +11,13 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
 {
     use JsonSerializableTrait;
     
-    public function __construct(Traversable $iterator)
+    public function __construct(array $data, string $type)
     {
-        parent::__construct($iterator);
+        $data = array_filter($data, function($item) use ($type) {
+            return $item instanceof $type;
+        });
+
+        parent::__construct(new \ArrayIterator($data));
     }
 
     public function count(): int
@@ -21,24 +25,38 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
         return iterator_count($this->getInnerIterator());
     }
 
-    public function map(callable $operation): self
+    static public function fromArray(...$data)
     {
-        $inner = function() use ($operation) {
+        return new static(...$data);
+    }
+
+    public function first(): ModelInterface
+    {
+        return $this->current();
+    }
+
+    public function map(callable $callback): self
+    {
+        $inner = function() use ($callback) {
             foreach ($this->list as $k => $v) {
-                yield $operation($k, $v);
+                yield $callback($k, $v);
             }
         };
 
-        return call_user_func_array(get_class($this)."::fromArray", $inner());
+        return self::fromArray(...$inner());
     }
 
-    public function filter(callable $filter): iterable 
+    public function filter(callable $callback): self
     {
-        foreach ($this->list as $k => $v) {
-            if ($filter($v)) {
-                yield $k => $v;
+        $inner = function() use ($callback) {
+            foreach ($this->list as $k => $v) {
+                if ($callback($v)) {
+                    yield $k => $v;
+                }
             }
-        }
+        };
+
+        return self::fromArray(...$inner());
     }
 
     public function reduce(callable $reducer, $acc)

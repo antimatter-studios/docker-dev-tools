@@ -21,12 +21,7 @@ class ProjectPathListModel extends ListModel
             }
         }
 
-        parent::__construct(new ArrayIterator($this->list));
-    }
-
-    static public function fromArray(...$variousPaths): self
-    {
-        return new self(...$variousPaths);
+        parent::__construct($this->list, ProjectPathModel::class);
     }
 
     public function getData()

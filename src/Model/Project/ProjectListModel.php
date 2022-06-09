@@ -3,7 +3,6 @@
 namespace DDT\Model\Project;
 
 use InvalidArgumentException;
-use ArrayIterator;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\ListModel;
 
@@ -41,10 +40,10 @@ class ProjectListModel extends ListModel
             }
         }
 
-        parent::__construct(new ArrayIterator($this->list));
+        parent::__construct($this->list, ProjectModel::class);
     }
 
-    static public function fromArray(...$data): ProjectListModel
+    static public function fromArray(...$data): self
     {
         return new self(...$data);
     }
