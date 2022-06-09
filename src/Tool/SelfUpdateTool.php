@@ -32,7 +32,7 @@ class SelfUpdateTool extends Tool
         $this->setToolCommand('reset');
         $this->setToolCommand('timeout');
         $this->setToolCommand('period');
-        $this->setToolCommand('enabled');
+        $this->setToolCommand('enable');
     }
 
     public function getToolMetadata(): array
@@ -55,7 +55,7 @@ class SelfUpdateTool extends Tool
                 "- $entrypoint timeout",
                 "- $entrypoint reset",
                 "- $entrypoint period \"7 days\"",
-                "- $entrypoint enabled true|false",
+                "- $entrypoint enable true|false",
             ],
         ];
     }
@@ -72,13 +72,13 @@ class SelfUpdateTool extends Tool
     public function period(?string $period=null)
     {
         if($this->selfUpdateConfig->setPeriod($period)){
-            $timeout = $this->reset($this->selfUpdateConfig);
+            $timeout = $this->reset();
             $relative = DateTimeHelper::nicetime($timeout);
             $this->cli->print("{yel}Next update{end}: $relative\n");
         }
     }
 
-    public function enabled(?bool $enable=true)
+    public function enable(?bool $enable=true)
     {
         $this->selfUpdateConfig->setEnabled($enable);
         

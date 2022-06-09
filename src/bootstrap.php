@@ -142,9 +142,6 @@ try{
 	$entrypoint->registerTools("Built-in Tools", __DIR__, "\\DDT\\Tool\\");
 	$entrypoint->registerExtensions();
 	
-	// Before handling the request, check to see if the timeout passes and self update
-	$entrypoint->getTool('self-update')->run();
-	
 	// But in the end, handle the request made by the user
 	$entrypoint->handle();
 }catch(\Throwable $e){

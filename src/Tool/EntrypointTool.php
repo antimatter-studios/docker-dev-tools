@@ -74,6 +74,12 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
                 $argList = array_slice($argList, 1);
             }
 
+            // Special case for the auto-updater
+            // Before handling the request, check to see if the timeout passes and self update
+            if($toolName !== 'self-update'){
+                $this->getTool('self-update')->run();
+            }
+
             if($methodName !== null){
                 if($methodName === '__call'){
                     $response = $tool->$toolName($argList);
