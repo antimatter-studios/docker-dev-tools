@@ -129,7 +129,7 @@ class ProjectTool extends Tool
             $groupList = (array)$project->getGroups();
 
             // If there are no groups, we just output an empty column
-            $group = empty($groupList) ? '' : array_shift($groupList);
+            $groupName = empty($groupList) ? '' : array_shift($groupList);
             
             // Obtain path and test whether it exists or not (show to the user invalid paths)
             $path = $project->getPath();
@@ -151,11 +151,11 @@ class ProjectTool extends Tool
                 $url = "{red}error, path not a git repository{end}";
             }
 
-            $table->addRow([$project->getName(), $group, $path, $type, $url]);
+            $table->addRow([$project->getName(), $groupName, $path, $type, $url]);
 
             // For every EXTRA group, we render an empty row with just the "+ group" name to indicate it's an extra group
-            foreach($groupList as $group){
-                $table->addRow([null, "+ $group", null, null, null]);
+            foreach($groupList as $groupName){
+                $table->addRow([null, "+ $groupName", null, null, null]);
             }
         }
 
