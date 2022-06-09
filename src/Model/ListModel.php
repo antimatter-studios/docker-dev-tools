@@ -44,28 +44,24 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
 
     public function map(callable $callback): self
     {
-        $inner = function() use ($callback) {
-            foreach ($this->list as $k => $v) {
-                yield $callback($k, $v);
-            }
-        };
+        $list = [];
+        foreach ($this->list as $k => $v) {
+            $list[$k] = $callback($k, $v);
+        }
 
-        return self::fromArray(...$inner());
+        return self::fromArray(...$list);
     }
 
     public function filter(callable $callback): self
     {
-        $inner = function() use ($callback) {
-            foreach ($this->list as $k => $v) {
-                if ($callback($v)) {
-                    yield $k => $v;
-                }
+        $list = [];
+        foreach ($this->list as $k => $v) {
+            if ($callback($v)) {
+                $list[$k] = $v;
             }
-        };
+        }
 
-        var_dump($inner());
-
-        return self::fromArray(...$inner());
+        return self::fromArray(...$list);
     }
 
     public function reduce(callable $reducer, $acc)
