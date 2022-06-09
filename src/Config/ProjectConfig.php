@@ -213,7 +213,7 @@ class ProjectConfig
 			// existing in multiple groups with the same name, if you tried to operate upon it, which one would you target? Since
 			// They both have the same name, but different directories, so could have different code too. Hence this situation
 			// Is not possible to tolerate
-			if(count(array_intersect($project->getGroups(), $group)) > 0){
+			if(count(array_intersect($project->getGroups()->getData(), $group)) > 0){
 				throw new ProjectExistsException($name, $path, 'Duplicate projects cannot overlap Groups');
 			}
 

@@ -6,6 +6,10 @@ use DDT\Model\Model;
 
 class VcsModel extends Model
 {
+    private $url;
+    private $branch;
+    private $name;
+
     public function __construct(string $url, ?string $branch=null, ?string $name=null)
     {
         $this->url = $url;
