@@ -2,6 +2,7 @@
     "name": "antimatter-studios/docker-dev-tools",
     "description": "A toolset for running a local docker environment",
     "require": {
+        "ext-json": "*",
         "phpunit/phpunit": "^9.5"
     },
     "autoload": {
