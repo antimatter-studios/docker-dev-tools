@@ -2,10 +2,10 @@
 
 namespace DDT\Config\External;
 
-use DDT\Config\BaseConfig;
+use DDT\Config\JsonConfig;
 use DDT\Contract\External\ProjectConfigInterface;
 
-abstract class AbstractProjectConfig extends BaseConfig implements ProjectConfigInterface
+abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfigInterface
 {
 	/** @var string The path to the project the config represents */
 	private $path;

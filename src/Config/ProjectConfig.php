@@ -14,7 +14,6 @@ use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectModel;
 use DDT\Model\Project\ProjectPathListModel;
 use DDT\Model\Project\ProjectPathModel;
-use Exception;
 
 class ProjectConfig
 {

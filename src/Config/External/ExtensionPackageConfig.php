@@ -2,9 +2,9 @@
 
 namespace DDT\Config\External;
 
-use DDT\Config\BaseConfig;
+use DDT\Config\JsonConfig;
 
-class ExtensionPackageConfig extends BaseConfig
+class ExtensionPackageConfig extends JsonConfig
 {
     const defautFilename = 'ddt-extension.json';
 

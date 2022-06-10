@@ -4,7 +4,7 @@ namespace DDT\Config;
 
 use Exception;
 
-class SystemConfig extends BaseConfig
+class SystemConfig extends JsonConfig
 {
 	const defaultFilename = '.ddt-system.json';
 

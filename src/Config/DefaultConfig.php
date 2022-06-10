@@ -2,7 +2,7 @@
 
 namespace DDT\Config;
 
-class DefaultConfig extends BaseConfig
+class DefaultConfig extends JsonConfig
 {
 	const defaultFilename = 'default.ddt-system.json';
 

@@ -7,7 +7,7 @@ use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigReadonlyException;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 
-abstract class BaseConfig implements ConfigInterface
+abstract class JsonConfig implements ConfigInterface
 {
     private $data = [];
 	private $filename = null;
