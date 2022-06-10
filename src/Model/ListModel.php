@@ -11,7 +11,7 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
 {
     use JsonSerializableTrait;
 
-    protected $list;
+    protected $list = [];
     
     public function __construct(array $data, string $type)
     {
