@@ -46,4 +46,15 @@ class SystemConfig extends BaseConfig
 
 		return $path . $subpath;
 	}
+
+    public function readModel(string $key, string $className)
+    {
+        $data = $this->getKey($key) ?? [];
+
+        if(is_callable("$className::fromArray")){
+            return $className::fromArray($data);
+        }
+
+        throw new Exception("Cannot read data into model because no static fromArray method was defined on it to accept the data");
+    }
 }

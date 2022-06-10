@@ -39,27 +39,16 @@ class ProjectConfig
 		}
 	}
 
-	public function readModel(string $key, string $className)
-	{
-		$data = $this->config->getKey($key) ?? [];
-
-		if(is_callable("$className::fromArray")){
-			return $className::fromArray($data);
-		}
-
-		throw new Exception("Cannot read data into model because no static fromArray method was defined on it to accept the data");
-	}
-
 	public function listProjects(int $mode=self::LIST_ALL): ProjectListModel
 	{
 		$path = $list = [];
 
 		if($mode & self::LIST_PATHS){
-			$path = $this->readModel($this->pathKey, ProjectPathListModel::class);
+			$path = $this->config->readModel($this->pathKey, ProjectPathListModel::class);
 		}
 
 		if($mode & self::LIST_PROJECTS){
-			$list = $this->readModel($this->listKey, ProjectListModel::class);	
+			$list = $this->config->readModel($this->listKey, ProjectListModel::class);
 		}
 
 		return ProjectListModel::fromArray($path, $list);
