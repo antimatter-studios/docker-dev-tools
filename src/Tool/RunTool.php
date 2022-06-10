@@ -7,6 +7,7 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
+use DDT\Model\Project\ProjectModel;
 use DDT\Model\Script\RunConfigurationModel;
 use DDT\Services\RunService;
 use DDT\Text\Table;
@@ -92,6 +93,7 @@ class RunTool extends Tool
         $table = container(Table::class);
         $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
+        /** @var ProjectModel $config */
         foreach($this->projectConfig->listProjects() as $config){
             try{
                 $projectConfig = $this->projectConfig->getProjectConfig($config->getName(), $config->getPath());
@@ -112,7 +114,7 @@ class RunTool extends Tool
                         continue;
                     }
     
-                    $table->addRow([$config->getName(), implode(', ', $config->getGroups()), $scriptName, $scriptCommand]);
+                    $table->addRow([$config->getName(), implode(', ', $config->getGroups()->getData()), $scriptName, $scriptCommand]);
                 }
             }catch(ProjectNotFoundException $e){
                 // This exception is thrown when a registered project has no project configuration
