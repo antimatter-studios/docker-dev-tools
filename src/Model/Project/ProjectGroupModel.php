@@ -36,6 +36,18 @@ class ProjectGroupModel extends Model
         return $this->group;
     }
 
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function toCsv(): string
+    {
+        if(is_string($this->group)) return $this->group;
+        if(is_array($this->group)) return implode(',', $this->group);
+
+        throw new \Exception('The data is not a string or an array, we cannot process this data');
+    }
+
     public function add(string $name): ProjectGroupModel
     {
         $g = array_merge($this->group, [$name]);

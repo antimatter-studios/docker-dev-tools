@@ -114,7 +114,7 @@ class RunTool extends Tool
                         continue;
                     }
     
-                    $table->addRow([$config->getName(), implode(', ', $config->getGroups()->getData()), $scriptName, $scriptCommand]);
+                    $table->addRow([$config->getName(), $config->getGroups()->toCsv(), $scriptName, $scriptCommand]);
                 }
             }catch(ProjectNotFoundException $e){
                 // This exception is thrown when a registered project has no project configuration
