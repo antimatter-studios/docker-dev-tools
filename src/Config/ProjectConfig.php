@@ -53,39 +53,17 @@ class ProjectConfig
 		return ProjectListModel::fromArray($path, $list);
 	}
 
-	public function listProjectsByScript(string $script): array
-	{
-		$list = [];
-
-		foreach($this->listProjects() as $path => $config){
-			try{
-				$projectConfig = $this->getProjectConfig($config->getName(), $path);
-				foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
-					if($script !== $scriptName){
-						continue;
-					}
-	
-					$list[] = $config;
-				}
-			}catch(ProjectNotFoundException $e){
-				// Any project configuration that isn't found, we just skip over
-			}
-		}
-
-		return $list;
-	}
-
-	public function listProjectsInGroup(string $group): iterable
+	public function listProjectsInGroup(string $group): ProjectListModel
 	{
         return $this->listProjectsByFilter(['group' => $group]);
 	}
 
-	public function listProjectsByName(string $project): iterable
+	public function listProjectsByName(string $project): ProjectListModel
 	{
         return $this->listProjectsByFilter(['name' => $project]);
 	}
 
-	public function listProjectsByFilter(array $filter): iterable
+	public function listProjectsByFilter(array $filter): ProjectListModel
 	{
 		return $this->listProjects()->filter(function($project) use ($filter) {
 			foreach($filter as $key => $value){
@@ -105,6 +83,27 @@ class ProjectConfig
 			return true;
 		});
 	}
+
+    public function listProjectsByScript(string $script): ProjectListModel
+    {
+        return $this->listProjects()->filter(function(ProjectModel $project) use ($script) {
+            try{
+                $projectConfig = $this->getProjectConfig($project->getName(), $project->getPath());
+
+                foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+                    if($script !== $scriptName){
+                        continue;
+                    }
+
+                    return true;
+                }
+            }catch(ProjectNotFoundException $e){
+                // Any project configuration that isn't found, we just skip over
+            }
+
+            return false;
+        });
+    }
 
 	public function addGroup(string $project, string $group, ?string $path=null): bool
 	{
