@@ -10,6 +10,8 @@ class ProjectListModel extends ListModel
 {
     public function __construct(...$projectList)
     {
+        $this->list = [];
+
         foreach($projectList as $arg){
             if($arg instanceof ProjectPathListModel){
                 // returns ProjectListModel
