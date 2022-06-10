@@ -3,8 +3,8 @@
 namespace DDT\Services;
 
 use DDT\CLI;
-use DDT\Config\ConfigGeneratorConfig;
 use DDT\Debug;
+use DDT\Config\Services\ConfigGeneratorConfig;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerNetwork;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;

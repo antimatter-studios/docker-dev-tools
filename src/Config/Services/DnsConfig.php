@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config;
+namespace DDT\Config\Services;
+
+use DDT\Config\SystemConfig;
 
 class DnsConfig
 {

@@ -3,15 +3,13 @@
 namespace DDT\Services;
 
 use DDT\CLI;
-use DDT\Config\ProxyConfig;
-use DDT\Services\DockerService;
+use DDT\Config\Services\ProxyConfig;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerNetwork;
 use DDT\Docker\DockerVolume;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
-use Exception;
 
 class ProxyService
 {
@@ -21,7 +19,7 @@ class ProxyService
 	/** @var ProxyConfig */
 	private $config;
 
-	/** @var Docker */
+	/** @var DockerService */
 	private $dockerService;
 
 	public function __construct(CLI $cli, ProxyConfig $config, DockerService $dockerService)

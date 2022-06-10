@@ -17,6 +17,7 @@ class ProjectListModel extends ListModel
                 // returns ProjectListModel
                 $arg = $arg->listProjects();
             }
+
             if($arg instanceof ProjectPathModel){
                 // returns ProjectListModel
                 $arg = $arg->listProjects();

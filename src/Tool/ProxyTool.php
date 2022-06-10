@@ -3,10 +3,9 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
-use DDT\Config\ProxyConfig;
+use DDT\Config\Services\ProxyConfig;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
-use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerNetworkAlreadyAttachedException;
 use DDT\Exceptions\Docker\DockerNetworkCreateException;
 use DDT\Services\ProxyService;

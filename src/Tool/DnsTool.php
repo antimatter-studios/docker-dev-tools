@@ -3,7 +3,7 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
-use DDT\Config\DnsConfig;
+use DDT\Config\Services\DnsConfig;
 use DDT\Config\IpConfig;
 use DDT\Contract\DnsServiceInterface;
 use DDT\Network\Address;
