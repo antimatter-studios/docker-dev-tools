@@ -78,17 +78,12 @@ class ProjectConfig
 
 	public function listProjectsInGroup(string $group): iterable
 	{
-		return $this->listProjectsByKey('group', $group);
+        return $this->listProjectsByFilter(['group' => $group]);
 	}
 
 	public function listProjectsByName(string $project): iterable
 	{
-		return $this->listProjectsByKey('name', $project);
-	}
-
-	public function listProjectsByKey(string $key, string $value): iterable
-	{
-		return $this->listProjectsByFilter([$key => $value]);
+        return $this->listProjectsByFilter(['name' => $project]);
 	}
 
 	public function listProjectsByFilter(array $filter): iterable
