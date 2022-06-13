@@ -20,7 +20,7 @@ abstract class Tool
     private $entrypoint;
 
     /** @var array The registered commands for this tool */
-    private $commands = [];
+    private $command = [];
 
     /** @var array A list of functions which cannot be used as tool commands */
     private $protectedFunctions = [
