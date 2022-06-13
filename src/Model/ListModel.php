@@ -7,7 +7,6 @@ use DDT\Contract\ModelInterface;
 use DDT\Model\Traits\JsonSerializableTrait;
 use IteratorIterator;
 use JsonSerializable;
-use Traversable;
 
 abstract class ListModel extends IteratorIterator implements ModelInterface, JsonSerializable, Countable
 {
