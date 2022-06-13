@@ -2,6 +2,7 @@
 
 namespace DDT\Config;
 
+use DDT\Contract\ConfigInterface;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Config\ConfigInvalidException;
 use DDT\Exceptions\Config\ConfigReadonlyException;
