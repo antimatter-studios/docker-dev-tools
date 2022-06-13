@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config\External;
+namespace DDT\Config\Project;
 
 use DDT\Config\JsonConfig;
 
-class ExtensionPackageConfig extends JsonConfig
+class ExtensionProjectConfig extends JsonConfig
 {
     const defautFilename = 'ddt-extension.json';
 

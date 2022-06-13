@@ -2,9 +2,9 @@
 
 namespace DDT\Model\Project;
 
-use DDT\Config\External\ComposerProjectConfig;
-use DDT\Config\External\NodeProjectConfig;
-use DDT\Config\External\StandardProjectConfig;
+use DDT\Config\Project\ComposerProjectConfig;
+use DDT\Config\Project\NodeProjectConfig;
+use DDT\Config\Project\StandardProjectConfig;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Model\Model;
 

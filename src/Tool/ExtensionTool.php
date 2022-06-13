@@ -3,8 +3,8 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
-use DDT\Config\ExtensionConfig;
-use DDT\Config\External\ExtensionPackageConfig;
+use DDT\Config\Sections\ExtensionConfig;
+use DDT\Config\Project\ExtensionProjectConfig;
 use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Config\ConfigWrongTypeException;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;

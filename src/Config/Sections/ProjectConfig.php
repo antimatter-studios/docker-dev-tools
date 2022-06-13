@@ -2,10 +2,11 @@
 
 namespace DDT\Config;
 
-use DDT\Config\External\ComposerProjectConfig;
-use DDT\Config\External\NodeProjectConfig;
-use DDT\Config\External\StandardProjectConfig;
-use DDT\Contract\External\ProjectConfigInterface;
+use DDT\Config\Project\ComposerProjectConfig;
+use DDT\Config\Project\NodeProjectConfig;
+use DDT\Config\Project\StandardProjectConfig;
+use DDT\Contract\Project\ProjectConfigInterface;
+use DDT\Config\SystemConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Exceptions\Project\ProjectFoundMultipleException;

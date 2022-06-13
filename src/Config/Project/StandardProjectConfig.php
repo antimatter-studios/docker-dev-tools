@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config\External;
+namespace DDT\Config\Project;
 
-use DDT\Contract\External\ProjectConfigInterface;
+use DDT\Contract\Project\ProjectConfigInterface;
 
 class StandardProjectConfig extends AbstractProjectConfig implements ProjectConfigInterface
 {

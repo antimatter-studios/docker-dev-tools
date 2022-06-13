@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config\External;
+namespace DDT\Config\Project;
 
 use DDT\Config\JsonConfig;
-use DDT\Contract\External\ProjectConfigInterface;
+use DDT\Contract\Project\ProjectConfigInterface;
 
 abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfigInterface
 {
