@@ -13,7 +13,7 @@ class ComposerProjectConfig extends AbstractProjectConfig implements ProjectConf
         $this->setKey('.', $this->getKey('docker-dev-tools') ?? []);
 	}
 
-    public function getDefaultFilename(): string
+    static public function getDefaultFilename(): string
     {
         return self::defaultFilename;
     }

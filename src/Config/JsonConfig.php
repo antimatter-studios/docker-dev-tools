@@ -34,7 +34,7 @@ abstract class JsonConfig implements ConfigInterface
 		return $this->filename = $temp;
 	}
 
-    abstract public function getDefaultFilename(): string;
+    static abstract public function getDefaultFilename(): string;
 
 	public function getFilename(): string
 	{

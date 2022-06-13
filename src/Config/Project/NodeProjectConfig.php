@@ -13,7 +13,7 @@ class NodeProjectConfig extends AbstractProjectConfig implements ProjectConfigIn
 		$this->setKey('.', $this->getKey('docker-dev-tools') ?? []);
 	}
 
-    public function getDefaultFilename(): string
+    static public function getDefaultFilename(): string
     {
         return self::defaultFilename;
     }

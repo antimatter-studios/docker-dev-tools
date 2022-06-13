@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Contract\External;
+namespace DDT\Contract\Project;
 
 interface ProjectConfigInterface
 {
 	public function getGroup(): ?string;
 	public function getProject(): string;
-	public function getDefaultFilename(): string;
+	static public function getDefaultFilename(): string;
 	public function write(?string $filename=null): bool;
 	public function getPath(): string;
 	public function listScripts(): array;

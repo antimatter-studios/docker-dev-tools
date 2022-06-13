@@ -26,7 +26,7 @@ class SystemConfig extends JsonConfig
 		return $this->getKey('description');
 	}
 
-	public function getDefaultFilename(): string
+	static public function getDefaultFilename(): string
 	{
 		return self::defaultFilename;
 	}

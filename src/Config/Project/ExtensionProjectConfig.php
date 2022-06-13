@@ -6,11 +6,11 @@ use DDT\Config\JsonConfig;
 
 class ExtensionProjectConfig extends JsonConfig
 {
-    const defautFilename = 'ddt-extension.json';
+    const defaultFilename = 'ddt-extension.json';
 
-    public function getDefaultFilename(): string
+    static public function getDefaultFilename(): string
     {
-        return self::defautFilename;
+        return self::defaultFilename;
     }
 
     static public function instance(string $filename, ?bool $readonly=false): self

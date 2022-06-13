@@ -13,7 +13,7 @@ class StandardProjectConfig extends AbstractProjectConfig implements ProjectConf
 		parent::__construct($filename, $project, $group);
 	}
 
-	public function getDefaultFilename(): string
+	static public function getDefaultFilename(): string
     {
         return self::defaultFilename;
     }
