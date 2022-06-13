@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\Services\DnsConfig;
-use DDT\Config\IpConfig;
+use DDT\Config\Sections\IpConfig;
 use DDT\Contract\DnsServiceInterface;
 use DDT\Network\Address;
 use DDT\Services\DnsMasqService;

@@ -3,9 +3,10 @@
 namespace DDT\Services;
 
 use DDT\CLI;
-use DDT\Config\ProjectConfig;
+use DDT\Config\Sections\ProjectConfig;
+use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Project\ProjectListModel;
-use DDT\Model\Project\ProjectPathModel;
+use DDT\Model\Project\ProjectModel;
 
 class ProjectService
 {

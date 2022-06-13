@@ -3,8 +3,8 @@ namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
-use DDT\Config\ProjectConfig;
-use DDT\Contract\External\ProjectConfigInterface;
+use DDT\Config\Sections\ProjectConfig;
+use DDT\Contract\Project\ProjectConfigInterface;
 use DDT\Exceptions\Project\ProjectScriptInvalidException;
 use DDT\Model\Project\ProjectModel;
 use DDT\Model\Script\RunConfigurationModel;

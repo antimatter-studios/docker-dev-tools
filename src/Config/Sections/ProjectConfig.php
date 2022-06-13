@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config;
+namespace DDT\Config\Sections;
 
 use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
@@ -52,16 +52,6 @@ class ProjectConfig
 		}
 
 		return ProjectListModel::fromArray($path, $list);
-	}
-
-	public function listProjectsInGroup(string $group): ProjectListModel
-	{
-        return $this->listProjectsByFilter(['group' => $group]);
-	}
-
-	public function listProjectsByName(string $project): ProjectListModel
-	{
-        return $this->listProjectsByFilter(['name' => $project]);
 	}
 
 	public function listProjectsByFilter(array $filter): ProjectListModel
@@ -244,34 +234,16 @@ class ProjectConfig
 	{
 		$projectList = $this->listProjects();
 
-		$reason = null;
-
 		if(!empty($path)){
 			$p = $projectList->findProjectByPath($path, $project);
 
-			$class = null;
 			$type = $p->getType();
-			$args = ['filename' => $path, 'project' => $project, 'group' => $group];
+            $typeMap = ['ddt' => StandardProjectConfig::class, 'node' => NodeProjectConfig::class, 'composer' => ComposerProjectConfig::class];
 
-			if($type === 'ddt'){
-				$class = StandardProjectConfig::class;
-				$filename = $path . '/' . StandardProjectConfig::defaultFilename;
-			}
-			
-			if($type === 'node'){
-				$class = NodeProjectConfig::class;
-				$filename = $path . '/' . NodeProjectConfig::defaultFilename;
-			}
-			
-			if($type === 'composer'){
-				$class = ComposerProjectConfig::class;
-				$filename = $path . '/' . ComposerProjectConfig::defaultFilename;
-			}
+            if(array_key_exists($type, $typeMap) && is_subclass_of($typeMap[$type], ProjectConfigInterface::class)){
+                return $typeMap[$type]::fromPath($path, $project, $group);
+            }
 
-			if(is_subclass_of($class, ProjectConfigInterface::class)){
-				return container($class, array_merge($args, ['filename' => $filename]));
-			}
-			
 			$reason = "Project type '$type' does not match any allowed type";
 
 			throw new ProjectNotFoundException($project, $reason);

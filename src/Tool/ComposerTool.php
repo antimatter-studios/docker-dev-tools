@@ -3,7 +3,7 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
-use DDT\Config\PhpComposerConfig;
+use DDT\Config\Sections\PhpComposerConfig;
 use DDT\Services\DockerService;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerVolume;

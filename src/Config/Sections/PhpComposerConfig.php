@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config;
+namespace DDT\Config\Sections;
+
+use DDT\Config\SystemConfig;
 
 class PhpComposerConfig
 {

@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
-use DDT\Config\ProjectConfig;
+use DDT\Config\Sections\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Project\ProjectModel;

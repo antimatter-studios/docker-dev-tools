@@ -1,9 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Config;
+namespace DDT\Contract;
+
 interface ConfigInterface
 {
-    public function getDefaultFilename(): string;
+    static public function getDefaultFilename(): string;
     public function setKey(string $key, $value): void;
     public function getKey(string $key);
 }

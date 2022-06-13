@@ -5,7 +5,7 @@ namespace DDT\Services;
 use DDT\CLI;
 use DDT\CLI\Output\DockerFilterChannel;
 use DDT\CLI\Output\StringChannel;
-use DDT\Config\DockerConfig;
+use DDT\Config\Sections\DockerConfig;
 use DDT\Contract\ChannelInterface;
 use DDT\Model\Docker\RunProfileModel;
 use DDT\Exceptions\Docker\DockerInspectException;

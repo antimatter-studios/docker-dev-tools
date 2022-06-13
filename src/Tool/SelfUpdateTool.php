@@ -3,9 +3,8 @@
 namespace DDT\Tool;
 
 use DDT\CLI;
-use DDT\Config\ExtensionConfig;
-use DDT\Config\SelfUpdateConfig;
-use DDT\Config\SystemConfig;
+use DDT\Config\Sections\ExtensionConfig;
+use DDT\Config\Sections\SelfUpdateConfig;
 use DDT\Helper\DateTimeHelper;
 use DDT\Services\GitService;
 

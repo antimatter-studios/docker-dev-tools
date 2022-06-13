@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\CLI\ArgumentList;
-use DDT\Config\DockerConfig;
+use DDT\Config\Sections\DockerConfig;
 use DDT\Debug;
 use DDT\Services\DockerService;
 use DDT\Model\Docker\RunProfileModel;
