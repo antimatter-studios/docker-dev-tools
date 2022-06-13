@@ -21,7 +21,7 @@ class ExtensionTool extends Tool
     /** @var \DDT\Services\GitService $gitService The service that can handle git repositories and manage them */
     private $gitService;
 
-    /** @var ToolRegistry An interface that can allow one tool to acquire another tool */
+    /** @var ToolRegistryInterface An interface that can allow one tool to acquire another tool */
     private $toolRegistry;
 
     public function __construct(CLI $cli, ExtensionConfig $config, GitService $gitService, ToolRegistryInterface $toolRegistry)
