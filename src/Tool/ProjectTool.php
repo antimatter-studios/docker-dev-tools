@@ -10,7 +10,6 @@ use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Model\Project\ProjectModel;
-use DDT\Model\Project\ProjectPathModel;
 use DDT\Services\GitService;
 use DDT\Services\ProjectService;
 use DDT\Text\Table;
@@ -106,7 +105,7 @@ class ProjectTool extends Tool
     {
         $this->cli->print("{blu}Project Group List:{end}\n");
 
-        $projectList = $this->projectService->list();
+        $projectList = $this->projectService->listProjects();
 
         $table = container(Table::class);
         $table->setColumnMapping(['project', 'group', 'path', 'type', 'vcs', 'remote']);

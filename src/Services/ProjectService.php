@@ -22,9 +22,9 @@ class ProjectService
         $this->config = $config;
     }
 
-    public function list(): ProjectListModel
+    public function listProjects(): ProjectListModel
     {
-        return $this->config->listProjects();   
+        return $this->config->listProjects();
     }
 
     public function addGroup(string $project, string $group, ?string $path=null): bool
