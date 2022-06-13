@@ -27,6 +27,48 @@ class ProjectService
         return $this->config->listProjects();
     }
 
+    public function listProjectsByFilter(array $filter): ProjectListModel
+    {
+        return $this->listProjects()->filter(function($project) use ($filter) {
+            foreach($filter as $key => $value){
+                if($key === 'name' && $project->getName() !== $value){
+                    return false;
+                }
+
+                if($key === 'path' && $project->getPath() !== $value){
+                    return false;
+                }
+
+                if($key === 'group' && !$project->hasGroup($value)){
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    public function listProjectsByScript(string $script): ProjectListModel
+    {
+        return $this->listProjects()->filter(function(ProjectModel $project) use ($script) {
+            try{
+                $projectConfig = $this->config->getProjectConfig($project->getName(), $project->getPath());
+
+                foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+                    if($script !== $scriptName){
+                        continue;
+                    }
+
+                    return true;
+                }
+            }catch(ProjectNotFoundException $e){
+                // Any project configuration that isn't found, we just skip over
+            }
+
+            return false;
+        });
+    }
+
     public function addGroup(string $project, string $group, ?string $path=null): bool
     {
         return $this->config->addGroup($project, $group, $path);
