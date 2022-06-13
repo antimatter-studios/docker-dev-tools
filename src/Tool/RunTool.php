@@ -7,8 +7,10 @@ use DDT\CLI\ArgumentList;
 use DDT\Config\Sections\ProjectConfig;
 use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
+use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectModel;
 use DDT\Model\Script\RunConfigurationModel;
+use DDT\Services\ProjectService;
 use DDT\Services\RunService;
 use DDT\Text\Table;
 
@@ -17,14 +19,18 @@ class RunTool extends Tool
     /** @var ProjectConfig */
     private $projectConfig;
 
+    /** @var ProjectService */
+    private $projectService;
+
     /** @var RunService */
     private $runService;
 
-    public function __construct(CLI $cli, ProjectConfig $projectConfig, RunService $runService)
+    public function __construct(CLI $cli, ProjectConfig $projectConfig, ProjectService $projectService, RunService $runService)
     {
     	parent::__construct('run', $cli);
 
         $this->projectConfig = $projectConfig;
+        $this->projectService = $projectService;
         $this->runService = $runService;
 
         $this->setToolCommand('script', null, true);
@@ -65,7 +71,7 @@ class RunTool extends Tool
         ];
     }
 
-    private function resolveProjectList(ArgumentList $arguments, string $script, ?string $project, ?string $group): array
+    private function resolveProjectList(ArgumentList $arguments, string $script, ?string $project, ?string $group): ProjectListModel
     {
         // remove project if it was specified
         if($project !== null) $arguments->shift();
@@ -74,17 +80,14 @@ class RunTool extends Tool
         // remove -- arg if found
         $arguments->remove('--');
 
-        $projectList = $this->projectConfig->listProjectsByScript($script);
-
-        $projectList = array_filter($projectList, function($config) use ($project) {
-            return $project === null || $project === $config->getName();
-        });
-
-        $projectList = array_filter($projectList, function($config) use ($group) {
-            return $group === null || $config->hasGroup($group);
-        });
-
-        return $projectList;
+        return $this->projectService
+            ->listProjectsByScript($script)
+            ->filter(function($config) use ($project) {
+                return $project === null || $project === $config->getName();
+            })
+            ->filter(function($config) use ($group) {
+                return $group === null || $config->hasGroup($group);
+            });
     }
 
     public function list(?string $project=null, ?string $script=null, ?string $group=null): void
@@ -94,7 +97,7 @@ class RunTool extends Tool
         $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
         /** @var ProjectModel $config */
-        foreach($this->projectConfig->listProjects() as $config){
+        foreach($this->projectService->listProjects() as $config){
             try{
                 $projectConfig = $this->projectConfig->getProjectConfig($config->getName(), $config->getPath());
                 foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
