@@ -112,7 +112,7 @@ class ExtensionTool extends Tool
                 $url = $this->gitService->remote($path, 'origin');
             }
 
-            $extensionConfig = ExtensionPackageConfig::instance($path . '/' . ExtensionPackageConfig::defautFilename);
+            $extensionConfig = ExtensionProjectConfig::fromPath($path);
             $test = $extensionConfig->getTest();
 
             /** @var SetupTool */
