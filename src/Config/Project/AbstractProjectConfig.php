@@ -27,6 +27,11 @@ abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfig
 		$this->project = $project;
 	}
 
+    static public function fromPath(string $path, string $project, ?string $group=null): ProjectConfigInterface
+    {
+        return new static("$path/" . static::getDefaultFilename(), $project, $group);
+    }
+
 	public function getGroup(): ?string
 	{
 		return $this->group;
