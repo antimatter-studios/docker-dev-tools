@@ -3,14 +3,13 @@
 namespace DDT\Network;
 
 use DDT\CLI;
-use DDT\Contract\DnsServiceInterface;
 use DDT\Methods\MacOs\DNS\NetworkSetupMethod;
 use DDT\Methods\Linux\DNS\ResolvConfFileMethod;
 use DDT\Methods\Linux\DNS\SystemdResolvedMethod;
 
 // apt-get install network-manager
 
-class DnsService implements DnsServiceInterface
+class DnsService
 {
     /** @var CLI */
     private $cli;

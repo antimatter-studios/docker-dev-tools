@@ -4,18 +4,18 @@ namespace DDT\Tool;
 
 use DDT\CLI;
 use DDT\Config\Sections\IpConfig;
-use DDT\Contract\IpServiceInterface;
 use DDT\Network\Address;
+use DDT\Network\IpService;
 
 class IpTool extends Tool
 {
     /** @var IpConfig  */
     private $config;
 
-	/** @var IpServiceInterface */
+	/** @var IpService */
 	private $ipService;
 
-    public function __construct(CLI $cli, IpConfig $config, IpServiceInterface $ipService)
+    public function __construct(CLI $cli, IpConfig $config, IpService $ipService)
     {
     	parent::__construct('ip', $cli);
 
