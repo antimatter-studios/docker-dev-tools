@@ -3,6 +3,8 @@
 namespace DDT\Model;
 
 use Countable;
+use DDT\Contract\ModelInterface;
+use DDT\Model\Traits\JsonSerializableTrait;
 use IteratorIterator;
 use JsonSerializable;
 use Traversable;

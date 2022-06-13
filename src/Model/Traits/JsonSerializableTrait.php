@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Model;
+namespace DDT\Model\Traits;
 
 trait JsonSerializableTrait
 {
