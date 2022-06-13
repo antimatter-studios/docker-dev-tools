@@ -8,15 +8,9 @@ use DDT\Text\Table;
 use DDT\Container;
 use DDT\Tool\EntrypointTool;
 use DDT\Config\SystemConfig;
-use DDT\Contract\IpServiceInterface;
-use DDT\Contract\DnsServiceInterface;
 use DDT\Contract\ToolRegistryInterface;
-use DDT\Exceptions\Config\ConfigMissingException;
 use DDT\Exceptions\Container\ContainerNotInstantiatedException;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
-use DDT\Exceptions\Tool\ToolCommandNotFoundException;
-use DDT\Exceptions\Tool\ToolNotFoundException;
-use DDT\Exceptions\Tool\ToolNotSpecifiedException;
 use DDT\Services\ConfigGeneratorService;
 use DDT\Services\DnsMasqService;
 use DDT\Services\DockerService;
@@ -132,9 +126,6 @@ try{
 	
 		return $c;
 	});
-	
-	$container->singleton(IpServiceInterface::class, \DDT\Network\IpService::class);
-	$container->singleton(DnsServiceInterface::class, \DDT\Network\DnsService::class);
 	
 	$entrypoint = container(EntrypointTool::class);
 	$container->singleton(ToolRegistryInterface::class, $entrypoint);
