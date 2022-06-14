@@ -69,6 +69,6 @@ class ProjectListModel extends ListModel
             return $this->list[$path];
         }
 
-        throw new ProjectNotFoundException($name ?? 'not specified', 'project with given path \'$path\' was not found');
+        throw new ProjectNotFoundException($name ?? 'not specified', "project with given path \'$path\' was not found");
     }
 }
