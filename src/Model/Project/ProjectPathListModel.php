@@ -22,6 +22,20 @@ class ProjectPathListModel extends ListModel
         parent::__construct($this->list, ProjectPathModel::class);
     }
 
+    public function remove($path): ListModel
+    {
+        /** @var ProjectPathModel $item */
+        foreach($this->list as $index => $item){
+            if($item->getPath() === $path){
+                unset($this->list[$index]);
+                $this->list = array_values($this->list);
+                return $this;
+            }
+        }
+
+        throw new \InvalidArgumentException("The path '$path' was not found in the list");
+    }
+
     public function listProjects(): ProjectListModel
     {
         $list = [];

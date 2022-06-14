@@ -97,7 +97,7 @@ class ProjectService
 
     public function removePath(string $path): bool
     {
-        return $this->config->removepath($path);
+        return $this->config->removePath($path);
     }
 
     public function listPaths(): ProjectPathListModel

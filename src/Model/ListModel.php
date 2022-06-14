@@ -75,7 +75,7 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
         }
     }
 
-    public function remove(int $index): self
+    public function remove($index): self
     {
         if(array_key_exists($index, $this->list)){
             unset($this->list[$index]);

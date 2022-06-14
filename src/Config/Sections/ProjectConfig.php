@@ -291,11 +291,9 @@ class ProjectConfig
 	{
 		$list = $this->listPaths();
 
-        if(array_key_exists($path, $list)){
-            unset($list[$path]);
-        
+        if($list->remove($path)){
             $this->config->setKey($this->pathKey, $list);
-    
+
             return $this->config->write();
         }
 

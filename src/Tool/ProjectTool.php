@@ -56,6 +56,7 @@ class ProjectTool extends Tool
                 "\tlist: Will list a table with all the registered projects with their groups, paths, vcs info etc",
 
                 "\n\t{cyn}Managing Paths{end}:",
+                "\tlist-paths: List all the registered paths",
                 "\tadd-path {yel}<path> [optional: <group>]{end}: Will add a path and automatically include all projects one level deep",
                 "\tremove-path {yel}<path>: Will remove a matching path from the list",
 
@@ -69,6 +70,7 @@ class ProjectTool extends Tool
                 "\tremove-project {yel}<project-name> [optional: <path>]{end}: Remove a project, see notes regarding path parameter",
 
                 "\n\t{cyn}Managing Groups{end}:",
+                "\tlist-groups: List all the groups from all the projects",
                 "\tadd-group {yel}<project-name> <group> [optional: <path>]{end}: Add a project to a group, see notes regarding path parameter",
                 "\tremove-group {yel}<project-name> <group> [optional: <path>]{end}: Remove a project from a group, see notes regarding path parameter",
 
