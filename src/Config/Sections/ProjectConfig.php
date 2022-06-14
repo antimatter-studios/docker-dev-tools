@@ -168,9 +168,13 @@ class ProjectConfig
 
 		$projectList = $this->listProjects();
 
-		if($projectList->findProjectByPath($path, $name)){
-			throw new ProjectExistsException($name, $path, 'Cannot add same project twice');
-		}
+        try{
+            if($projectList->findProjectByPath($path, $name)){
+                throw new ProjectExistsException($name, $path, 'Cannot add same project twice');
+            }
+        }catch(ProjectNotFoundException $e){
+            // If the project is not found, this means we can add it
+        }
 
 		$projectList->filter(function($project) use ($name, $path, $group) {
 			// If the name doesn't match, skip over this config
