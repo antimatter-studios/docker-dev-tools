@@ -270,19 +270,17 @@ class ProjectConfig
 		return $this->getProjectConfig($project, $first->getPath(), $group);
 	}
 
-	public function listPaths(): array
+	public function listPaths(): ProjectPathListModel
 	{
 		$list = $this->config->getKey("$this->pathKey") ?? [];
 
-		return array_map(function($item){
-			return ProjectPathModel::fromArray($item);
-		}, $list);
+        return ProjectPathListModel::fromArray($list);
 	}
 
 	public function addPath(string $path, ?string $group=null): bool
 	{
-		$list = $this->listPaths();
-		$list[$path] = ProjectPathModel::fromPath($path, $group);
+        $list = $this->listPaths();
+        $list->append(ProjectPathModel::fromPath($path, $group));
 
         $this->config->setKey($this->pathKey, $list);
 

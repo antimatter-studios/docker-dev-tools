@@ -7,6 +7,7 @@ use DDT\Config\Sections\ProjectConfig;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectModel;
+use DDT\Model\Project\ProjectPathListModel;
 
 class ProjectService
 {
@@ -97,5 +98,10 @@ class ProjectService
     public function removePath(string $path): bool
     {
         return $this->config->removepath($path);
+    }
+
+    public function listPaths(): ProjectPathListModel
+    {
+        return $this->config->listPaths();
     }
 }

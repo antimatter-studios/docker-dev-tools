@@ -13,6 +13,7 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
     use JsonSerializableTrait;
 
     protected $list = [];
+    protected $type;
     
     public function __construct(array $data, string $type)
     {
@@ -20,7 +21,14 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
             return $item instanceof $type;
         });
 
+        $this->type = $type;
+
         parent::__construct(new \ArrayIterator($this->list));
+    }
+
+    static public function fromArray(...$data)
+    {
+        return new static(...$data);
     }
 
     public function getData()
@@ -30,12 +38,7 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
 
     public function count(): int
     {
-        return iterator_count($this->getInnerIterator());
-    }
-
-    static public function fromArray(...$data)
-    {
-        return new static(...$data);
+        return count($this->list);
     }
 
     public function first(): ModelInterface
@@ -48,6 +51,41 @@ abstract class ListModel extends IteratorIterator implements ModelInterface, Jso
     {
         reset($this->list);
         return $this;
+    }
+
+    public function unshift(ModelInterface $model): self
+    {
+        if($model instanceof $this->type){
+            $this->list = array_merge([$model], $this->list);
+
+            return $this;
+        }else{
+            throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: ".get_class($model));
+        }
+    }
+
+    public function append(ModelInterface $model): self
+    {
+        if($model instanceof $this->type){
+            $this->list[] = $model;
+
+            return $this;
+        }else{
+            throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: ".get_class($model));
+        }
+    }
+
+    public function remove(int $index): self
+    {
+        if(array_key_exists($index, $this->list)){
+            unset($this->list[$index]);
+            // reindex the array to compact the indexes
+            $this->list = array_values($this->list);
+
+            return $this;
+        }else{
+            throw new \InvalidArgumentException("Index '$index' passed to function was not found");
+        }
     }
 
     public function map(callable $callback): self

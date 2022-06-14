@@ -54,6 +54,16 @@ class ProjectPathModel extends Model
         return new self($path, $group);
     }
 
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function getGroups(): ProjectGroupModel
+    {
+        return $this->group;
+    }
+
     public function listProjects(): ProjectListModel
     {
         $paths = [

@@ -10,6 +10,7 @@ use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 use DDT\Exceptions\Project\ProjectExistsException;
 use DDT\Model\Project\ProjectModel;
+use DDT\Model\Project\ProjectPathModel;
 use DDT\Services\GitService;
 use DDT\Services\ProjectService;
 use DDT\Text\Table;
@@ -31,8 +32,8 @@ class ProjectTool extends Tool
 
         foreach([
             'list',
-            'add-path', 'remove-path',
-            'add-group', 'remove-group',
+            'add-path', 'remove-path', 'list-paths',
+            'add-group', 'remove-group', 'list-groups',
             'add-project', 'remove-project',
             'pull', 'push',
         ] as $command){
@@ -103,7 +104,7 @@ class ProjectTool extends Tool
 
     public function list(?string $name=null, ?string $group=null): void
     {
-        $this->cli->print("{blu}Project Group List:{end}\n");
+        $this->cli->print("{blu}Complete Project List:{end}\n");
 
         $projectList = $this->projectService->listProjects();
 
@@ -159,6 +160,38 @@ class ProjectTool extends Tool
         }
 
         $this->cli->print($table->render());
+    }
+
+    public function listPaths(): void
+    {
+        $this->cli->print("{blu}Path List{end}\n");
+
+        $table = Table::getInstance();
+        $table->addRow(["Path", "Groups"]);
+
+        /** @var ProjectPathModel $item */
+        foreach($this->projectService->listPaths() as $item) {
+            $table->addRow([$item->getPath(), $item->getGroups()->toCsv()]);
+        }
+
+        $this->cli->print($table->render());
+    }
+
+    public function listGroups(): void
+    {
+        $this->cli->print("{blu}Group List:{end}\n");
+
+        $groups = [];
+
+        /** @var ProjectModel $project */
+        foreach($this->projectService->listProjects() as $project) {
+            $groups = array_merge($groups, $project->getGroups()->getData());
+        }
+
+        $groups = array_unique($groups);
+        array_map(function($g){
+            $this->cli->print(" - " . $g . "\n");
+        }, $groups);
     }
 
     public function addPath(string $path, ?string $group=null): void
