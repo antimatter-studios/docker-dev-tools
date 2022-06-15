@@ -192,6 +192,7 @@ class RunService
 			$this->cli->debug("runservice", "{red}".get_class($e)."{end} => {$e->getMessage()}\n");
 			$this->cli->debug("runservice", "{yel}No Script Found:{end} group: {yel}{$e->getGroup()}{end}, project: {yel}{$e->getProject()}{end}, script: {yel}{$e->getScript()}{end}, extra args: {yel}'$extraArgs'{end}");
 		}catch(\Exception $e){
+            $this->cli->debug('runservice', $e->getTraceAsString());
 			// Oh, exception happened :( oopsie
 			$this->cli->print("{red}".get_class($e)."{end} => {$e->getMessage()}\n");
 			return false;
@@ -204,7 +205,7 @@ class RunService
 		$project	= $projectConfig->getProject();
 		$path		= $projectConfig->getPath();
 
-		$groupText = !empty($group) ? ", group: {yel}$group{end}" : "";
+		$groupText = !empty($group) ? ", group: {yel}{$group->toCsv()}{end}" : "";
 		$extraArgsText = !empty((string)$extraArgs) ? ", extra args: {yel}'$extraArgs'{end}" : "";
 
 		// Otherwise, cd into the project path and run the script as specified
