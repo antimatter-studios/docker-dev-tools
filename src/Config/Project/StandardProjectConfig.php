@@ -8,11 +8,6 @@ class StandardProjectConfig extends AbstractProjectConfig implements ProjectConf
 {
 	const defaultFilename = 'ddt-project.json';
 
-	public function __construct(string $filename, string $project, ?string $group=null)
-	{
-		parent::__construct($filename, $project, $group);
-	}
-
 	static public function getDefaultFilename(): string
     {
         return self::defaultFilename;

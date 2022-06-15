@@ -5,7 +5,8 @@ namespace DDT\Model\Project;
 use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
 use DDT\Config\Project\StandardProjectConfig;
-use DDT\Model\Config\ProjectConfigModel;
+use DDT\Contract\Project\ProjectConfigInterface;
+use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Model;
 
 class ProjectModel extends Model
@@ -59,6 +60,20 @@ class ProjectModel extends Model
         }
 
         return $type;
+    }
+
+    public function getConfig(): ProjectConfigInterface
+    {
+        $type = $this->getType();
+        $typeMap = ['ddt' => StandardProjectConfig::class, 'node' => NodeProjectConfig::class, 'composer' => ComposerProjectConfig::class];
+
+        if(array_key_exists($type, $typeMap) && is_subclass_of($typeMap[$type], ProjectConfigInterface::class)){
+            return $typeMap[$type]::fromPath($this->getPath(), $this->getName(), $this->getGroups());
+        }
+
+        $reason = "Project type '$type' does not match any allowed type";
+
+        throw new ProjectNotFoundException($this->getName(), $reason);
     }
 
     public function setPath(string $path): self

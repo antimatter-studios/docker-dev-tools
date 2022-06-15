@@ -4,35 +4,36 @@ namespace DDT\Config\Project;
 
 use DDT\Config\JsonConfig;
 use DDT\Contract\Project\ProjectConfigInterface;
+use DDT\Model\Project\ProjectGroupModel;
 
 abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfigInterface
 {
 	/** @var string The path to the project the config represents */
 	private $path;
 
-	/** @var string The group this project belongs to */
+	/** @var ProjectGroupModel The group this project belongs to */
 	private $group;
 
 	/** @var string The name of this project */
 	private $project;
 
-	public function __construct(string $filename, string $project, ?string $group=null)
+	public function __construct(string $filename, string $project, ?ProjectGroupModel $group=null)
 	{
 		parent::__construct($filename);
 
 		$this->setPath($filename);
 		$this->initDataStore();
 
-		$this->group = $group;
+		$this->group = $group ?? new ProjectGroupModel([]);
 		$this->project = $project;
 	}
 
-    static public function fromPath(string $path, string $project, ?string $group=null): ProjectConfigInterface
+    static public function fromPath(string $path, string $project, ?ProjectGroupModel $group=null): ProjectConfigInterface
     {
         return new static("$path/" . static::getDefaultFilename(), $project, $group);
     }
 
-	public function getGroup(): ?string
+	public function getGroup(): ProjectGroupModel
 	{
 		return $this->group;
 	}

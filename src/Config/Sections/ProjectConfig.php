@@ -234,40 +234,30 @@ class ProjectConfig
 		return $this->removeProject($project, $first->getPath());
 	}
 
-	public function getProjectConfig(string $project, ?string $path=null, ?string $group=null): ProjectConfigInterface
+	public function getProjectConfig(string $name, ?string $path=null, ?string $group=null): ProjectConfigInterface
 	{
 		$projectList = $this->listProjects();
 
 		if(!empty($path)){
-			$p = $projectList->findProjectByPath($path, $project);
-
-			$type = $p->getType();
-            $typeMap = ['ddt' => StandardProjectConfig::class, 'node' => NodeProjectConfig::class, 'composer' => ComposerProjectConfig::class];
-
-            if(array_key_exists($type, $typeMap) && is_subclass_of($typeMap[$type], ProjectConfigInterface::class)){
-                return $typeMap[$type]::fromPath($path, $project, $group);
-            }
-
-			$reason = "Project type '$type' does not match any allowed type";
-
-			throw new ProjectNotFoundException($project, $reason);
+			$p = $projectList->findProjectByPath($path, $name);
+            return $p->getConfig();
 		}
 
-		$filteredList = $projectList->filter(function($v) use ($project) {
-			return $v->getName() === $project;
+		$filteredList = $projectList->filter(function($v) use ($name) {
+			return $v->getName() === $name;
 		});
 
 		if(count($filteredList) > 1){
-			throw new ProjectFoundMultipleException($project);
+			throw new ProjectFoundMultipleException($name);
 		}
 
 		if(count($filteredList) === 0){
-			throw new ProjectNotFoundException($project);
+			throw new ProjectNotFoundException($name);
 		}
 
 		$first = $filteredList->first();
 
-		return $this->getProjectConfig($project, $first->getPath(), $group);
+		return $this->getProjectConfig($name, $first->getPath(), $group);
 	}
 
 	public function listPaths(): ProjectPathListModel
