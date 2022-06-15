@@ -122,7 +122,11 @@ class ProjectListModel extends ListModel
 
     public function findProject(string $name, ?string $path=null, ?string $group=null): ModelInterface
     {
-        $list = $this->listProjectsByFilter(['name' => $name, 'path' => null, 'group' => $group]);
+        $filter = ['name' => $name];
+        if(!empty($path)) $filter['path'] = $path;
+        if(!empty($group)) $filter['group'] = $group;
+
+        $list = $this->listProjectsByFilter($filter);
 
         if($list->count() === 0){
             throw new ProjectNotFoundException($name);
