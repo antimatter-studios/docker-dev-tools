@@ -90,22 +90,23 @@ class RunTool extends Tool
             });
     }
 
-    public function list(?string $project=null, ?string $script=null, ?string $group=null): void
+    public function list(?string $name=null, ?string $script=null, ?string $group=null): void
     {
         /* @var Table $table */
         $table = container(Table::class);
         $table->addRow(["{yel}Project{end}", "{yel}Group{end}", "{yel}Script Name{end}", "{yel}Script Command{end}"]);
 
-        /** @var ProjectModel $config */
-        foreach($this->projectService->listProjects() as $config){
+        /** @var ProjectModel $project */
+        foreach($this->projectService->listProjects() as $project){
             try{
-                $projectConfig = $this->projectConfig->getProjectConfig($config->getName(), $config->getPath());
-                foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+                $config = $project->getConfig();
+
+                foreach($config->listScripts() as $scriptName => $scriptCommand){
                     if(is_array($scriptCommand)) {
                         $scriptCommand = '{grn}* sequence({end}' . implode(', ', $scriptCommand) . '{grn}){end}';
                     }
     
-                    if($group !== null && !$config->hasGroup($group)){
+                    if($group !== null && !$project->hasGroup($group)){
                         continue;
                     }
     
@@ -113,11 +114,11 @@ class RunTool extends Tool
                         continue;
                     }
     
-                    if($project !==null && $project !== $config->getname()){
+                    if($name !==null && $name !== $project->getName()){
                         continue;
                     }
     
-                    $table->addRow([$config->getName(), $config->getGroups()->toCsv(), $scriptName, $scriptCommand]);
+                    $table->addRow([$project->getName(), $project->getGroups()->toCsv(), $scriptName, $scriptCommand]);
                 }
             }catch(ProjectNotFoundException $e){
                 // This exception is thrown when a registered project has no project configuration
