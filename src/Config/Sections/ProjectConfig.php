@@ -99,7 +99,7 @@ class ProjectConfig
 		$projectList = $this->listProjects();
 
 		if(!empty($path)){
-			$p = $projectList->findProjectByPath($path, $project);
+			$p = $projectList->findProjectByPath($path);
 
 			if($p->getName() !== $project){
 				throw new ProjectNotFoundException($project, 'project name does not match path');
@@ -130,7 +130,7 @@ class ProjectConfig
 		$projectList = $this->listProjects();
 
 		if(!empty($path)){
-			$p = $projectList->findProjectByPath($path, $project);
+			$p = $projectList->findProjectByPath($path);
 
 			if($p->getName() !== $project){
 				throw new ProjectNotFoundException($project, 'project name does not match path');
@@ -167,7 +167,7 @@ class ProjectConfig
 		$projectList = $this->listProjects();
 
         try{
-            if($projectList->findProjectByPath($path, $name)){
+            if($projectList->findProjectByPath($path)){
                 throw new ProjectExistsException($name, $path, 'Cannot add same project twice');
             }
         }catch(ProjectNotFoundException $e){
@@ -211,7 +211,7 @@ class ProjectConfig
 		$projectList = $this->listProjects();
 
 		if(!empty($path)){
-			$p = $projectList->findProjectByPath($path, $project);
+			$p = $projectList->findProjectByPath($path);
 
 			$projectList->removeProject($p);
 			

@@ -27,53 +27,17 @@ class ProjectService
 
     public function listProjectsByFilter(array $filter): ProjectListModel
     {
-        return $this->listProjects()->filter(function($project) use ($filter) {
-            foreach($filter as $key => $value){
-                if($key === 'name' && $project->getName() !== $value){
-                    return false;
-                }
-
-                if($key === 'path' && $project->getPath() !== $value){
-                    return false;
-                }
-
-                if($key === 'group' && !$project->hasGroup($value)){
-                    return false;
-                }
-            }
-
-            return true;
-        });
+        return $this->listProjects()->listProjectsByFilter($filter);
     }
 
     public function listProjectsByScript(string $script): ProjectListModel
     {
-        return $this->listProjects()->filter(function(ProjectModel $project) use ($script) {
-            try{
-                foreach($project->listScripts() as $scriptName => $scriptCommand){
-                    if($script !== $scriptName){
-                        continue;
-                    }
-
-                    return true;
-                }
-            }catch(ProjectNotFoundException $e){
-                // Any project configuration that isn't found, we just skip over
-            }
-
-            return false;
-        });
+        return $this->listProjects()->listProjectsByScript($script);
     }
 
     public function findProject(string $name, ?string $path=null, ?string $group=null): ModelInterface
     {
-        $list = $this->listProjectsByFilter(['name' => $name, 'path' => null, 'group' => $group]);
-
-        if($list->count() > 1){
-            throw new \Exception("The project '$name', in path '$path', with group '$group' returned multiple results");
-        }
-
-        return $list->first();
+        return $this->listProjects()->findProject($name, $path, $group);
     }
 
     public function addGroup(string $project, string $group, ?string $path=null): bool

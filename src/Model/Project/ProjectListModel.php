@@ -2,6 +2,8 @@
 
 namespace DDT\Model\Project;
 
+use DDT\Contract\ModelInterface;
+use DDT\Exceptions\Project\ProjectFoundMultipleException;
 use InvalidArgumentException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\ListModel;
@@ -63,12 +65,73 @@ class ProjectListModel extends ListModel
         return $this->getData();
     }
 
-    public function findProjectByPath(string $path, ?string $name=null): ProjectModel
+    public function listProjectsByScript(string $script): self
     {
-        if(array_key_exists($path, $this->list)){
-            return $this->list[$path];
+        return $this->filter(function(ProjectModel $project) use ($script) {
+            try{
+                foreach($project->listScripts() as $scriptName => $scriptCommand){
+                    if($script !== $scriptName){
+                        continue;
+                    }
+
+                    return true;
+                }
+            }catch(ProjectNotFoundException $e){
+                // Any project configuration that isn't found, we just skip over
+            }
+
+            return false;
+        });
+    }
+
+    public function listProjectsByFilter(array $filter): self
+    {
+        return $this->filter(function($project) use ($filter) {
+            foreach($filter as $key => $value){
+                if($key === 'name' && $project->getName() !== $value){
+                    return false;
+                }
+
+                if($key === 'path' && $project->getPath() !== $value){
+                    return false;
+                }
+
+                if($key === 'group' && !$project->hasGroup($value)){
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    public function findProjectByPath(string $path): ModelInterface
+    {
+        $list = $this->listProjectsByFilter(['path' => $path]);
+
+        if($list->count() === 0){
+            throw new ProjectNotFoundException($path);
         }
 
-        throw new ProjectNotFoundException($name ?? 'not specified', "project with given path \'$path\' was not found");
+        if($list->count() > 1){
+            throw new ProjectFoundMultipleException($path);
+        }
+
+        return $list->first();
+    }
+
+    public function findProject(string $name, ?string $path=null, ?string $group=null): ModelInterface
+    {
+        $list = $this->listProjectsByFilter(['name' => $name, 'path' => null, 'group' => $group]);
+
+        if($list->count() === 0){
+            throw new ProjectNotFoundException($name);
+        }
+
+        if($list->count() > 1){
+            throw new ProjectFoundMultipleException($name);
+        }
+
+        return $list->first();
     }
 }
