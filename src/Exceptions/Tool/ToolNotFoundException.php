@@ -1,7 +1,7 @@
 <?php
 namespace DDT\Exceptions\Tool;
 
-class ToolNotFoundException extends \Exception
+class ToolNotFoundException extends ToolException
 {
     public function __construct(string $tool, int $code = 0, \Throwable $previous=null)
     {

@@ -6,6 +6,7 @@ use DDT\CLI;
 use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Autowire\CannotAutowireParameterException;
+use DDT\Exceptions\Tool\ToolException;
 use DDT\Exceptions\Tool\ToolNotFoundException;
 
 class EntrypointTool extends Tool implements ToolRegistryInterface
@@ -24,51 +25,48 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
     public function handle()
     {        
-        try{
+        try {
             $requestedCommand = null;
             $methodName = null;
 
             // If there are no arguments, output the default help
-            if($this->cli->countArgs() === 0){
+            if ($this->cli->countArgs() === 0) {
                 return $this->cli->print($this->help());
             }
 
-            if($this->cli->getArg('--version', false, true)){
+            if ($this->cli->getArg('--version', false, true)) {
                 return $this->cli->print($this->invoke('getVersion'));
             }
 
             $toolArg = $this->cli->shiftArg();
 
             // There were no commands or arguments, show main help
-            if(empty($toolArg)){
+            if (empty($toolArg)) {
                 return $this->cli->print($this->help());
             }
 
             // If the tool name, is the entrypoint, we stop this from happening 
             // by just treating it as if you called the help
             $toolName = strtolower($toolArg['name']);
-            if($toolName === $this->name) {
+            if ($toolName === $this->name) {
                 return $this->cli->print($this->help());
             }
 
             // Obtain the tool, throw exception if not found
             $tool = $this->getTool($toolName);
-            if(!$tool instanceof Tool){
-                throw new ToolNotFoundException($toolName);
-            }
 
             $argList = $this->cli->getArgList();
 
             // If there are arguments, pick the first and resolve it to a command method
-            if($this->cli->countArgs()){
+            if ($this->cli->countArgs()) {
                 $requestedCommand = $argList[0]['name'];
                 $methodName = $tool->getToolCommand($requestedCommand);
             }
 
-            if($methodName === null){
+            if ($methodName === null) {
                 // If it does not resolve into a command method, fall back to the default command method
                 $methodName = $tool->getToolDefaultCommand();
-            }else{
+            } else {
                 // If the argument contained a valid command method, we should slice this parameter off the list
                 // This is so it doesn't get consumed twice
                 $argList = array_slice($argList, 1);
@@ -76,28 +74,30 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
             // Special case for the auto-updater
             // Before handling the request, check to see if the timeout passes and self update
-            if($toolName !== 'self-update'){
+            if ($toolName !== 'self-update') {
                 $this->getTool('self-update')->run();
             }
 
-            if($methodName !== null){
-                if($methodName === '__call'){
+            if ($methodName !== null) {
+                if ($methodName === '__call') {
                     $response = $tool->$toolName($argList);
-                }else{
+                } else {
                     $response = $tool->invoke($methodName, $argList);
                 }
 
                 $response = (is_string($response) ? $response : '') . "\n";
-                
+
                 $this->cli->print($response);
                 return $response;
             }
 
             $this->cli->print($tool->help());
 
-            if($requestedCommand){
+            if ($requestedCommand) {
                 $this->cli->failure("The requested command '$requestedCommand' from tool '$toolName' does not exist, check your spelling against the help");
             }
+        }catch(ToolException $e){
+            $this->cli->failure($e->getMessage());
         }catch(CannotAutowireParameterException $e){
             // This exception is being caught even when normal autowiring of objects as well as tools
             // So it's confusing when the message is relating to constructing an object instead of a tool
@@ -186,7 +186,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
 
     public function getToolByClass(string $name): Tool
     {
-        if(empty($name)) throw new \Exception('Tool name cannot be empty');
+        if(empty($name)) throw new ToolException('Tool name cannot be empty');
 
         foreach($this->tools as $group){
             foreach($group['tools'] as $tool){

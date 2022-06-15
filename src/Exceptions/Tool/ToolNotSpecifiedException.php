@@ -1,7 +1,7 @@
 <?php
 namespace DDT\Exceptions\Tool;
 
-class ToolNotSpecifiedException extends \Exception
+class ToolNotSpecifiedException extends ToolException
 {
     public function __construct(int $code = 0, \Throwable $previous=null)
     {
