@@ -12,15 +12,11 @@ use DDT\Model\Project\ProjectPathListModel;
 
 class ProjectService
 {
-    /** @var CLI */
-    private $cli;
-
     /** @var ProjectConfig */
     private $config;
 
-    public function __construct(CLI $cli, ProjectConfig $config)
+    public function __construct(ProjectConfig $config)
     {
-        $this->cli = $cli;
         $this->config = $config;
     }
 
