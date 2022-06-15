@@ -20,9 +20,9 @@ class ProjectService
         $this->config = $config;
     }
 
-    public function listProjects(): ProjectListModel
+    public function listProjects(int $mode=ProjectConfig::LIST_ALL): ProjectListModel
     {
-        return $this->config->listProjects();
+        return $this->config->listProjects($mode);
     }
 
     public function listProjectsByFilter(array $filter): ProjectListModel
