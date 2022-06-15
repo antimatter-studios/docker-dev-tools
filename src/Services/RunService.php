@@ -17,12 +17,16 @@ class RunService
 	/** @var ProjectConfig */
 	private $projectConfig;
 
+    /** @var ProjectService */
+    private $projectService;
+
 	/** @var array The stack of scripts running and used to detect circular dependencies */
 	private $stack = [];
 
-	public function __construct(CLI $cli, ProjectConfig $config)
+	public function __construct(CLI $cli, ProjectService $projectService, ProjectConfig $config)
 	{
 		$this->cli = $cli;
+        $this->projectService = $projectService;
 		$this->projectConfig = $config;
 	}
 
@@ -93,8 +97,8 @@ class RunService
 			}
 			$stack[] = $key;
 
-			// Obtain the project configuration
-			$projectConfig = $this->getProject($name, $group);
+			/** @var ProjectConfigInterface $projectConfig */
+            $projectConfig = $p->getConfig();
 			
 			$command = $this->resolveCommandList($script, $projectConfig);
 
@@ -151,13 +155,6 @@ class RunService
 		return $output;
 	}
 
-	// FIXME: I don't know why I have this function and i only use it in one place
-	public function getProject(string $project, ?string $group=null): ProjectConfigInterface
-	{
-		//	TODO: how to handle when a project is not found, it'll throw exceptions?
-		return $this->projectConfig->getProjectConfig($project, null, $group);
-	}
-
 	public function run(RunConfigurationModel $runConfig, ?ArgumentList $extraArgs=null)
 	{
 		try{
@@ -169,7 +166,10 @@ class RunService
 			}
 
 			// Obtain the project configuration
-			$projectConfig = $this->getProject($project, $group);
+            /** @var ProjectModel $project */
+            $project = $this->projectService->findProject($project, null, $group);
+            /** @var ProjectConfigInterface $projectConfig */
+            $projectConfig = $project->getConfig();
 
 			foreach($runConfig->getCommandList() as $script => $commandLine){
 				$this->cli->debug("runservice", "Running: '{$script}', '{$project}', '".($group ?? 'none')."'\n");

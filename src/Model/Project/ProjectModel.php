@@ -76,6 +76,13 @@ class ProjectModel extends Model
         throw new ProjectNotFoundException($this->getName(), $reason);
     }
 
+    public function listScripts(): array
+    {
+        $config = $this->getConfig();
+
+        return $config->listScripts();
+    }
+
     public function setPath(string $path): self
     {
         $this->path = $path;

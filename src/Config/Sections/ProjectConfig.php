@@ -79,9 +79,7 @@ class ProjectConfig
     {
         return $this->listProjects()->filter(function(ProjectModel $project) use ($script) {
             try{
-                $projectConfig = $this->getProjectConfig($project->getName(), $project->getPath());
-
-                foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+                foreach($project->listScripts() as $scriptName => $scriptCommand){
                     if($script !== $scriptName){
                         continue;
                     }
@@ -232,32 +230,6 @@ class ProjectConfig
 		$first = $filteredList->first();
 
 		return $this->removeProject($project, $first->getPath());
-	}
-
-	public function getProjectConfig(string $name, ?string $path=null, ?string $group=null): ProjectConfigInterface
-	{
-		$projectList = $this->listProjects();
-
-		if(!empty($path)){
-			$p = $projectList->findProjectByPath($path, $name);
-            return $p->getConfig();
-		}
-
-		$filteredList = $projectList->filter(function($v) use ($name) {
-			return $v->getName() === $name;
-		});
-
-		if(count($filteredList) > 1){
-			throw new ProjectFoundMultipleException($name);
-		}
-
-		if(count($filteredList) === 0){
-			throw new ProjectNotFoundException($name);
-		}
-
-		$first = $filteredList->first();
-
-		return $this->getProjectConfig($name, $first->getPath(), $group);
 	}
 
 	public function listPaths(): ProjectPathListModel

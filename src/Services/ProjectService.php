@@ -4,6 +4,7 @@ namespace DDT\Services;
 
 use DDT\CLI;
 use DDT\Config\Sections\ProjectConfig;
+use DDT\Contract\ModelInterface;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectModel;
@@ -53,9 +54,7 @@ class ProjectService
     {
         return $this->listProjects()->filter(function(ProjectModel $project) use ($script) {
             try{
-                $projectConfig = $this->config->getProjectConfig($project->getName(), $project->getPath());
-
-                foreach($projectConfig->listScripts() as $scriptName => $scriptCommand){
+                foreach($project->listScripts() as $scriptName => $scriptCommand){
                     if($script !== $scriptName){
                         continue;
                     }
@@ -68,6 +67,17 @@ class ProjectService
 
             return false;
         });
+    }
+
+    public function findProject(string $name, ?string $path=null, ?string $group=null): ModelInterface
+    {
+        $list = $this->listProjectsByFilter(['name' => $name, 'path' => null, 'group' => $group]);
+
+        if($list->count() > 1){
+            throw new \Exception("The project '$name', in path '$path', with group '$group' returned multiple results");
+        }
+
+        return $list->first();
     }
 
     public function addGroup(string $project, string $group, ?string $path=null): bool
