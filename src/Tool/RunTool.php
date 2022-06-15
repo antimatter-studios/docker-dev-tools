@@ -198,6 +198,10 @@ class RunTool extends Tool
             foreach($runlist as $config){
                 $this->runService->run($config, $arguments);
             }
+
+            if(empty($runlist)){
+                $this->cli->failure("There was nothing to run\n");
+            }
         }catch(ConfigMissingException $e){
             $this->cli->failure("The project directory for '$project' in group '$group' was not found");
         }catch(ProjectNotFoundException $e){
