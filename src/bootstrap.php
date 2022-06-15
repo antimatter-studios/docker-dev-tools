@@ -3,6 +3,7 @@
 use DDT\Autowire;
 use DDT\CLI;
 use DDT\Debug;
+use DDT\Exceptions\Autowire\CannotAutowireParameterException;
 use DDT\Text\Text;
 use DDT\Text\Table;
 use DDT\Container;
@@ -11,12 +12,14 @@ use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Container\ContainerNotInstantiatedException;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
+use DDT\Exceptions\Tool\ToolException;
 use DDT\Services\ConfigGeneratorService;
 use DDT\Services\DnsMasqService;
 use DDT\Services\DockerService;
 use DDT\Services\GitService;
 use DDT\Services\ProxyService;
 use DDT\Services\RunService;
+use DDT\Tool\Tool;
 
 try{
 	if (version_compare(phpversion(), '7.2', '<')) {
@@ -138,15 +141,19 @@ try{
 }catch(\Throwable $e){
 	$cli->debug(get_class($e), $e->getTraceAsString());
 
-	$message = $text->box(get_class($e) . ":\n" . $e->getMessage(), "wht", "red");
+	$message = $text->box(get_class($e) . ":\n" . $e->getMessage(), 'wht', 'red');
 
 	switch(true){
+        case $e instanceof CannotAutowireParameterException:
+            $message = $text->box("Autowiring exception:\n" . $e->getMessage(), 'wht', 'red');
+            break;
+
 		case $e instanceof ProjectConfigUpgradeException:
-			$message = $text->box("Project Configuration error:\n" . $e->getMessage(), "wht", "red");
+			$message = $text->box("Project Configuration error:\n" . $e->getMessage(), 'wht', 'red');
 			break;
 
 		case $e instanceof Exception:
-			$message = $text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), "wht", "red");
+			$message = $text->box(get_class($e) . ":\nThe tool has a non-specified error: " . $e->getMessage(), 'wht', 'red');
 			break;
 	}
 

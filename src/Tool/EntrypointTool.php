@@ -24,90 +24,76 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     }
 
     public function handle()
-    {        
-        try {
-            $requestedCommand = null;
-            $methodName = null;
+    {
+        $requestedCommand = null;
+        $methodName = null;
 
-            // If there are no arguments, output the default help
-            if ($this->cli->countArgs() === 0) {
-                return $this->cli->print($this->help());
-            }
+        // If there are no arguments, output the default help
+        if ($this->cli->countArgs() === 0) {
+            return $this->cli->print($this->help());
+        }
 
-            if ($this->cli->getArg('--version', false, true)) {
-                return $this->cli->print($this->invoke('getVersion'));
-            }
+        if ($this->cli->getArg('--version', false, true)) {
+            return $this->cli->print($this->invoke('getVersion'));
+        }
 
-            $toolArg = $this->cli->shiftArg();
+        $toolArg = $this->cli->shiftArg();
 
-            // There were no commands or arguments, show main help
-            if (empty($toolArg)) {
-                return $this->cli->print($this->help());
-            }
+        // There were no commands or arguments, show main help
+        if (empty($toolArg)) {
+            return $this->cli->print($this->help());
+        }
 
-            // If the tool name, is the entrypoint, we stop this from happening 
-            // by just treating it as if you called the help
-            $toolName = strtolower($toolArg['name']);
-            if ($toolName === $this->name) {
-                return $this->cli->print($this->help());
-            }
+        // If the tool name, is the entrypoint, we stop this from happening
+        // by just treating it as if you called the help
+        $toolName = strtolower($toolArg['name']);
+        if ($toolName === $this->name) {
+            return $this->cli->print($this->help());
+        }
 
-            // Obtain the tool, throw exception if not found
-            $tool = $this->getTool($toolName);
+        // Obtain the tool, throw exception if not found
+        $tool = $this->getTool($toolName);
 
-            $argList = $this->cli->getArgList();
+        $argList = $this->cli->getArgList();
 
-            // If there are arguments, pick the first and resolve it to a command method
-            if ($this->cli->countArgs()) {
-                $requestedCommand = $argList[0]['name'];
-                $methodName = $tool->getToolCommand($requestedCommand);
-            }
+        // If there are arguments, pick the first and resolve it to a command method
+        if ($this->cli->countArgs()) {
+            $requestedCommand = $argList[0]['name'];
+            $methodName = $tool->getToolCommand($requestedCommand);
+        }
 
-            if ($methodName === null) {
-                // If it does not resolve into a command method, fall back to the default command method
-                $methodName = $tool->getToolDefaultCommand();
+        if ($methodName === null) {
+            // If it does not resolve into a command method, fall back to the default command method
+            $methodName = $tool->getToolDefaultCommand();
+        } else {
+            // If the argument contained a valid command method, we should slice this parameter off the list
+            // This is so it doesn't get consumed twice
+            $argList = array_slice($argList, 1);
+        }
+
+        // Special case for the auto-updater
+        // Before handling the request, check to see if the timeout passes and self update
+        if ($toolName !== 'self-update') {
+            $this->getTool('self-update')->run();
+        }
+
+        if ($methodName !== null) {
+            if ($methodName === '__call') {
+                $response = $tool->$toolName($argList);
             } else {
-                // If the argument contained a valid command method, we should slice this parameter off the list
-                // This is so it doesn't get consumed twice
-                $argList = array_slice($argList, 1);
+                $response = $tool->invoke($methodName, $argList);
             }
 
-            // Special case for the auto-updater
-            // Before handling the request, check to see if the timeout passes and self update
-            if ($toolName !== 'self-update') {
-                $this->getTool('self-update')->run();
-            }
+            $response = (is_string($response) ? $response : '') . "\n";
 
-            if ($methodName !== null) {
-                if ($methodName === '__call') {
-                    $response = $tool->$toolName($argList);
-                } else {
-                    $response = $tool->invoke($methodName, $argList);
-                }
+            $this->cli->print($response);
+            return $response;
+        }
 
-                $response = (is_string($response) ? $response : '') . "\n";
+        $this->cli->print($tool->help());
 
-                $this->cli->print($response);
-                return $response;
-            }
-
-            $this->cli->print($tool->help());
-
-            if ($requestedCommand) {
-                $this->cli->failure("The requested command '$requestedCommand' from tool '$toolName' does not exist, check your spelling against the help");
-            }
-        }catch(ToolException $e){
-            $this->cli->failure($e->getMessage());
-        }catch(CannotAutowireParameterException $e){
-            // This exception is being caught even when normal autowiring of objects as well as tools
-            // So it's confusing when the message is relating to constructing an object instead of a tool
-            // So I think we need to find a way to separate those things from each other
-
-            $this->cli->print($tool->help());
-            $commandName = $tool->getToolCommandName($e->getMethodName());
-            $commandText = $tool->isToolDefaultCommand($commandName) ? 'tool' : "command '$commandName' on the tool";
-
-            $this->cli->failure("The {$commandText} '$toolName' requires a parameter '{$e->getParameterName()}' with format '{$e->getParameterType()}'\n");
+        if ($requestedCommand) {
+            $this->cli->failure("The requested command '$requestedCommand' from tool '$toolName' does not exist, check your spelling against the help");
         }
     }
 
