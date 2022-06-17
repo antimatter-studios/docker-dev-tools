@@ -36,13 +36,18 @@ abstract class Tool
 
     public function __construct(string $name, CLI $cli)
 	{
-		$this->name = $name;
 		$this->cli = $cli;
         $this->autowire = container(Autowire::class);
-    
+
         $this->setEntrypoint($this->cli->getScript(false));
+        $this->setToolName($name);
         $this->setToolCommand('help');
 	}
+
+    public function setToolName(string $name): void
+    {
+        $this->name = $name;
+    }
 
     public function getToolName(): string
     {
