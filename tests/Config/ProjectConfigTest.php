@@ -30,9 +30,10 @@ class ProjectConfigTest extends TestCase
             ->method('getVersion')
             ->willReturn(3);
 
+        $path = $this->getPath('path-a');
         $expectedResult = [
-            $this->getPath('path-a') => [
-                "path" => $this->getPath('path-a'),
+            $path => [
+                "path" => $path,
                 "group" => [
                     "path-group-a"
                 ]
@@ -46,7 +47,6 @@ class ProjectConfigTest extends TestCase
 
         $projectConfig = new ProjectConfig($systemConfig);
         $list = $projectConfig->listProjects(ProjectConfig::LIST_PATHS);
-
         $this->assertCount(3, $list);
 
         $compareData = [

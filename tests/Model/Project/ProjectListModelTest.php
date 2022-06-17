@@ -34,7 +34,7 @@ class ProjectListModelTest extends TestCase
     public function testAddProjectPathModel(): void
     {
         $path = ProjectPathModel::fromArray(['path' => $this->getPath(), 'group' => new ProjectGroupModel('test-group')]);
-        $list = ProjectListModel::fromArray($path);
+        $list = ProjectListModel::fromArray([$path]);
 
         $this->assertInstanceOf(ProjectListModel::class, $list);
     }

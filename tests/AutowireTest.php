@@ -36,16 +36,16 @@ class AutowireTest extends TestCase
         return $method->invokeArgs($obj, $args);
     }
 
-    // ****************** THIS TEST IS BROKEN
-    // public function testReformatArgs(): void
-    // {
-    //     $args = explode(" ", "run start mycompany some-project --userAge=monkey --debug 23 helloboys 99.99 77");
-    //     $autowire = new Autowire([$this->container, 'get']);
-    //     $response = $this->callHiddenMethod($autowire, "reformatArgs", [$args]);
+     public function testReformatArgs(): void
+     {
+         $args = explode(" ", "run start mycompany some-project --userAge=monkey --debug 23 helloboys 99.99 77");
+         $autowire = new Autowire([$this->container, 'get']);
+         $response = $this->callHiddenMethod($autowire, "reformatArgs", [$args]);
 
-    //     var_dump($response);
-    //     $this->assertIsArray($response);
-    // }
+         $this->assertIsArray($response);
+
+         // TODO: Assert that the arguments were reformatted into a way that is predictable
+     }
 
     // ****************** THIS TEST IS BROKEN
     // public function testResolveArgs(): void
