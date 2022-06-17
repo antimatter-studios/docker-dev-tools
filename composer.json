@@ -7,7 +7,8 @@
     },
     "autoload": {
         "psr-4": {
-            "DDT\\": "src/"
+            "DDT\\": "src/",
+            "DDT\\Test\\": "tests/"
         }
     }
 }
