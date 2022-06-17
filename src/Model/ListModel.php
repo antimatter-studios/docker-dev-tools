@@ -2,120 +2,73 @@
 
 namespace DDT\Model;
 
-use Countable;
-use DDT\Contract\ModelInterface;
-use DDT\Model\Traits\JsonSerializableTrait;
-use IteratorIterator;
-use JsonSerializable;
+use DDT\Contract\CollectionInterface;
+use DDT\Helper\ArrayCollection;
 
-abstract class ListModel extends IteratorIterator implements ModelInterface, JsonSerializable, Countable
+abstract class ListModel extends ArrayCollection
 {
-    use JsonSerializableTrait;
-
-    protected $list = [];
     protected $type;
     
-    public function __construct(array $data, string $type)
+    public function __construct(iterable $data, string $type)
     {
-        $this->list = array_filter($data, function($item) use ($type) {
+        $data = array_filter($data, function($item) use ($type) {
             return $item instanceof $type;
         });
 
         $this->type = $type;
 
-        parent::__construct(new \ArrayIterator($this->list));
+        parent::__construct($data);
     }
 
-    static public function fromArray(...$data)
+    public function set($key, $item): CollectionInterface
     {
-        return new static(...$data);
-    }
-
-    public function getData()
-    {
-        return $this->list;
-    }
-
-    public function count(): int
-    {
-        return count($this->list);
-    }
-
-    public function first(): ModelInterface
-    {
-        $this->reset();
-        return current($this->list);
-    }
-
-    public function reset(): self
-    {
-        reset($this->list);
-        return $this;
-    }
-
-    public function unshift(ModelInterface $model): self
-    {
-        if($model instanceof $this->type){
-            $this->list = array_merge([$model], $this->list);
-
-            return $this;
-        }else{
-            throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: ".get_class($model));
-        }
-    }
-
-    public function append(ModelInterface $model): self
-    {
-        if($model instanceof $this->type){
-            $this->list[] = $model;
-
-            return $this;
-        }else{
-            throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: ".get_class($model));
-        }
-    }
-
-    public function remove($index): self
-    {
-        if(array_key_exists($index, $this->list)){
-            unset($this->list[$index]);
-            // reindex the array to compact the indexes
-            $this->list = array_values($this->list);
-
-            return $this;
-        }else{
-            throw new \InvalidArgumentException("Index '$index' passed to function was not found");
-        }
-    }
-
-    public function map(callable $callback): self
-    {
-        $list = [];
-        foreach ($this->list as $k => $v) {
-            $list[$k] = $callback($k, $v);
+        if($item instanceof $this->type) {
+            return parent::set($key, $item);
         }
 
-        return self::fromArray($list);
+        $type = is_object($item) ? get_class($item) : gettype($item);
+        throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: " . $type);
     }
 
-    public function filter(callable $callback): self
+    public function get($key)
     {
-        $list = [];
-        foreach ($this->list as $k => $v) {
-            if ($callback($v)) {
-                $list[$k] = $v;
-            }
+        $item = parent::get($key);
+
+        if($item !== null) {
+            return $item;
         }
 
-        return self::fromArray($list);
+        throw new \InvalidArgumentException("Key '$key' passed to function was not found");
     }
 
-    public function reduce(callable $reducer, $acc)
+    public function add($item): CollectionInterface
     {
-        foreach ($this->list as $v) {
-            $acc = $reducer($acc, $v);
+        if($item instanceof $this->type) {
+            return parent::add($item);
         }
 
-        return $acc;
+        $type = is_object($item) ? get_class($item) : gettype($item);
+        throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: " . $type);
+    }
+
+    public function remove($key)
+    {
+        $item = parent::remove($key);
+
+        if($item !== null){
+            return $item;
+        }
+
+        throw new \InvalidArgumentException("Key '$key' passed to function was not found");
+    }
+
+    public function unshift($item): CollectionInterface
+    {
+        if($item instanceof $this->type) {
+            return parent::unshift($item);
+        }
+
+        $type = is_object($item) ? get_class($item) : gettype($item);
+        throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: " . $type);
     }
 }

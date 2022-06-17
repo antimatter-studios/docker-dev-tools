@@ -18,7 +18,7 @@ class ArrayCollection implements CollectionInterface
 		$this->data = $data;
 	}
 
-    static public function fromArray(array $data)
+    static public function fromArray(iterable $data): CollectionInterface
     {
         return new static($data);
     }
@@ -274,7 +274,7 @@ class ArrayCollection implements CollectionInterface
      * @return CollectionInterface|void
      * @throws ArrayCollectionInvalidKeyException
      */
-    public function offsetSet($key, $value)
+    public function offsetSet($key, $value): void
     {
         if (!isset($key)) {
             $this->add($value);
@@ -290,12 +290,12 @@ class ArrayCollection implements CollectionInterface
 
     public function filter(callable $callback): CollectionInterface
     {
-        return self::fromArray(array_filter($this->data, $callback));
+        return new self(array_filter($this->data, $callback));
     }
 
     public function map(callable $callback): CollectionInterface
     {
-        return self::fromArray(array_map($callback, $this->data));
+        return new self(array_map($callback, $this->data));
     }
 
     public function reduce(callable $reducer, $acc)

@@ -4,6 +4,7 @@ namespace DDT\Contract;
 
 interface CollectionInterface extends \Countable, \IteratorAggregate, \ArrayAccess, \JsonSerializable
 {
+    static public function fromArray(iterable $array): CollectionInterface;
     public function getIterator(): \Traversable;
     public function count(): int;
 
