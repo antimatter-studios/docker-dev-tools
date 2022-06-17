@@ -64,6 +64,11 @@ class ProjectPathModel extends Model
         return $this->group;
     }
 
+    public function hasGroup(string $group): bool
+    {
+        return $this->group->has($group);
+    }
+
     public function listProjects(): ProjectListModel
     {
         $paths = [
