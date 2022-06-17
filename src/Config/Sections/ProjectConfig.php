@@ -2,10 +2,6 @@
 
 namespace DDT\Config\Sections;
 
-use DDT\Config\Project\ComposerProjectConfig;
-use DDT\Config\Project\NodeProjectConfig;
-use DDT\Config\Project\StandardProjectConfig;
-use DDT\Contract\Project\ProjectConfigInterface;
 use DDT\Config\SystemConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
 use DDT\Exceptions\Project\ProjectExistsException;
@@ -51,7 +47,7 @@ class ProjectConfig
 			$list = $this->config->readModel($this->listKey, ProjectListModel::class);
 		}
 
-		return ProjectListModel::fromArray($path, $list);
+		return ProjectListModel::fromArray([$path, $list]);
 	}
 
 	public function listProjectsByFilter(array $filter): ProjectListModel

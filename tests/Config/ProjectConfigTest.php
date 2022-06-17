@@ -2,7 +2,7 @@
 
 namespace DDT\Test\Config;
 
-use DDT\Config\ProjectConfig;
+use DDT\Config\Sections\ProjectConfig;
 use DDT\Config\SystemConfig;
 use DDT\Model\Project\ProjectModel;
 use PHPUnit\Framework\MockObject\MockObject;
