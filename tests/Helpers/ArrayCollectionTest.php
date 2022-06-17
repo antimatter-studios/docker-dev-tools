@@ -142,10 +142,16 @@ class ArrayCollectionTest extends TestCase
             ]
         ]);
 
+        // access the numerical indexes as part of a key path
         $this->assertEquals('sixth', $a->get('first.second.third.2'));
         $this->assertEquals(false, $a->get('first.eighth'));
 
+        // dynamically set a new element which has a numerical index
         $a->set('first.nineth', ['tenth' => [99, 88, 77]]);
         $this->assertEquals(77, $a->get('first.nineth.tenth.2'));
+
+        // retrieve deeper than a numerical index
+        $a->set('eleventh.twelveth', ['thirteen', ['fifteen' => 'monkey']]);
+        $this->assertEquals('monkey', $a->get('eleventh.twelveth.1.fifteen'));
     }
 }
