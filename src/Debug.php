@@ -17,7 +17,7 @@ class Debug
             self::$enabled = array_map('trim', explode(',', $enabled));
         }
 
-        self::$cli = container(CLI::class);
+        self::$cli = \DDT\Container::$instance->get(CLI::class);
         self::$cli->enableErrors(true);
         self::$cli->toggleChannel('debug', true);
 
@@ -41,7 +41,7 @@ class Debug
     
     static public function dump($filter, $mixed)
     {
-        $cli = self::$cli ?: container(CLI::class);
+        $cli = self::$cli ?: \DDT\Container::$instance->get(CLI::class);
 
         if(in_array($filter, self::$enabled) || in_array('verbose', self::$enabled)){
             is_scalar($mixed) ? $cli->print("$mixed\n") : $cli->varDump($mixed);
