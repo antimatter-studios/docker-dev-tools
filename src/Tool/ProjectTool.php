@@ -6,6 +6,7 @@ use DDT\CLI;
 use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
 use DDT\Config\Project\StandardProjectConfig;
+use DDT\Config\Sections\ProjectConfig;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 use DDT\Exceptions\Project\ProjectExistsException;
@@ -32,7 +33,7 @@ class ProjectTool extends Tool
 
         foreach([
             'list',
-            'add-path', 'remove-path', 'list-paths',
+            'add-path', 'remove-path', 'list-paths', 'dedup-path',
             'add-group', 'remove-group', 'list-groups',
             'add-project', 'remove-project',
             'pull', 'push',
@@ -220,6 +221,29 @@ class ProjectTool extends Tool
         }
 
         $this->cli->failure("Could not remove the project path '$path'\n");
+    }
+
+    public function dedupPath(string $path): void
+    {
+        $this->cli->print("{blu}De-duplicating projects{end}: $path\n");
+
+        $listByPath = $this->projectService->listProjects(ProjectConfig::LIST_PATHS);
+        $listByProject = $this->projectService->listProjects(ProjectConfig::LIST_PROJECTS);
+
+        $table = Table::getInstance();
+        $table->addRow(['{yel}Name{end}', '{yel}Path{end}']);
+
+        /** @var ProjectModel $search */
+        foreach($listByPath as $search){
+            /** @var ProjectModel $project */
+            foreach($listByProject as $project){
+                if ($search->getPath() === $project->getPath()) {
+                    $table->addRow([$project->getName(), $project->getPath()]);
+                }
+            }
+        }
+
+        $this->cli->print($table->render());
     }
 
     public function addGroup(string $project, string $group, ?string $path=null): void
