@@ -2,47 +2,34 @@
 
 namespace DDT\Model\Project;
 
-use ArrayIterator;
-use DDT\Model\ListModel;
+use DDT\Model\ListModel2;
 
-class ProjectPathListModel extends ListModel
+class ProjectPathListModel extends ListModel2
 {
     public function __construct(...$variousPaths)
     {
-        $this->list = [];
+        $data = [];
 
         foreach($variousPaths as $listPaths){
-            foreach($listPaths as $path){
-                if(is_array($path)){
-                    $this->list[] = ProjectPathModel::fromArray($path);
+            foreach($listPaths as $item){
+                if(is_array($item)) {
+                    $model = ProjectPathModel::fromArray($item);
+                    $data[$model->getPath()] = $model;
+                }else if($item instanceof ProjectPathModel) {
+                    $model = $item;
+                    $data[$model->getPath()] = $model;
                 }
             }
         }
 
-        parent::__construct($this->list, ProjectPathModel::class);
-    }
-
-    public function remove($path): ListModel
-    {
-        /** @var ProjectPathModel $item */
-        foreach($this->list as $index => $item){
-            if($item->getPath() === $path){
-                unset($this->list[$index]);
-                $this->list = array_values($this->list);
-                return $this;
-            }
-        }
-
-        throw new \InvalidArgumentException("The path '$path' was not found in the list");
+        parent::__construct($data, ProjectPathModel::class);
     }
 
     public function listProjects(): ProjectListModel
     {
-        $list = [];
-
-        foreach($this->list as $item){
-            $list[] = $item->listProjects();
-        }
+        $list = $this->map(function($item) {
+            return $item->listProjects();
+        });
 
         return ProjectListModel::fromArray(...$list);
     }
