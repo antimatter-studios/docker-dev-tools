@@ -268,7 +268,13 @@ class ArrayCollection implements CollectionInterface
         return $this->get($key);
     }
 
-    public function offsetSet($key, $value): void
+    /**
+     * @param $key
+     * @param $value
+     * @return CollectionInterface|void
+     * @throws ArrayCollectionInvalidKeyException
+     */
+    public function offsetSet($key, $value)
     {
         if (!isset($key)) {
             $this->add($value);
