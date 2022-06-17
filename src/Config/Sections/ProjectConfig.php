@@ -164,7 +164,7 @@ class ProjectConfig
 		// Ensure the name is valid
 		$name = $name ?? basename($path);
 
-		$projectList = $this->listProjects();
+		$projectList = $this->listProjects(self::LIST_PROJECTS);
 
         try{
             if($projectList->findProjectByPath($path)){
