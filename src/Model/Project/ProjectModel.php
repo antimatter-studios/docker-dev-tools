@@ -6,6 +6,7 @@ use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
 use DDT\Config\Project\StandardProjectConfig;
 use DDT\Contract\Project\ProjectConfigInterface;
+use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
 use DDT\Model\Model;
 
@@ -85,7 +86,11 @@ class ProjectModel extends Model
 
     public function setPath(string $path): self
     {
-        $this->path = $path;
+        if(!is_dir($path)){
+            throw new DirectoryNotExistException($path);
+        }
+
+        $this->path = realpath($path);
         return $this;
     }
 
