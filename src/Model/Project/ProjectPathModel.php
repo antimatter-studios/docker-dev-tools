@@ -19,7 +19,7 @@ class ProjectPathModel extends Model
             throw new DirectoryNotExistException($path);
         }
 
-        $this->path = $path;
+        $this->path = realpath($path);
         $this->group = $group ?? new ProjectGroupModel([]);
     }
 
