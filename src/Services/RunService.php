@@ -115,6 +115,10 @@ class RunService
 
 					$depScript = $depData['scripts'][$cmdName];
 					$depScript = is_string($depScript) ? [$depScript] : $depScript;
+
+					if(!is_array($depScript)){
+						continue;
+					}
 	
 					foreach($depScript as $ds){
 						[$st, $stack] = $this->resolve($ds, $depProjectList, $stack);
