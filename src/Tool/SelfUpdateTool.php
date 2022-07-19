@@ -93,13 +93,8 @@ class SelfUpdateTool extends Tool
         return $this->timeout();
     }
 
-    public function run(): void
+    public function auto(): void
     {
-        if($this->selfUpdateConfig->isReadonly()){
-            $this->cli->print("{yel}System Configuration is readonly, can not update{end}\n");
-            return;
-        }
-
         $timeout = $this->selfUpdateConfig->getTimeout();
 
         if(time() < $timeout){
@@ -108,8 +103,8 @@ class SelfUpdateTool extends Tool
             return;
         }
 
-        if(!$this->selfUpdateConfig->isEnabled()){
-            $this->cli->debug("update", "{yel}Self Updater is disabled{end}\n");
+        if($this->cli->hasArg('--skip-update')){
+            $this->cli->debug('update', "Skipping auto-update\n");
             return;
         }
 
@@ -120,6 +115,7 @@ class SelfUpdateTool extends Tool
     {
         $this->cli->print("========================================\n");
         $this->cli->print("{blu}Docker Dev Tools{end}: Self Updater\n");
+        $this->cli->print("{cyn}Add --skip-update to your command to skip this auto-update{end}\n");
 
         if($this->selfUpdateConfig->isReadonly()){
             $this->cli->print("{yel}System Configuration is readonly, can not update{end}\n");
