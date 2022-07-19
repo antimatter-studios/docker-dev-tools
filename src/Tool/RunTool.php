@@ -40,6 +40,8 @@ class RunTool extends Tool
 
     public function getToolMetadata(): array
     {
+        $entrypoint = $this->getEntrypoint();
+        
         return [
             'title' => 'Script Runner',
             'short_description' => 'A tool to run scripts configured as part of projects',
@@ -52,15 +54,17 @@ class RunTool extends Tool
                 "to start them",
             ],
             'examples' => [
-                "{yel}{$this->getEntrypoint()} run{end}: This help",
-                "{yel}{$this->getEntrypoint()} run start api-project my-company{end}: Run the 'start' script from the 'backendapi' project in the 'mycompany' group",
-                "{yel}{$this->getEntrypoint()} run start --group=my-company{end}: Run the 'start' script from the ALL the projects in the 'mycompany' group",
-                "{yel}{$this->getEntrypoint()} run start api-project my-company{end}: The same command as above, but using anonymous parameters",
-                "{yel}{$this->getEntrypoint()} run --list{end}: Will output all the possible scripts that it's possible to run",
-                "{yel}{$this->getEntrypoint()} run --list --group=mycompany{end}: Will limit the output from --list to only scripts within a particular group",
-                "{yel}{$this->getEntrypoint()} run --list --project=api-project{end}: Will limit the output from --list to only scripts within a particular project",
-                "{yel}{$this->getEntrypoint()} run --list --script=start{end}: Will limit the output from --list to only entries which match a particular script",
-                "{yel}{$this->getEntrypoint()} run s3api -- list-buckets{end}: An example from fakews project, it uses the -- escape sequence to pass parameters to awscli",
+                "{yel}$entrypoint run{end}: This help",
+                "{yel}$entrypoint run start api-project my-company{end}: Run the 'start' script from the 'backendapi' project in the 'mycompany' group",
+                "{yel}$entrypoint run start --group=my-company{end}: Run the 'start' script from the ALL the projects in the 'mycompany' group",
+                "{yel}$entrypoint run start api-project my-company{end}: The same command as above, but using anonymous parameters",
+                "{yel}$entrypoint run --list{end}: Will output all the possible scripts that it's possible to run",
+                "{yel}$entrypoint run --list --group=mycompany{end}: Will limit the output from --list to only scripts within a particular group",
+                "{yel}$entrypoint run --list --project=api-project{end}: Will limit the output from --list to only scripts within a particular project",
+                "{yel}$entrypoint run --list --script=start{end}: Will limit the output from --list to only entries which match a particular script",
+                "{yel}$entrypoint run --list --script=start{end}: Will limit the output from --list to only entries which match a particular script",
+                "{yel}$entrypoint run --show start api-project{end}: Will show the entrire script dependency tree for this script 'start' on the project 'api-project'",
+                "{yel}$entrypoint run s3api -- list-buckets{end}: An example from fakews project, it uses the -- escape sequence to pass parameters to awscli",
             ],
             'notes' => [
                 "- Use -- in your command line to use the bash escape sequence that will take all the arguments to the right and pass",
