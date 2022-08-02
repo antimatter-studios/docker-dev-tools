@@ -54,13 +54,17 @@ class DockerNetwork
 
     public function getId(): string
     {
-        $id = $this->docker->inspect('network', $this->name, '{{json .Id }}');
+        try{
+            $id = $this->docker->inspect('network', $this->name, '{{json .Id }}');
 
-        if(empty($id)){
+            if(empty($id)){
+                throw new DockerNetworkNotFoundException($this->name);
+            }
+    
+            return $id[0];
+        }catch(DockerInspectException $e){
             throw new DockerNetworkNotFoundException($this->name);
         }
-
-        return $id[0];
     }
 
     public function getName(): string
@@ -70,12 +74,16 @@ class DockerNetwork
 
     public function listContainers(): array
     {
-        $result = $this->docker->inspect('network', $this->name, '{{json .Containers }}');
+        try{
+            $result = $this->docker->inspect('network', $this->name, '{{json .Containers }}');
         
-        return array_reduce(array_keys($result), function($a, $c) use ($result) {
-            $a[$c] = $result[$c]['Name'];
-            return $a;
-        }, []);
+            return array_reduce(array_keys($result), function($a, $c) use ($result) {
+                $a[$c] = $result[$c]['Name'];
+                return $a;
+            }, []);    
+        }catch(DockerInspectException $e){
+            throw new DockerNetworkNotFoundException($this->name);
+        }
     }
 
     public function create(string $name): string
