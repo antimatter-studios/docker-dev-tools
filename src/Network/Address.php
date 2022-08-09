@@ -46,7 +46,7 @@ class Address
         try{
             $count = 10;
             $delay = 0.2;
-			$result = $this->cli->exec("ping $this->address -c $count -i $delay 2>&1");
+			$result = $this->cli->exec("LC_NUMERIC=en_US.utf8 ping $this->address -c $count -i $delay 2>&1");
             $this->cli->debug('address raw', $result);
 		}catch(\Exception $e){
 			$result = $e->getMessage();
