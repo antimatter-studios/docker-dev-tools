@@ -37,8 +37,6 @@ class SelfUpdateConfig
         
         if(!$period) {
             $period = $this->defaultPeriod;
-            $this->config->setKey("$this->key.period", $period);
-            $this->config->write();
         }
 
         return $period;
@@ -60,8 +58,6 @@ class SelfUpdateConfig
         
         if(!$timeout){
             $timeout = time() - 1;
-            $this->config->setKey("$this->key.timeout", $timeout);
-            $this->config->write();
         }
 
         return $timeout;
