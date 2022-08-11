@@ -39,7 +39,7 @@ This tool sidesteps this problem by creating a stable, dependable ip address for
 Then if the PHP XDebug extension connects back to `10.254.254.254` it'll reach the development machine itself, and the application sitting on the desktop listening can receive that callback. So this bypasses the problem that "localhost" is relative.
 
 ### Setting an IP Address
-By default an ip address is alreay configured, which is 99.99% sure not used by any device anywhere on the internet (it's very unlikely). However if you want to change this, use the following command: 
+By default an ip address is already configured, which is 99.99% sure not used by any device anywhere on the internet (it's very unlikely). However if you want to change this, use the following command: 
 
 ```
 ddt ip set 10.254.254.254
