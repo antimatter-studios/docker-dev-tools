@@ -6,7 +6,7 @@ A project composed of scripts which aid in the development of applications using
 The `ddt` command is only available once your shell path is updated. To do this
 there run the following command:
 
-`ddt setup install <path>` 
+`./bin/ddt setup install <path>` 
 
 This will configure your shells '$PATH' environment variable with the `<path>` given.
 
