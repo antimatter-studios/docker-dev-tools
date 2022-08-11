@@ -238,7 +238,7 @@ class ProjectConfig
 	public function addPath(string $path, ?string $group=null): bool
 	{
         $list = $this->listPaths();
-        $list->append(ProjectPathModel::fromPath($path, $group));
+        $list->add(ProjectPathModel::fromPath($path, $group));
 
         $this->config->setKey($this->pathKey, $list);
 
