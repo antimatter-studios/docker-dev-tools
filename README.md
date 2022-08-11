@@ -3,10 +3,12 @@ A project composed of scripts which aid in the development of applications using
 
 ### Installation
 
-The `ddt` command is only available once your shell path is updated. To do this
-there run the following command:
+The `ddt` command is only globally available once your shell path is updated. To do this there run the following command from inside the cloned location:
 
-`./bin/ddt setup install <path>` 
+```
+cd docker-dev-tools
+./bin/ddt setup install 
+```
 
 This will configure your shells '$PATH' environment variable with the `<path>` given.
 
