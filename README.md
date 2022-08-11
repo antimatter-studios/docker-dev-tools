@@ -10,7 +10,8 @@ cd docker-dev-tools
 ./bin/ddt setup install 
 ```
 
-This will configure your shells '$PATH' environment variable with the `<path>` given.
+This will configure your shells '$PATH' environment variable, this will make the `ddt` command 
+available in any terminal automatically.
 
 After this process is complete, a new file `.ddt-system.json` will be written to
 your $HOME directory. 
