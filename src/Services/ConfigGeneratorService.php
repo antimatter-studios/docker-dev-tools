@@ -58,8 +58,9 @@ class ConfigGeneratorService
 					'ddt_config_gen:/config',
 				],
 				[], // options
-				$env, // env
+				$env // env
 			);
+
             $id = $container->getId();
 
 			if(empty($networkList)){
