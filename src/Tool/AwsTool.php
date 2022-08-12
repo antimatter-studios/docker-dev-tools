@@ -93,7 +93,7 @@ class AwsTool extends Tool
             "tail -f /dev/null", 
             $this->getImage()->getName(), 
             ["\$HOME/.aws:/root/.aws", "\$PWD:/app"], 
-            ['-w /app'],
+            ['-w /app']
         );
 
         return $this->container;
