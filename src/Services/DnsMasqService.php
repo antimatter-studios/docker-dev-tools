@@ -53,24 +53,27 @@ class DnsMasqService
         );
     }
 
+    private function getConfigFileList($filename): array
+    {
+        $container = $this->getContainer();
+
+        $list = explode("\n", $container->exec("find /etc/dnsmasq.d -name \"$filename.conf\" -type f"));
+
+        $list = array_map('trim', $list);
+        $list = array_filter($list);
+
+        return $list;
+    }
+
 	public function listDomains(): array
 	{    
         $domains = [];
 
         $container = $this->getContainer();
 
-        $list = explode("\n", $container->exec("find /etc/dnsmasq.d -name \"*.conf\" -type f"));
-        $list = array_map('trim', $list);
-        $list = array_filter($list);  
+        $list = $this->getConfigFileList("*");
 
-        foreach($list as $file){
-            $file = trim($file);
-            
-            if(empty($file)){
-                $this->cli->debug('{red}[DNSMASQ]{end}: cannot view file inside container as it was empty string, skipping');
-                continue;
-            }
-
+        foreach($list as $file){     
             $contents = $container->exec("cat $file");
             if(preg_match("/^[^\/]+\/(?P<domain>[^\/]+)\/(?P<ip_address>[^\/]+)/", $contents, $matches)){
                 $domains[] = ['domain' => $matches['domain'], 'ip_address' => $matches['ip_address']];
@@ -101,6 +104,24 @@ class DnsMasqService
     private function getUpstreamFilename(string $ipAddress): string 
     {
         return "/etc/dnsmasq.d/upstream_dns_".str_replace(['.',':'],'_',$ipAddress).".conf";
+    }
+
+    public function getUpstreamList(): array
+    {
+        $fileList = $this->getConfigFileList("upstream_dns_*");
+
+        $container = $this->getContainer();
+
+        $upstreamList = [];
+
+        foreach($fileList as $file){
+            $contents = $container->exec("cat $file");
+            if(preg_match("/^server\=(?P<ip_address>[^\/]+)/", $contents, $matches)){
+                $upstreamList[] = $matches['ip_address'];
+            }
+        }
+
+        return $upstreamList;
     }
 
     public function addUpstream(string $ipAddress): bool

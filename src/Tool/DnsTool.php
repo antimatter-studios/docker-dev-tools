@@ -48,7 +48,7 @@ class DnsTool extends Tool
         }
     }
 
-    private function getUpstreamList(): array
+    private function getConfiguredUpstreamList(): array
     {
         $upstreamList = $this->dnsConfig->getUpstreamList();
 
@@ -56,7 +56,7 @@ class DnsTool extends Tool
             if ($this->cli->isLinux()) {
                 $upstreamList = ['1.1.1.1'];
             } else if ($this->cli->isDarwin()) {
-                $upstreamList = $this->ipConfig->get();
+                $upstreamList = [$this->ipConfig->get()];
             } else {
                 throw new \Exception('Unknown operating system');
             }
@@ -64,6 +64,17 @@ class DnsTool extends Tool
             $this->cli->print("{yel}No upstream servers configured, defaulting to: " . implode($upstreamList) . "{end}\n");
         }
         
+        return $upstreamList;
+    }
+
+    private function getActiveUpstreamList(): array
+    {
+        $upstreamList = $this->dnsMasq->getUpstreamList();
+
+        if (empty($upstreamList)) {
+            $this->cli->print("{yel}No upstream servers configured{end}\n");
+        }
+
         return $upstreamList;
     }
 
@@ -168,7 +179,7 @@ class DnsTool extends Tool
         $this->cli->print("{blu}Started{end}: container id '$id'...{end}\n");
         
         // Set the dns upstreams to your previous ip addresses (most likely from your dhcp/router config)
-        foreach($this->getUpstreamList() as $ipAddress){
+        foreach($this->getConfiguredUpstreamList() as $ipAddress){
             $this->cli->print("Setting upstream dns: $ipAddress\n");
             $this->dnsMasq->addUpstream($ipAddress);
         }
@@ -457,6 +468,9 @@ class DnsTool extends Tool
         }
         
         $this->cli->print("\n".$table->render(true));
+
+        $upstreamList = $this->getActiveUpstreamList();
+        $this->cli->print("{yel}Upstream Servers{end}: " . implode(', ', $upstreamList) . "\n");
     }
 
     public function config(): void
