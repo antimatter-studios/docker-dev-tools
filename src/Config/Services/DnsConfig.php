@@ -11,6 +11,7 @@ class DnsConfig
 		'container_name'	=> 'dns.container_name',
         'domains'           => 'dns.domains',
 		'device'			=> 'dns.device',
+		'upstream'			=> 'dns.upstream',
 	];
 
     public function __construct(SystemConfig $config)
@@ -27,6 +28,10 @@ class DnsConfig
 
 		if($this->config->getKey($this->keys['domains']) === null){
 			$this->config->setKey($this->keys['domains'], []);
+		}
+
+		if($this->config->getKey($this->keys['upstream']) === null){
+			$this->config->setKey($this->keys['upstream'], []);
 		}
     }
 
@@ -105,6 +110,39 @@ class DnsConfig
 
 		$this->config->setKey($this->keys['domains'], $list);
 
+		return $this->config->write();
+	}
+
+	public function getUpstreamList(): array
+	{
+		return $this->config->getKey($this->keys['upstream']);
+	}
+
+	public function addUpstream(string $address): bool 
+	{
+		$list = $this->getUpstreamList();
+
+		$list[] = $address;
+		$list = array_values(array_unique($list));
+
+		$this->config->setKey($this->keys['upstream'], $list);
+
+		return $this->config->write();
+	}
+
+	public function removeUpstream(string $address): bool 
+	{
+		$list = $this->getUpstreamList();
+		
+		$index = array_search($address, $list);
+		if($index !== false){
+			unset($list[$index]);
+		}
+
+		$list = array_values(array_unique($list));
+
+		$this->config->setKey($this->keys['upstream'], $list);
+		
 		return $this->config->write();
 	}
 

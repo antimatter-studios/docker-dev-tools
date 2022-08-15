@@ -39,14 +39,32 @@ class DnsTool extends Tool
             'enable', 'disable', 'refresh', 'start', 'stop', 'restart',
             'logs', 'logs-f',
             'add-domain', 'remove-domain',
+            'add-upstream', 'remove-upstream',
             'ip', 'ping', 'status',
             'container-name', 'docker-image',
             'config',
-            // These are commands I think I need to re-add in the future
-            // 'list-devices', 'set-device', 'remove-device'
         ] as $command){
             $this->setToolCommand($command);
         }
+    }
+
+    private function getUpstreamList(): array
+    {
+        $upstreamList = $this->dnsConfig->getUpstreamList();
+
+        if (empty($upstreamList)) {
+            if ($this->cli->isLinux()) {
+                $upstreamList = ['1.1.1.1'];
+            } else if ($this->cli->isDarwin()) {
+                $upstreamList = $this->ipConfig->get();
+            } else {
+                throw new \Exception('Unknown operating system');
+            }
+
+            $this->cli->print("{yel}No upstream servers configured, defaulting to: " . implode($upstreamList) . "{end}\n");
+        }
+        
+        return $upstreamList;
     }
 
     public function getToolMetadata(): array
@@ -150,7 +168,8 @@ class DnsTool extends Tool
         $this->cli->print("{blu}Started{end}: container id '$id'...{end}\n");
         
         // Set the dns upstreams to your previous ip addresses (most likely from your dhcp/router config)
-        foreach($this->dnsService->listIpAddress() as $ipAddress){
+        foreach($this->getUpstreamList() as $ipAddress){
+            $this->cli->print("Setting upstream dns: $ipAddress\n");
             $this->dnsMasq->addUpstream($ipAddress);
         }
         
@@ -291,6 +310,42 @@ class DnsTool extends Tool
         }
     }
 
+    public function addUpstream(string $address): void 
+    {
+        $this->cli->print("{blu}Adding Upstream:{end} $address: ");
+
+        if($this->dnsConfig->addUpstream($address) == false) {
+            $this->cli->print("{red}FAILURE{end}\n");
+            return;
+        }
+
+        if($this->dnsMasq->addUpstream($address) == false) {
+            $this->cli->print("{red}FAILURE{end}\n");
+            return;
+        }
+
+        $this->dnsMasq->reload();
+        $this->cli->print("{grn}SUCCESS{end}\n");
+    }
+
+    public function removeUpstream(string $address): void 
+    {
+        $this->cli->print("{blu}Removing Upstream:{end} $address: ");
+
+        if($this->dnsConfig->removeUpstream($address) == false) {
+            $this->cli->print("{red}FAILURE{end}\n");
+            return;
+        }
+
+        if($this->dnsMasq->removeUpstream($address) == false) {
+            $this->cli->print("{red}FAILURE{end}\n");
+            return;
+        }
+
+        $this->dnsMasq->reload();
+        $this->cli->print("{grn}SUCCESS{end}\n");
+    }
+
     public function ip(?string $address=null): string
     {
         // TODO: what to do when you set a new ip address, here, should reconfigure everything with that new ip address?
@@ -421,36 +476,4 @@ class DnsTool extends Tool
             $this->cli->print($container->exec("cat $file")."\n\n");
         }
     }
-
-    // public function listDevices() {
-    //     $this->cli->print("{blu}List of all devices:{end}\n");
-        
-    //     foreach($this->dnsService->getHardwarePorts() as $index => $device){
-    //         $this->cli->print($index+1 . " - ${device['name']} (dev: ${device['device']})\n");
-    //     }
-    // }
-
-    // public function setDevice(string $device=null) {
-    //     $this->cli->print("{blu}Set the device for DNS service:{end}\n");
-
-    //     $list = $this->dnsService->getHardwarePorts();
-
-    //     foreach($list as $index => $device){
-    //         $this->cli->print($index+1 . " - ${device['name']} (dev: ${device['device']})\n");
-    //     }
-
-    //     $answer = (int)$this->cli->ask("Please enter the number of device to select: ", range(1,count($list)));
-
-    //     if($answer < 1 || $answer > count($list)) {
-    //         $this->cli->print("{red}Sorry but the device selected was not available (requested: $answer){end}\n");
-    //     }else{
-    //         $device = $list[$answer-1];
-    //         $this->cli->print("You have requested device: {yel}{$device['name']} (dev: {$device['device']}){end}\n");
-    //         $this->dnsConfig->setDevice($device['name'], $device['device']);
-    //     }
-    // }
-
-    // public function removeDevice() {
-    //     $this->dnsConfig->removeDevice();
-    // }
 }

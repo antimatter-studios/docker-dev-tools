@@ -98,12 +98,27 @@ class DnsMasqService
         return $container->getExitCode() === 0;
 	}
 
+    private function getUpstreamFilename(string $ipAddress): string 
+    {
+        return "/etc/dnsmasq.d/upstream_dns_".str_replace(['.',':'],'_',$ipAddress).".conf";
+    }
+
     public function addUpstream(string $ipAddress): bool
     {
         $container = $this->getContainer();
 
-        $filename = "/etc/dnsmasq.d/upstream_dns_".str_replace(['.',':'],'_',$ipAddress).".conf";
+        $filename = $this->getUpstreamFilename($ipAddress);
         $container->exec("/bin/sh -c 'echo 'server=$ipAddress' >> $filename'");
+
+        return $container->getExitCode() === 0;
+    }
+
+    public function removeUpstream(string $ipAddress): bool
+    {
+        $container = $this->getContainer();
+
+        $filename = $this->getUpstreamFilename($ipAddress);
+        $container->exec("rm $filename");
 
         return $container->getExitCode() === 0;
     }
