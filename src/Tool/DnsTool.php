@@ -53,13 +53,7 @@ class DnsTool extends Tool
         $upstreamList = $this->dnsConfig->getUpstreamList();
 
         if (empty($upstreamList)) {
-            if ($this->cli->isLinux()) {
-                $upstreamList = ['1.1.1.1'];
-            } else if ($this->cli->isDarwin()) {
-                $upstreamList = [$this->ipConfig->get()];
-            } else {
-                throw new \Exception('Unknown operating system');
-            }
+            $upstreamList = $this->dnsService->listIpAddress();
 
             $this->cli->print("{yel}No upstream servers configured, defaulting to: " . implode($upstreamList) . "{end}\n");
         }

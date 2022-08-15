@@ -9,9 +9,6 @@ class SystemdResolvedMethod
     /** @var CLI $cli */
     private $cli;
 
-    // FIXME: work out a way to make this automatic and read from the system instead of hardcoded here
-    private $upstream = '127.0.0.53';
-
     public function __construct(CLI $cli)
     {
         $this->cli = $cli;
@@ -22,16 +19,22 @@ class SystemdResolvedMethod
         return $cli->isCommand('systemd-resolve');
     }
 
+    /**
+     * Get a list of dns servers this machine is configured to use
+     *
+     * @todo we should make this dynamic. I don't know how to query systemd to get this information yet
+     * @return array
+     */
     public function get(): array
     {
-        return [$this->upstream];
+        return ['1.1.1.1'];
     }
 
     public function add(string $ipAddress): bool
     {
         $this->cli->print("{blu}DNS:{end} Writing new DNS Configuration\n");
         $this->cli->sudo('sed -i "s/^[#]\?DNS=.*\?/DNS=' . $ipAddress . '/i" /etc/systemd/resolved.conf');
-        $this->cli->sudo('sed -i "s/^[#]\?FallbackDNS=.*\?/FallbackDNS=' . $this->upstream . '/i" /etc/systemd/resolved.conf');
+        $this->cli->sudo('sed -i "s/^[#]\?FallbackDNS=.*\?/FallbackDNS=' . implode(',', $this->get()) . '/i" /etc/systemd/resolved.conf');
         //$this->cli->sudo('sed -i "s/^[#]\?DNSStubListener=.*\?/DNSStubListener=no/i" /etc/systemd/resolved.conf');
         //$this->cli->exec('sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf');
         
