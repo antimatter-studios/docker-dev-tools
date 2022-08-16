@@ -4,7 +4,7 @@ namespace DDT\Methods\Linux\DNS;
 
 use DDT\CLI;
 
-class SystemdResolvedMethod
+class SystemdResolvedMethod extends ResolvConfFileMethod
 {
     /** @var CLI $cli */
     private $cli;
@@ -17,17 +17,6 @@ class SystemdResolvedMethod
     static public function supported(CLI $cli): bool
     {
         return $cli->isCommand('systemd-resolve');
-    }
-
-    /**
-     * Get a list of dns servers this machine is configured to use
-     *
-     * @todo we should make this dynamic. I don't know how to query systemd to get this information yet
-     * @return array
-     */
-    public function get(): array
-    {
-        return ['1.1.1.1'];
     }
 
     public function add(string $ipAddress): bool

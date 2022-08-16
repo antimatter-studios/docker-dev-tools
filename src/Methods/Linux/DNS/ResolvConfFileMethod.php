@@ -13,6 +13,13 @@ class ResolvConfFileMethod
         return file_exists(self::$file);
     }
 
+    private function getFileContents(): array
+    {
+        $contents = file_get_contents(self::$file);
+
+        return explode("\n", $contents);
+    }
+
     /**
      * Get a list of dns servers this machine is configured to use
      *
@@ -21,14 +28,22 @@ class ResolvConfFileMethod
      */
     public function get(): array
     {
-        return ['1.1.1.1'];
+        $upstreamList = array_filter($this->getFileContents(), function($line) {
+            return strpos($line, 'nameserver') !== false;
+        });
+
+        $upstreamList = array_map(function($line) {
+            return trim(str_replace('nameserver', '', $line));
+        }, $upstreamList);
+
+        return array_values($upstreamList);
     }
 
     public function add(string $ipAddress): bool
     {
-        $contents = file_get_contents($this->file);
+        $contents = $this->getFileContents();
 
-        foreach(explode("\n", $contents) as $line){
+        foreach($contents as $line){
             if(strpos($line, $ipAddress) !== false) {
                 return true;
             }
