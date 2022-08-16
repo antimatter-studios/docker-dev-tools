@@ -129,7 +129,7 @@ class DnsMasqService
         $container = $this->getContainer();
 
         $filename = $this->getUpstreamFilename($ipAddress);
-        $container->exec("/bin/sh -c 'echo 'server=$ipAddress' >> $filename'");
+        $container->exec("/bin/sh -c 'echo 'server=$ipAddress' > $filename'");
 
         return $container->getExitCode() === 0;
     }
