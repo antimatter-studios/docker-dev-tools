@@ -144,6 +144,15 @@ class DnsMasqService
         return $container->getExitCode() === 0;
     }
 
+    public function clearUpstreams(): void
+    {
+        $upstreamList = $this->getUpstreamList();
+
+        foreach($upstreamList as $upstream) {
+            $this->removeUpstream($upstream);
+        }
+    }
+
     public function reload()
     {
         $container = $this->getContainer();

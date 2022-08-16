@@ -48,20 +48,36 @@ class DnsTool extends Tool
         }
     }
 
-    private function getConfiguredUpstreamList(): array
+    /**
+     * This function will request what dns upstream servers are configured to use
+     * If there are no upstream servers configured, it will fall back to what upstream dns servers are currently being used
+     *
+     * @return array
+     */
+    private function getConfigurationUpstreamList(): array
     {
         $upstreamList = $this->dnsConfig->getUpstreamList();
 
         if (empty($upstreamList)) {
-            $upstreamList = $this->dnsService->listIpAddress();
+            $upstreamList = $this->dnsService->getUpstreamList();
 
             $this->cli->print("{yel}No upstream servers configured, defaulting to: " . implode(', ', $upstreamList) . "{end}\n");
         }
+
+        // filter out the configured dns ip address
+        $upstreamList = array_filter($upstreamList, function($upstream) {
+            return strpos($upstream, $this->getDnsIpAddress()) === false;
+        });
         
         return $upstreamList;
     }
 
-    private function getActiveUpstreamList(): array
+    /**
+     * This function will request from the dns server what upstream servers are configured
+     *
+     * @return array
+     */
+    private function getServerUpstreamList(): array
     {
         $upstreamList = $this->dnsMasq->getUpstreamList();
 
@@ -72,13 +88,38 @@ class DnsTool extends Tool
         return $upstreamList;
     }
 
+    /**
+     * Reset the Upstreams to what the system is configured to set
+     * This function will first request from the configuration what upstreams are configured
+     * If there are no upstreams configured. It will ask your operating system what upstreams are configured and use those
+     *
+     * @return void
+     */
     private function resetUpstreams(): void
     {
+        $this->dnsMasq->clearUpstreams();
+        
         // Set the dns upstreams to your previous ip addresses (most likely from your dhcp/router config)
-        foreach($this->getConfiguredUpstreamList() as $ipAddress){
+        foreach($this->getConfigurationUpstreamList() as $ipAddress){
             $this->cli->print("Setting upstream dns: $ipAddress\n");
             $this->dnsMasq->addUpstream($ipAddress);
         }
+    }
+    
+    /**
+     * Return the Ip Address to use for the DNS server
+     *
+     * @return string
+     */
+    private function getDnsIpAddress(): string
+    {
+        $ipAddress = $this->ipConfig->get();
+
+        if(empty($ipAddress)){
+            throw new \Exception('The system configuration had no usable ip address for this system configured');
+        }
+
+        return $ipAddress;
     }
 
     public function getToolMetadata(): array
@@ -136,11 +177,7 @@ class DnsTool extends Tool
     {
         $this->cli->print("{grn}Enabling{end}: DNS...\n");
 
-        $dnsIpAddress = $this->ipConfig->get();
-
-        if(empty($dnsIpAddress)){
-            throw new \Exception('The system configuration had no usable ip address for this system configured');
-        }
+        $dnsIpAddress = $this->getDnsIpAddress();
 
         $this->dnsService->enable($dnsIpAddress);
     }
@@ -149,11 +186,7 @@ class DnsTool extends Tool
     {
         $this->cli->print("{red}Disabling:{end} DNS...\n");
 
-        $dnsIpAddress = $this->ipConfig->get();
-
-        if(empty($dnsIpAddress)){
-            throw new \Exception('The system configuration had no usable ip address for this system configured');
-        }
+        $dnsIpAddress = $this->getDnsIpAddress();
 
         $this->dnsService->disable($dnsIpAddress);
     }
@@ -176,7 +209,7 @@ class DnsTool extends Tool
             $this->dnsMasq->pull();
         }
 
-        $dnsIpAddress = $this->ipConfig->get();
+        $dnsIpAddress = $this->getDnsIpAddress();
 
         $id = $this->dnsMasq->start($dnsIpAddress);
         
@@ -255,7 +288,7 @@ class DnsTool extends Tool
             throw new \Exception('The hostname was not interpreted correctly, if relevant; please use a hostname and not an ip address');
         }
 
-        $ipAddress = $this->ipConfig->get();
+        $ipAddress = $this->getDnsIpAddress();
 
         // TODO: support overriding the ip address through the command line argument --ip-address=x.x.x.x
 
@@ -293,7 +326,7 @@ class DnsTool extends Tool
             throw new \Exception('The hostname was not interpreted correctly, if relevant; please use a hostname and not an ip address');
         }
 
-        $ipAddress = $this->ipConfig->get();
+        $ipAddress = $this->getDnsIpAddress();
 
         // TODO: support overriding the ip address through the command line argument --ip-address=x.x.x.x
 
@@ -363,14 +396,14 @@ class DnsTool extends Tool
         // NOTE: this could be quite a lot of changes in various aspects of the system that might be storing that ip address and using it locally
         $this->cli->debug("dns", "new ip address = '$address'");
 
-        $list = $this->dnsService->listIpAddress();
+        $list = $this->dnsService->getUpstreamList();
 
         return implode("\n", $list);
     }
 
     public function ping()
     {
-        $list = $this->dnsService->listIpAddress();
+        $list = $this->dnsService->getUpstreamList();
 
         foreach($list as $ipAddress){
             $address = Address::instance($ipAddress);
@@ -469,7 +502,7 @@ class DnsTool extends Tool
         
         $this->cli->print("\n".$table->render(true));
 
-        $upstreamList = $this->getActiveUpstreamList();
+        $upstreamList = $this->getServerUpstreamList();
         $this->cli->print("{yel}Upstream Servers{end}: " . implode(', ', $upstreamList) . "\n");
     }
 

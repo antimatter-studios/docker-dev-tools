@@ -36,7 +36,7 @@ class DnsService
         throw new \Exception("No supported dns configuration method found");
     }
 
-    public function listIpAddress(): array
+    public function getUpstreamList(): array
     {   
         $method = $this->getSupportedMethod();
         return $method->get();
