@@ -55,7 +55,7 @@ class DnsTool extends Tool
         if (empty($upstreamList)) {
             $upstreamList = $this->dnsService->listIpAddress();
 
-            $this->cli->print("{yel}No upstream servers configured, defaulting to: " . implode($upstreamList) . "{end}\n");
+            $this->cli->print("{yel}No upstream servers configured, defaulting to: " . implode(', ', $upstreamList) . "{end}\n");
         }
         
         return $upstreamList;
@@ -70,6 +70,15 @@ class DnsTool extends Tool
         }
 
         return $upstreamList;
+    }
+
+    private function resetUpstreams(): void
+    {
+        // Set the dns upstreams to your previous ip addresses (most likely from your dhcp/router config)
+        foreach($this->getConfiguredUpstreamList() as $ipAddress){
+            $this->cli->print("Setting upstream dns: $ipAddress\n");
+            $this->dnsMasq->addUpstream($ipAddress);
+        }
     }
 
     public function getToolMetadata(): array
@@ -155,6 +164,7 @@ class DnsTool extends Tool
         
         $this->disable();
         $this->enable();
+        $this->resetUpstreams();
         $this->dnsMasq->reload();
     }
 
@@ -172,11 +182,7 @@ class DnsTool extends Tool
         
         $this->cli->print("{blu}Started{end}: container id '$id'...{end}\n");
         
-        // Set the dns upstreams to your previous ip addresses (most likely from your dhcp/router config)
-        foreach($this->getConfiguredUpstreamList() as $ipAddress){
-            $this->cli->print("Setting upstream dns: $ipAddress\n");
-            $this->dnsMasq->addUpstream($ipAddress);
-        }
+        $this->resetUpstreams();
         
         $this->enable();
 
