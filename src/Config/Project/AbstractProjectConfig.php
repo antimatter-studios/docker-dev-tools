@@ -87,12 +87,21 @@ abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfig
 			// No scripts defined at all, then consider this the same as no dependencies to process
 			if(!array_key_exists('scripts', $config)) return false;
 
+			// Then all scripts can execute on this project
 			if($config['scripts'] === true) return true;
+
+			// Then all scripts are denied to execute on this project
 			if($config['scripts'] === false) return false;
 
-			// This would also be an invalid configuration
+			// script key is not true/false, but not an array either,  this is invalid
 			if(!is_array($config['scripts'])) return false;
+
+			// If the script key exists and the script is one of the values
+			// This just defaults to saying the script is set to true
+			// It's like a shorthand, you just list the scripts you want true in this format
+			if(in_array($script, $config['scripts'])) return true;
 			
+			// script key is an array, but we must inspect the keys value to determine whether it's execution is allowed or not
 			if(array_key_exists($script, $config['scripts'])){
 				$value = $config['scripts'][$script];
 				if($value === true) return true;
@@ -107,6 +116,9 @@ abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfig
 
 		// Resolve all true values into actual objects with proper values
 		$list = array_map(function($config) use ($script) {
+			if(in_array($script, $config['scripts'])){
+				$config['scripts'] = [$script => $script];
+			}
 			if($config['scripts'] === true){
 				$config['scripts'] = [$script => $script];
 			}

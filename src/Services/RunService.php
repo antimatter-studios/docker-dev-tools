@@ -77,7 +77,7 @@ class RunService
 
 		// TODO: do I need to keep track of any runtime data here?
 		$this->stack[] = $key;
-		$this->cli->debug("runservice", "\n{cyn}Stack(push = $key):\n".implode("\n", $this->stack)."{end}\n");
+		$this->cli->debug('runservice', "\n{cyn}Stack(push = $key):\n".implode("\n", $this->stack)."{end}\n");
 		// I don't know how to handle failure yet
 		return true;
 	}
@@ -91,6 +91,8 @@ class RunService
 			$name = $p->getName();
 			$group = current($p->getGroups()->getData());
 
+			$this->cli->debug('runservice', "resolve: '$script', project: '$name', group: '$group'\n");
+
 			$key = "{$p->getPath()}@{$script}";
 			if(in_array($key, $stack)){
 				continue;
@@ -103,8 +105,9 @@ class RunService
 			$command = $this->resolveCommandList($script, $projectConfig);
 
 			$subtree = [];
-			$dependencies = $projectConfig->getDependencies($script);	
+			$dependencies = $projectConfig->getDependencies($script);
 			foreach($dependencies as $depName => $depData){
+				$this->cli->debug('runservice', "resolve dependency: '$depName'\n");
 				$depProjectList = $this->projectConfig->listProjectsByFilter(['name' => $depName, 'group' => $group]);
 
 				foreach(array_keys($command) as $cmdName){
