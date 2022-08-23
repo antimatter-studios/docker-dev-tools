@@ -34,7 +34,7 @@ class ProjectTool extends Tool
         foreach([
             'list',
             'add-path', 'remove-path', 'list-paths', 'dedup-path',
-            'add-group', 'remove-group', 'list-groups',
+            'add-group', 'remove-group', 'clone-project', 'list-groups',
             'add-project', 'remove-project',
             'pull', 'push',
         ] as $command){
@@ -62,13 +62,15 @@ class ProjectTool extends Tool
                 "\tremove-path {yel}<path>: Will remove a matching path from the list",
 
                 "\n\t{cyn}Managing Projects{end}:",
-                "\tadd-project {yel}<path> [optional: <project-name> <type> <group> <vcs> <remote-name>]{end}: Will add a new project that already exists on the disk.",
-                "\t\t{yel}<project-name>{end}: Can be autodetected from the folder name that is given in the path",
-                "\t\t{yel}<type=node|composer|ddt>{end}: Can be autodetected from looking at the files contained in the project, if given must be one of the types defined below",
+                "\tadd-project {yel}<path> [optional: <group>]{end}: Will add a new project that already exists on the disk.",
+                "\t\t{yel}<path>{end}: A path on the disk for the project itself",
                 "\t\t{yel}<group>{end}: Can be empty, but groups may become required when two projects have the same name, or you can use path in other functionality to reduce the ambiguity",
-                "\t\t{yel}<vcs>{end}: Can be autodetected from the projects contents. But Git is only supported right now, but this is the clone url",
-                "\t\t{yel}<remote-name>{end}: Defaults to 'origin', but this is very git-centric and may change if other vcs systems are supported in the future",
                 "\tremove-project {yel}<project-name> [optional: <path>]{end}: Remove a project, see notes regarding path parameter",
+                "\tclone-project {yel}<vcs> [optional: <group> <remote-name>]{end}: Will clone a project",
+                "\t\t{yel}<vcs>{end}: The url of the repository to clone",
+                "\t\t{yel}<group>{end}: Can be empty, but groups may become required when two projects have the same name, or you can use path in other functionality to reduce the ambiguity",
+                "\t\t{yel}<remote-name>{end}: Defaults to 'origin', but this is very git-centric and may change if other vcs systems are supported in the future",
+
 
                 "\n\t{cyn}Managing Groups{end}:",
                 "\tlist-groups: List all the groups from all the projects",
@@ -89,13 +91,11 @@ class ProjectTool extends Tool
                 "\tmultiple groups with the same name, if you tried to operate upon it, which one would",
                 "\tyou target? Since they both have the same name, but different directories, so could have",
                 "\tdifferent code too. Hence this situation is not possible to handle and will fail",
-                "- If adding a new project which already exists, you cannot leave the groups empty, as again",
-                "\tit makes it hard or impossible to know how to work with it.",
-                "- A project with the same name might exist in multiple locations on the disk and whereas it might",
-                "\tbe the same project, might have a different version or branch. Therefore just cause it's the same",
-                "\tproject doesn't mean it is treated the same. Therefore the path optional parameter can be used to",
-                "\tselect which project to operate on and manipulate. So when using the following commands",
-                "\t'remove-project, add-group, and remove-group', the path parameter is used to do that"
+                "- If a project with the same name exists, you are forced to provide a group parameter",
+                "- {yel}OPTIONAL PATH PARAMETER{end}: It might be that multiple projects exist on a developers system called 'rest-api'",
+                "\tand each needs to be managed separately. Therefore sometimes we need to more accurately select which 'rest-api'",
+                "\tto act upon and thats why sometimes {cyn}<path>{end} is needed on some commands to say WHICH 'rest-api'",
+                "\tto choose when performing actions",
             ]
         ];
     }
@@ -146,7 +146,8 @@ class ProjectTool extends Tool
             }
 
             try{
-                $url = $this->repoService->remote($project->getPath());
+                $repo = $project->getVcs();
+                $url = $repo->remote();
                 if(!is_dir($path)){
                     $url = "{red}error, path not found{end}";
                 }
@@ -298,7 +299,7 @@ class ProjectTool extends Tool
         return $type;
     }
 
-    public function addProject(?string $path=null, ?string $project=null, ?string $type=null, ?string $group=null, ?string $vcs=null, ?string $remote='origin'): bool
+    public function addProject(?string $path=null, ?string $group=null): bool
     {
         $this->cli->print("{blu}Adding project{end}\n");
 
@@ -309,51 +310,28 @@ class ProjectTool extends Tool
         
         $updatedPath = realpath($path);
         
-        // Path does not exist, but vcs parameter was not specified so cannot clone into this location
-        if(!$updatedPath && $vcs === null){
-            $this->cli->failure("{red}The path given '$path' does not exist, but no --vcs parameter with a repository to clone from was given, please check and try again{end}\n");
+        // Path does not exist
+        if(!$updatedPath){
+            $this->cli->failure("{red}The path given '$path' does not exist, please use the clone-project command instead{end}\n");
         }
         
-        // Path does not exist, but vcs is not null, check it's valid and if so, clone project into that location
-        if(!$updatedPath && $vcs !== null){
-            if($this->repoService->exists($vcs) && $this->repoService->clone($vcs, $path)){
-                $this->cli->print("{grn}Repository cloned, continuing...{end}\n");
-                $updatedPath = realpath($path);
-            }else{
-                $this->cli->failure("{red}An attempt to clone the repository was made, but failed. See the terminal output to try to correct the problem manually\n");
-            }
-        }
-
         $path = $updatedPath;
 
-        $type = $type ?? $this->autoDetectProjectType($path);
+        $type = $this->autoDetectProjectType($path);
 
         if($type === 'none'){
             $this->cli->failure("{red}It is not possible to manage projects with an unrecognised project type{end}\n");
         }
 
+        // I think this is redundant now
         if($this->isProjectType($type) === false){
             $this->cli->failure("{red}The project type '$type' given or auto-detected, can not be recognised. See help for options{end}\n");
         }
 
         $path = rtrim($path, '/');
 
-        if($project === null){
-            $name = null;
-            $project = basename($path);
-            $this->cli->print("No project name given, using directory name '$project'\n");
-        }else{
-            $name = $project;
-        }
-
-        if($vcs === null){
-            try{
-                $vcs = $this->repoService->remote($path, $remote);
-            }catch(GitRepositoryNotFoundException $e){
-                // do nothing
-                $this->cli->print("No git repository was found, nor one was given through the command line\n");
-            }
-        }
+        $name = null;
+        $project = basename($path);
 
         try{
             if($this->projectService->addProject($path, $name, $group)){
@@ -365,6 +343,34 @@ class ProjectTool extends Tool
         }
 
         $this->cli->failure("The project '$project' failed\n");
+    }
+
+    public function cloneProject(string $vcs, ?string $group=null, ?string $branch=null, ?string $remote='origin'): bool 
+    {
+        $path = explode('.', basename($vcs));
+        $path = current($path);
+        $path = getcwd() . "/" . $path;
+        $updatedPath = realpath($path);
+
+        if($updatedPath){
+            $this->cli->failure("{red}An attempt to clone the repository into an existing directory '$updatedPath'. This is not allowed\n");
+        }
+
+        if(!$this->repoService->exists($vcs)){
+            $this->cli->failure("{red}There was no repository with the url '$vcs'{end}\n");
+        }
+
+        try{
+            $repo = $this->repoService->clone($vcs, $path);
+            $this->cli->print("{grn}Repository cloned, continuing...{end}\n");
+            if(!empty($branch)){
+                $this->cli->print("{yel}Repository branch:{end} changed to '$branch'\n");
+                $repo->checkout($branch);
+            }
+            return $this->addProject($path, $group);
+        }catch(\Exception $e){
+            $this->cli->failure("{red}An attempt to clone the repository was made, but failed. See the terminal output to try to correct the problem manually\n");
+        }
     }
 
     public function removeProject(string $project, ?string $path=null, ?bool $delete=false): bool
