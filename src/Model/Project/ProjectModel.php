@@ -8,6 +8,7 @@ use DDT\Config\Project\StandardProjectConfig;
 use DDT\Contract\Project\ProjectConfigInterface;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
+use DDT\Model\Git\GitRepositoryModel;
 use DDT\Model\Model;
 
 class ProjectModel extends Model
@@ -125,6 +126,11 @@ class ProjectModel extends Model
     public function getGroups(): ProjectGroupModel
     {
         return $this->group;
+    }
+
+    public function getVcs(): GitRepositoryModel
+    {
+        return container(GitRepositoryModel::class, ['path' => $this->getPath()]);
     }
 
     static public function fromArray(array $data): self
