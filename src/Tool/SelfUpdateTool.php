@@ -128,12 +128,12 @@ class SelfUpdateTool extends Tool
         }
 
         $this->cli->print("Updating Tools: ");
-        $this->gitService->pull(config('tools.path'));
+        $this->gitService->getRepository(config('tools.path'))->pull();
 
         $extensionList = $this->extensionConfig->list();
         foreach($extensionList as $name => $extension){
             $this->cli->print("Updating extension '$name': ");
-            $this->gitService->pull($extension['path']);
+            $this->gitService->getRepository($extension['path'])->pull();
         }
 
         $timeout = $this->cli->silenceChannel('stdout', function(){
