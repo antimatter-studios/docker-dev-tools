@@ -261,3 +261,190 @@ Sometimes, you need more advanced debugging, so you'd like to know the exact ngi
 ```
 ddt proxy nginx-config
 ```
+
+## Managing projects
+
+There is a tool for managing projects. This is so you can orchestrate multiple projects to do things without having to worry too much about the individual projects, as long as they respect some rules. They will be orchestratable and you can do more advanced things.
+
+The reason why a developer would want to do this, is because as projects get bigger, the knowledge the manage the entire stack the developer has to work with gets larger and more complex. As more team members become involved, the harder it becomes to get everybody up to speed with every detail of every project required to do things. Front end developers might not understand what services need to run, similarily back end developers might not understand how the user interfaces work.
+
+The solution chosen to fix this problem, is that each project can hold it's own configuration that specifies what functionality can be orchestrated and what other projects it depends on. So this reduces the amount of knowledge needed to get up and running. Then the developer can investigate more over time, but get quite complex projects running with little effort. Additionally, developers who are already knowledgable about the system, do not have to do so much work in order to get relatively complex tasks. Less typing always equals a happy developer. But it's important the developer knows what these systems are doing. You can't use a tool if you don't understand what it's doing, otherwise you run into a difficult scenario where if something goes wrong. The developer will not know why, or what should be done.
+
+The tool to manage projects is:
+```
+ddt project
+```
+
+First the developer should add a path to manage projects from. Typically developers put all their projects in one folder, or perhaps one folder per client, or one folder per environment. So the idea was to manage paths, with each subdirectory representing an individual project. It's possible to also add individual projects. However there is a management cost to this in that the developer will need to manage every individually managed project one by one. Whereas paths allow you to manage potentially as many projects as the developer has in a single directory. So paths are clearly easier to manage.
+
+### Managing paths
+
+The following commands can be used to manage paths
+```
+ddt project list-paths
+# this will add every project it finds in the path '$HOME/projects' to the 'client-a' group
+ddt project add-path $HOME/projects client-a
+ddt project remove-path $HOME/projects
+```
+
+You can manage individual projects with the following examples
+```
+ddt project add-project $HOME/separate/rest-api client-b
+```
+
+### Integrating projects
+
+Once a project is part of the system, it can be interacted with using a script runtime that will execute commands through a shell. These commands can be called from anywhere on the system. This allows the system to orchestrate actions to do more complex functionality. 
+
+You can configure integration with the project by adding something similar as follows to the project:
+
+File: `ddt-project.json` 
+``` 
+{
+  "scripts": {
+    "start": "docker-compose up -d",
+    "stop": "docker-compose stop",
+    "up": ["start"],
+    "down": ["stop"],
+    "reup": ["stop", "start"]
+    "logs": "docker compose logs -f phpfpm",
+    "composer": "docker compose run --rm phpfpm sh -c \"composer $@\"",
+    "pull": "git pull",
+    "push": "git push",
+    "unit-tests": "./bin/run-phpunit unit",
+    "integration-tests": "./bin/run-phpunit integration"
+  },
+  "dependencies": {
+    "service-a": {
+      "repo": {
+        "url": "git@gitlab.host.com:user/service-a.git",
+        "branch": "main"
+      },
+      "scripts": ["up", "reup", "push", "pull"]
+    },
+    "service-b": {
+      "repo": {
+        "url": "git@gitlab.host.com:user/service-b.git",
+        "branch": "main"
+      },
+      "scripts": ["up", "reup", "push", "pull"],
+    }
+  }
+}
+
+``` 
+
+Alternative ways to integrate are to put the previous contents into the `composer.json` or `package.json` files directly. However this method can make your project file quite large and it was determined some time ago a separate file is actually cleaner. Examples are like:
+
+File: `composer.json` or `package.json`
+```
+{
+  ... the other fields from your file
+
+  "docker-dev-tools": {
+    "scripts": {
+      "start": "docker-compose up -d",
+      "stop": "docker-compose stop",
+      "up": ["start"],
+      "down": ["stop"],
+      "reup": ["stop", "start"]
+      "logs": "docker compose logs -f phpfpm",
+      "composer": "docker compose run --rm phpfpm sh -c \"composer $@\"",
+      "pull": "git pull",
+      "push": "git push",
+      "unit-tests": "./bin/run-phpunit unit",
+      "integration-tests": "./bin/run-phpunit integration"
+    },
+    "dependencies": {
+      "service-a": {
+        "repo": {
+          "url": "git@gitlab.host.com:user/service-a.git",
+          "branch": "main"
+        },
+        "scripts": ["up", "reup", "push", "pull"]
+      },
+      "service-b": {
+        "repo": {
+          "url": "git@gitlab.host.com:user/service-b.git",
+          "branch": "main"
+        },
+        "scripts": ["up", "reup", "push", "pull"],
+      }
+    }
+  }
+}
+```
+
+The `scripts` key functions exactly as the developer might expect in npm or composer, in that it defines a list of scripts that can be execute
+
+At first glance, it seems like a duplication of existing functionality and to some extent this is true when the script is a plain command. However, the tools provide functionality that neither npm or composer support in that each script that can be executed, can inspect their project dependencies and the underlying `script` key in each project dependency and trigger the same command on subsequent projects, causing a tree like spanning of multiple projects, calling the same command subsequently on each project that allows it. This is why it was not permitted to re-use the npm or composer functionalities. 
+
+* SIDE NOTE: there is a plan to investigate a hybrid approach where for plain commands we can use the npm or composer script keys without this duplication and still orchestrate at the tool level. This would only work with plain commands and none of the advanced features described below, however it might make project configurations easier if it was possible to merge these together somehow
+
+### Top level script key abilities
+
+- Can be plain commands: These will be triggered in the project directory and by default all arguments will be appended to the end of the command given
+- Can be an array: This means this will be a sequence of commands to trigger one after another and they can be nested and cyclic references prevented.
+- When it is an array: Each command references a name of an actual command to trigger, it cannot be a plain command themselves. You can see examples in the "up", "down", and "reup" commands, they contain a simple array of command names, then each command name, is a plain command to trigger. 
+- If a command name, inside an array, references another array, then that will also be iterated in the same fashion. So the developer can build more complex orchestrations as required.
+
+### Dependency script key abilities
+
+- Are much simpler than top level script keys
+- Can only reference command names, nothing else
+- By default, all scripts are denied, the developer must grant access to them by adding the child script to this script element according to one of the permitted ways in the section talking about Dependency script key formats
+
+### Dependency script key formats
+
+The script keys for dependencies can be created in one of the following ways, depending on much control the developer wants to exert
+
+All child scripts are permitted, set the script key to true
+```
+dependencies: {
+  "service-a": {
+    "scripts": true
+  }
+}
+```
+
+All child scripts are denied, this is actually the default, but the developer can of course specify it explicitly if they want to
+```
+dependencies: {
+  "service-a": {
+    "scripts": false
+  }
+}
+```
+
+The same is equivalent:
+```
+dependencies: {
+  "service-a": {
+
+  }
+}
+```
+
+You can specify an array of command names as a list that will be permitted.
+```
+dependencies: {
+  "service-a": ["up", "down", "reup", "pull", "push"]
+}
+```
+
+If the developer requires the most absolute control, then each script can be specified manually with it's configuration manually.
+```
+dependencies: {
+  "service-a": {
+    "up": true, 
+    "down": false, 
+    "reup": "renamed-reup-in-child-project", 
+    "pull": true, 
+    "push": true
+  }
+}
+```
+
+It's worth noting that the "down" script which has a value "false", is actually a superfluous way to define the same thing as not havint this key in this object, the developer can set "false", but it's better to just not have the key "down" in the first place.
+
+The second thing that's worth noting, is that in the case of "reup", the developer has decided that in the child project, a different command other than the one named will be executed. So the developer has some flexibility here with the naming of commands, even depending on projects from other teams that might have different naming schemes.
