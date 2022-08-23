@@ -35,7 +35,7 @@ class ProxyTool extends Tool
             'start', 'stop', 'restart', 'reload',
             'logs', 'logs-f', 
             'add-network', 'remove-network', 
-            'nginx-config', 'status', 
+            'config', 'status', 
             'container-name', 'docker-image'
         ] as $command){
             $this->setToolCommand($command);
@@ -197,7 +197,7 @@ class ProxyTool extends Tool
         }
     } 
 
-    public function nginxConfig(?bool $colour=true)
+    public function config(?bool $colour=true)
     {
         if($this->proxyService->isRunning()){
             $output = $this->proxyService->getConfig();
