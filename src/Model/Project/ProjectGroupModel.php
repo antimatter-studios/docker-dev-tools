@@ -16,6 +16,8 @@ class ProjectGroupModel extends Model
     {
         if($group instanceof self){
             $this->group = $group->getData();
+        }else if(is_null($group)){
+            $this->group = [];
         }else if(is_string($group)) {
             $this->group = [$group];
         }else if(is_array($group)) {
