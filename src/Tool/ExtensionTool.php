@@ -9,6 +9,7 @@ use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Config\ConfigWrongTypeException;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
+use DDT\Exceptions\Git\GitRepositoryException;
 use DDT\Services\GitService;
 use DDT\Text\Table;
 use InvalidArgumentException;
@@ -102,14 +103,14 @@ class ExtensionTool extends Tool
 
             // Not installed, but a url given to clone + install from
             if(!is_dir($path) && $url !== null){
-                if(!$this->gitService->clone($url, $path)){
-                    $this->cli->failure("Failed install extension '$name' and clone repository from '$url' into '$path'\n");
-                }
+                $repo = $this->gitService->clone($url, $path);
+            }else{
+                $repo = $this->gitService->getRepository($path);
             }
 
             // Found the path, but the url was null, probably this is a reinstallation attempt
             if(is_dir($path) && $url ===null){
-                $url = $this->gitService->remote($path, 'origin');
+                $url = $repo->remote();
             }
 
             $extensionConfig = ExtensionProjectConfig::fromPath($path);
@@ -130,6 +131,8 @@ class ExtensionTool extends Tool
             $this->cli->failure("Sorry, but the path '$path' already exists, we cannot install to this location\n");
         }catch(InvalidArgumentException $e){
             $this->cli->failure("There seems to be a problem with the Git Repository, are you sure the url is correct?\n");
+        }catch(GitRepositoryException $e){
+            $this->cli->failure($e->getMessage());
         }
     }
 

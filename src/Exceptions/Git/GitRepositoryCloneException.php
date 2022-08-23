@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Git;
 
-class GitRepositoryCloneException extends \Exception
+class GitRepositoryCloneException extends GitRepositoryException
 {
     public function __construct(string $url, string $path, $code = 0, \Throwable $previous = null)
     {

@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Git;
 
-class GitRepositoryCommandException extends \Exception
+class GitRepositoryCommandException extends GitRepositoryException
 {
     public function __construct(string $command, $code = 0, \Throwable $previous = null)
     {
