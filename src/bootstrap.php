@@ -22,7 +22,7 @@ use DDT\Services\RunService;
 use DDT\Tool\Tool;
 
 try{
-	if (version_compare(phpversion(), '7.2', '<')) {
+	if (version_compare(phpversion(), '7.4', '<')) {
 		die("Sorry but the tools require at least PHP 7.2, you have ".phpversion()." installed\n");
 	}
 	
