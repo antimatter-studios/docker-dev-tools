@@ -183,33 +183,37 @@ class RunTool extends Tool
 
     public function script(string $script, ?string $project=null, ?string $group=null): void
     {
-        try{
-            $arguments = new ArgumentList($this->cli->getArgList(), 2);
-            $projectList = $this->resolveProjectList($arguments, $script, $project, $group);
+        $scriptList = explode(',', $script);
 
-            $this->runService->reset();
+        foreach($scriptList as $script){
+            try{
+                $arguments = new ArgumentList($this->cli->getArgList(), 2);
+                $projectList = $this->resolveProjectList($arguments, $script, $project, $group);
 
-            // Couldn't find anything, time to die!
-            if(empty($projectList)){
-                $this->list($project, null, $group);
-                $this->cli->failure("\nThe script '$script' requested was not found, please look at the above table to see what options are available");
+                $this->runService->reset();
+
+                // Couldn't find anything, time to die!
+                if(empty($projectList)){
+                    $this->list($project, null, $group);
+                    $this->cli->failure("\nThe script '$script' requested was not found, please look at the above table to see what options are available");
+                }
+
+                // Resolve the project list and dependency tree into a final run list
+                [$runlist] = $this->runService->resolve($script, $projectList);
+
+                // Iterate the run list and execute each project in step
+                foreach($runlist as $config){
+                    $this->runService->run($config, $arguments);
+                }
+
+                if(empty($runlist)){
+                    $this->cli->failure("There was nothing to run\n");
+                }
+            }catch(ConfigMissingException $e){
+                $this->cli->failure("The project directory for '$project' in group '$group' was not found");
+            }catch(ProjectNotFoundException $e){
+                $this->cli->failure("The project was not found '" . $e->getProject() . "'");
             }
-
-            // Resolve the project list and dependency tree into a final run list
-            [$runlist] = $this->runService->resolve($script, $projectList);
-
-            // Iterate the run list and execute each project in step
-            foreach($runlist as $config){
-                $this->runService->run($config, $arguments);
-            }
-
-            if(empty($runlist)){
-                $this->cli->failure("There was nothing to run\n");
-            }
-        }catch(ConfigMissingException $e){
-            $this->cli->failure("The project directory for '$project' in group '$group' was not found");
-        }catch(ProjectNotFoundException $e){
-            $this->cli->failure("The project was not found '" . $e->getProject() . "'");
         }
     }
 }
