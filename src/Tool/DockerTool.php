@@ -63,29 +63,25 @@ class DockerTool extends Tool
                 "\ttlskey=xxx: The filename of the tls key",
                 
                 "\n\t{cyn}Managing Projects (Sync Profiles){end}",
-                "\tadd-project <name> <host> <port> <tlscacert> <tlscert> <tlskey>: See 'Adding Profiles' for more details",
-                "\tremove-project <name>: The name of the profile to remove",
-                "\tlist-project: List all the registered profiles",
+                "\tadd-project <name> <container-name> <local-dir> <remote-dir>: See 'Adding Profiles' for more details",
+                "\tremove-project <name>: The name of the project to remove",
+                "\tlist-project: List all the registered projects",
 
                 "\n\t{cyn}Using Profiles{end}",
                 "\tuse <profile-name>: To execute a command using this profile (all following arguments are sent directly to docker executable without modification",
                 "\tsync <profile-name> <project-name>: Start watching for file modifications inside a project against a docker server, syncing all updates to the container"
             ],
             'notes' => [
-                "The parameter {yel}--add-profile{end} depends on: {yel}name, host, port, tlscacert, tlscert, tlskey{end} options",
-                "and unfortunately you can't create a profile without all of those paraameters at the moment\n",
-                "If you don't pass a profile to execute under, it'll default to your local docker server. Which means you can use this",
-                "tool as a wrapper and optionally pass commands to various dockers by just adjusting the command parameters and",
-                "adding the {yel}--profile=staging{end} or not",
+                "The command {yel}add-profile{end} depends on: {yel}name, host, port, tlscacert, tlscert, tlskey{end} options",
+                "and unfortunately you can't create a profile without all of those parameters at the moment\n",
             ],
             'examples' => [
                 "{yel}Usage Examples: {end}",
-                "$entrypoint profile --name=staging exec -it phpfpm sh",
+                "$entrypoint use <profile-name> exec -it phpfpm sh",
                 "$entrypoint add-profile --name=staging --host=mycompany.com --port=2376 --tlscacert=cacert.pem --tlscert=cert.pem --tlskey=key.pem",
                 "$entrypoint remove-profile --name=staging",
                 "$entrypoint get-profile --name=staging",
                 "$entrypoint list-profile",
-                "$entrypoint use the-profile ps"
             ],
         ];
     }
