@@ -128,7 +128,7 @@ class DockerTool extends Tool
         ]);
 
         foreach($list as $profile){
-            $data = $profile->get();
+            $data = $profile->getData();
 
             $table->addRow([$data['name'], $data['host'], $data['port'], $data['tlscacert'], "{grn}" . ($data['tlsverify'] ? "yes" : "no") . "{end}"]);
             $table->addRow([null, null, null, $data['tlscert'], null]);
