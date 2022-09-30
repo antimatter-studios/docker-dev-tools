@@ -29,7 +29,7 @@ class DockerTool extends Tool
         foreach([
             'add-profile', 'remove-profile', 'list-profile',
             'add-project', 'remove-project', 'list-project',
-            'use', 'sync'
+            'use', 'sync', 'write'
         ] as $command){
             $this->setToolCommand($command);
         }
@@ -130,7 +130,8 @@ class DockerTool extends Tool
         foreach($list as $profile){
             $data = $profile->getData();
 
-            $table->addRow([$data['name'], $data['host'], $data['port'], $data['tlscacert'], "{grn}" . ($data['tlsverify'] ? "yes" : "no") . "{end}"]);
+            $tlsVerifyColour = $data['tlsverify'] ? "{grn}" : "{red}";
+            $table->addRow([$data['name'], $data['host'], $data['port'], $data['tlscacert'], $tlsVerifyColour . ($data['tlsverify'] ? "yes" : "no") . "{end}"]);
             $table->addRow([null, null, null, $data['tlscert'], null]);
             $table->addRow([null, null, null, $data['tlskey'], null]); 
         }
@@ -207,7 +208,7 @@ class DockerTool extends Tool
         $this->docker->passthru((string)$arguments . " >/dev/tty </dev/tty");
     }
 
-    public function sync(string $profileName, string $projectName, ?string $localFilename=null): void
+    public function sync(string $profileName, string $projectName): void
     {
         if(!$this->cli->isCommand('fswatch')){
             $this->cli->failure("The 'fswatch' command must be installed for this tool to function correctly");
@@ -224,34 +225,49 @@ class DockerTool extends Tool
             $this->cli->failure("The docker sync project '$projectName' was not found");
         }
 
-        if(empty($localFilename)){
-            $this->cli->print("Watching '{$sync->getLocalDir()}' for changes\n");
-            $debug = Debug::is(true) ? '--debug' : '';
-            $script = "{$this->getEntrypoint()} {$debug} {$this->getToolName()} sync {$run->getName()} {$sync->getName()} \"\$file\"";
-            $command = "fswatch {$sync->getLocalDir()} | while read file; do file=$(echo \"\$file\" | sed '/\~$/d') && [ ! -z \"\$file\" ] && $script; done";
+        $this->cli->print("Watching '{$sync->getLocalDir()}' for changes\n");
+        $debug = Debug::is(true) ? '--debug' : '';
+        $script = "{$this->getEntrypoint()} {$debug} {$this->getToolName()} write {$run->getName()} {$sync->getName()} \"\$file\"";
+        $command = "fswatch {$sync->getLocalDir()} | while read file; do file=$(echo \"\$file\" | sed '/\~$/d') && [ ! -z \"\$file\" ] && $script; done";
 
-            $this->cli->passthru($command);
+        $this->cli->passthru($command);
+    }
+
+    public function write(string $profileName, string $projectName, string $filename): void
+    {
+        $run = $this->config->readRunProfile($profileName);
+        $sync = $this->config->readSyncProfile($projectName);
+
+        if(!$run){
+            $this->cli->failure("The docker run profile '$profileName' was not found");
+        }
+
+        if(!$sync){
+            $this->cli->failure("The docker sync project '$projectName' was not found");
+        }
+
+        $this->docker->setProfile($run);
+
+        $container = $sync->getContainerName();
+        $remoteFilename = $sync->toRemoteFilename($filename);
+
+        $temp = "/tmp/".implode('_', [bin2hex(random_bytes(8)), basename($remoteFilename)]);
+
+        // FIXME: what happens when the $filename is a directory? we should sync it's entire contents and entire file tree?
+        // FIXME: what happens when $filename does not exist anymore? Does this mean delete on the remote in order to not exist on the remove too?
+
+        $this->cli->print("[{yel}" . date("d-m-Y h:i:s"). "{end}] Writing File: '$filename' to '$remoteFilename': ");
+
+        $this->docker->exec("cp -a $filename $container:$temp");
+        
+        if($this->docker->getExitCode() === 0){
+            $this->docker->exec("exec -i --user=0 $container mv -f $temp $remoteFilename");
+        }
+
+        if($this->docker->getExitCode() === 0){
+            $this->cli->print("{grn}SUCCESS{end}");
         }else{
-            $this->docker->setProfile($run);
-
-            $container = $sync->getContainerName();
-            $remoteFilename = $sync->toRemoteFilename($localFilename);
-
-            $temp = "/tmp/".implode('_', [bin2hex(random_bytes(8)), basename($remoteFilename)]);
-
-            $this->cli->print("[{yel}" . date("d-m-Y h:i:s"). "{end}] Writing File: '$localFilename' to '$remoteFilename': ");
-
-            $this->docker->exec("cp -a $localFilename $container:$temp");
-            
-            if($this->docker->getExitCode() === 0){
-                $this->docker->exec("exec -i --user=0 $container mv -f $temp $remoteFilename");
-            }
-
-            if($this->docker->getExitCode() === 0){
-                $this->cli->print("{grn}SUCCESS{end}");
-            }else{
-                $this->cli->print("{red}FAILURE{end}");
-            }
+            $this->cli->print("{red}FAILURE{end}");
         }
     }
 
