@@ -2,13 +2,9 @@
 
 namespace DDT\Exceptions\Config;
 
-class ConfigReadonlyException extends \Exception
+class ConfigReadonlyException extends ConfigException
 {
-    public function __construct(
-        string $message = "The Configuration is readonly", 
-        int $code = 0, 
-        \Throwable $previous=null
-    ) {
-        parent::__construct($message, $code, $previous);
+    public function __construct(string $message = null, int $code = 0, \Throwable $previous=null) {
+        parent::__construct($message ?? "The Configuration is readonly", $code, $previous);
     }
 }

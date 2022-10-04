@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Config;
 
-class ConfigMissingException extends \Exception
+class ConfigMissingException extends ConfigException
 {
     public function __construct(string $filename, int $code = 0, \Throwable $previous=null)
     {

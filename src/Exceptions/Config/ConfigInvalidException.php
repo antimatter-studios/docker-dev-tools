@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Config;
 
-class ConfigInvalidException extends \Exception
+class ConfigInvalidException extends ConfigException
 {
     public function __construct(string $message, int $code = 0, \Throwable $previous=null)
     {

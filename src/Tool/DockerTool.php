@@ -6,6 +6,8 @@ use DDT\CLI;
 use DDT\CLI\ArgumentList;
 use DDT\Config\Sections\DockerConfig;
 use DDT\Debug;
+use DDT\Exceptions\Config\Docker\DockerRunProfileNotFoundException;
+use DDT\Exceptions\Config\Docker\DockerSyncProfileNotFoundException;
 use DDT\Services\DockerService;
 use DDT\Model\Docker\RunProfileModel;
 use DDT\Model\Docker\SyncProfileModel;
@@ -214,23 +216,21 @@ class DockerTool extends Tool
             $this->cli->failure("The 'fswatch' command must be installed for this tool to function correctly");
         }
 
-        $run = $this->config->readRunProfile($profileName);
-        $sync = $this->config->readSyncProfile($projectName);
+        try{
+            $run = $this->config->readRunProfile($profileName);
+            $sync = $this->config->readSyncProfile($projectName);    
+        
+            $this->cli->print("Watching '{$sync->getLocalDir()}' for changes\n");
+            $debug = Debug::is(true) ? '--debug' : '';
+            $script = "{$this->getEntrypoint()} {$debug} {$this->getToolName()} write {$run->getName()} {$sync->getName()} \"\$file\"";
+            $command = "fswatch {$sync->getLocalDir()} | while read file; do file=$(echo \"\$file\" | sed '/\~$/d') && [ ! -z \"\$file\" ] && $script; done";
 
-        if(!$run){
-            $this->cli->failure("The docker run profile '$profileName' was not found");
+            $this->cli->passthru($command);
+        }catch(DockerRunProfileNotFoundException $e){
+            $this->cli->failure($e->getMessage());
+        }catch(DockerSyncProfileNotFoundException $e){
+            $this->cli->failure($e->getMessage());
         }
-
-        if(!$sync){
-            $this->cli->failure("The docker sync project '$projectName' was not found");
-        }
-
-        $this->cli->print("Watching '{$sync->getLocalDir()}' for changes\n");
-        $debug = Debug::is(true) ? '--debug' : '';
-        $script = "{$this->getEntrypoint()} {$debug} {$this->getToolName()} write {$run->getName()} {$sync->getName()} \"\$file\"";
-        $command = "fswatch {$sync->getLocalDir()} | while read file; do file=$(echo \"\$file\" | sed '/\~$/d') && [ ! -z \"\$file\" ] && $script; done";
-
-        $this->cli->passthru($command);
     }
 
     public function write(string $profileName, string $projectName, string $filename): void

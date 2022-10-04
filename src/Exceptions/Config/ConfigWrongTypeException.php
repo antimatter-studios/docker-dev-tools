@@ -2,7 +2,7 @@
 
 namespace DDT\Exceptions\Config;
 
-class ConfigWrongTypeException extends \Exception
+class ConfigWrongTypeException extends ConfigException
 {
     public function __construct(array $type, int $code = 0, \Throwable $previous=null)
     {

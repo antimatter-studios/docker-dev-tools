@@ -2,4 +2,4 @@
 
 namespace DDT\Exceptions\Config;
 
-class ConfigWriteException extends \Exception{}
+class ConfigWriteException extends ConfigException{}
