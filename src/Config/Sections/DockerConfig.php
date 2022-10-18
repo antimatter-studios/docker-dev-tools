@@ -3,6 +3,8 @@
 namespace DDT\Config\Sections;
 
 use DDT\Config\SystemConfig;
+use DDT\Exceptions\Config\Docker\DockerRunProfileNotFoundException;
+use DDT\Exceptions\Config\Docker\DockerSyncProfileNotFoundException;
 use DDT\Model\Docker\RunProfileModel;
 use DDT\Model\Docker\SyncProfileModel;
 
@@ -40,7 +42,7 @@ class DockerConfig
             return $list[$name];
         }
 
-        throw new \Exception("Docker Run Profile named '$name' does not exist");
+        throw new DockerRunProfileNotFoundException($name);
     }
 
     public function writeRunProfile(RunProfileModel $profile): bool
@@ -87,7 +89,7 @@ class DockerConfig
             return $list[$name];
         }
 
-        throw new \Exception("Docker Sync Profile named '$name' does not exist");
+        throw new DockerSyncProfileNotFoundException($name);
     }
 
     public function writeSyncProfile(SyncProfileModel $profile): bool
