@@ -58,14 +58,24 @@ class ArrayCollection implements CollectionInterface
         return current($this->data);
     }
 
-    public function next()
+    public function next(): void
     {
-        return next($this->data);
+        next($this->data);
     }
 
     public function reset()
     {
         return reset($this->data);
+    }
+
+    public function rewind(): void
+    {
+        reset($this->data);
+    }
+
+    public function valid(): bool
+    {
+        return $this->offsetExists(key($this->data));
     }
 
     /**

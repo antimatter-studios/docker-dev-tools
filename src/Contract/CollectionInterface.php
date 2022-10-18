@@ -2,7 +2,7 @@
 
 namespace DDT\Contract;
 
-interface CollectionInterface extends \Countable, \IteratorAggregate, \ArrayAccess, \JsonSerializable
+interface CollectionInterface extends \Countable, \Iterator, \ArrayAccess, \JsonSerializable
 {
     static public function fromArray(iterable $array): CollectionInterface;
     public function getIterator(): \Traversable;
@@ -10,10 +10,17 @@ interface CollectionInterface extends \Countable, \IteratorAggregate, \ArrayAcce
 
     public function first();
     public function last();
+    
+    #[\ReturnTypeWillChange]
     public function key();
+    
+    #[\ReturnTypeWillChange]
     public function current();
-    public function next();
+    
+    public function next(): void;
     public function reset();
+    public function rewind(): void;
+    public function valid(): bool;
 
     public function set($key, $item): CollectionInterface;
     public function get($key);
@@ -28,6 +35,13 @@ interface CollectionInterface extends \Countable, \IteratorAggregate, \ArrayAcce
     public function isEmpty(): bool;
     public function toArray(): array;
     public function isAssoc(): bool;
+
+    public function offsetExists($key): bool;
+    
+    #[\ReturnTypeWillChange]
+    public function offsetGet($key);
+    public function offsetSet($key, $value): void;
+    public function offsetUnset($key): void;
 
     public function filter(callable $callback): CollectionInterface;
     public function map(callable $callback): CollectionInterface;
