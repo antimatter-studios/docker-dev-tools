@@ -81,7 +81,15 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
             if ($methodName === '__call') {
                 $response = $tool->$toolName($argList);
             } else {
-                $response = $tool->invoke($methodName, $argList);
+                try{
+                    $response = $tool->invoke($methodName, $argList);
+                }catch(CannotAutowireParameterException $e){
+                    $name = $e->getParameterName();
+                    $type = $e->getParameterType();
+                    $this->cli->print("{red}This tool requires the parameter '$name' with expected type '$type'{end}\n\n");
+                    $this->cli->print($tool->help());
+                    return;
+                }
             }
 
             $response = (is_string($response) ? $response : '') . "\n";

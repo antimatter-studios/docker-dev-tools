@@ -36,7 +36,7 @@ class Autowire
                 $params = $this->getReflectionParameters($rm);
             
                 $args = $this->reformatArgs($args);
-                $args = $this->resolveArgs($params, $args);   
+                $args = $this->resolveArgs($params, $args);
             }else{
                 $args = [];
             }
@@ -196,7 +196,9 @@ class Autowire
 
                     if($data['name'] === $name && array_key_exists('value', $data)){
                         $test_numeric = (int)filter_var($data['value'], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
-                        Debug::dump("autowire", "NAMED TYPE CHECK($name), numeric = $test_numeric, value = '{$data['value']}'");
+
+                        $dval = is_scalar($data['value']) ? $data['value'] : json_encode($data['value']);
+                        Debug::dump("autowire", "NAMED TYPE CHECK($name), numeric = $test_numeric, value = '$dval'");
                         if($type === 'bool'){
                             $value = filter_var($data['value'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                             if(is_bool($value)){
@@ -227,8 +229,10 @@ class Autowire
                             }
                         }
                         
+                        // NOTE: this does not just catch strings
+                        // It will catch any non-typed parameter as well, something I recently debugged and found out
                         if($type === 'string' && array_key_exists('value', $data)){
-                            Debug::dump("autowire", "FOUND NAMED STRING: name = '$name', value = '{$data['value']}'");
+                            Debug::dump("autowire", "FOUND NAMED STRING: name = '$name', value = '$dval'");
                             $output[] = $data['value'];
                             unset($inputParameters[$index]);
                             continue 2;
