@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+export PHP_IDE_CONFIG=serverName=ddt
+export XDEBUG_SESSION=1
+export XDEBUG_ENABLE=1
+export XDEBUG_IDE_KEY=ddt
+export XDEBUG_MODE=debug,coverage
+export XDEBUG_HOST=10.254.254.254
+export XDEBUG_PORT=9003
+
+is_debug=$(echo "${XDEBUG_MODE}" | grep debug)
+is_coverage=$(echo "${XDEBUG_MODE}" | grep coverage)
+
+if [ ! -z "${is_debug}" ] || [ ! -z "${is_coverage}" ]; then
+  # Configure XDEBUG extension and configuration
+  echo "Enabling XDebug Configuration: ${XDEBUG_HOST}:${XDEBUG_PORT}"
+
+  cat << EOF | awk '{$1=$1};1' > /usr/local/etc/php/conf.d/xdebug.ini
+  [xdebug]
+  zend_extension = xdebug.so
+
+  xdebug.idekey = ${XDEBUG_IDE_KEY}
+  xdebug.mode = ${XDEBUG_MODE}
+  xdebug.start_with_request = yes
+  xdebug.remote_autostart = 1
+  xdebug.remote_enable = 1
+  xdebug.client_host = ${XDEBUG_HOST}
+  xdebug.client_port = ${XDEBUG_PORT}
+  xdebug.var_display_max_depth = 32
+  xdebug.cli_color = 1
+EOF
+else
+  echo "Disabling XDebug Configuration"
+fi
+
+echo "Running '$@'"
+exec "$@"

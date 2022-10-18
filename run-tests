@@ -4,6 +4,13 @@ if [ -z "$(docker image ls | grep ddt-phpunit)" ]; then
 docker build -t ddt-phpunit:latest . -f - <<EOF
 FROM php:7.3-cli-alpine3.13
 RUN apk add --no-cache composer
+RUN apk add --no-cache --virtual .build-deps \$PHPIZE_DEPS \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && apk del -f .build-deps
+COPY ./phpunit-entrypoint /phpunit-entrypoint
+RUN chmod +x /phpunit-entrypoint
+ENTRYPOINT ["/phpunit-entrypoint"]
 EOF
 fi
 
