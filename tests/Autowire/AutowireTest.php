@@ -1,12 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace DDT\Test;
+namespace DDT\Test\Autowire;
 
 use DDT\Autowire;
 use DDT\Text\Text;
 use DDT\CLI;
 use DDT\Config\SystemConfig;
 use DDT\Container;
+use DDT\Debug;
 use DDT\Services\RunService;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -21,12 +22,14 @@ class AutowireTest extends TestCase
         $argv = explode(" ", "ddt --debug run start mycompany some-project --userAge=monkey --debug 23 helloboys 99.99 77");
 
         $text = new Text();
-        $systemConfig = new SystemConfig(__DIR__ . '/../default.ddt-system.json', true);
+        $systemConfig = new SystemConfig(__DIR__ . '/../../default.ddt-system.json', true);
 
         $this->cli = new CLI($argv, $text);
         $this->container = new Container($this->cli, [Autowire::class, 'instantiator']);
         $this->container->singleton(CLI::class, $this->cli);
         $this->container->singleton(SystemConfig::class, $systemConfig);
+        
+        new Debug($this->cli, true);
     }
 
     private function callHiddenMethod($obj, $name, array $args) {

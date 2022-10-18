@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class ProjectPathListModelTest extends TestCase
 {
-    private $testDataPath = __DIR__ . '/../../data';
+    private $testDataPath = __DIR__ . '/../../Data';
 
     private function getPath(?string $path=null)
     {
