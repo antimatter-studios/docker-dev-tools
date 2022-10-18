@@ -3,6 +3,7 @@
 namespace DDT;
 
 use DDT\CLI\Output\CustomChannel;
+use DDT\Exceptions\Container\ContainerNotInstantiatedException;
 use ReflectionClass;
 use DDT\Exceptions\Container\NotClassReferenceException;
 
@@ -24,6 +25,17 @@ class Container {
         $this->instantiator = $instantiator;
         $this->debug = new CustomChannel($this->cli->getChannel('debug'), 'container', false);
         $this->cli->setChannel($this->debug);
+    }
+
+    static public function instantiate(?string $ref = null, ?array $args = [])
+    {
+        if(Container::$instance === null){
+			throw new ContainerNotInstantiatedException();
+		}
+	
+		return is_string($ref)
+			? Container::$instance->get($ref, $args)
+			: Container::$instance;
     }
 
     public function bind(string $ref, $func){

@@ -54,13 +54,7 @@ try{
 	
 	function container(?string $ref = null, ?array $args = [])
 	{
-		if(Container::$instance === null){
-			throw new ContainerNotInstantiatedException();
-		}
-	
-		return is_string($ref)
-			? Container::$instance->get($ref, $args)
-			: Container::$instance;
+		return Container::instantiate($ref, $args);
 	}
 	
 	function config(string $key)
@@ -76,7 +70,7 @@ try{
 	$container->singleton(CLI::class, $cli);
 
 	// We have configure this really early so it's useful when the autowirer starts using it
-	$debug = container(Debug::class, ['cli' => $cli, 'enabled' => $cli->getArg('--debug', false, true)]);
+	$debug = new Debug($cli, $cli->getArg('--debug', false, true));
 	
 	// Add all the services which we only want to instantiate once since they are singular in nature
 	$container->singleton(ConfigGeneratorService::class, ConfigGeneratorService::class);
@@ -139,6 +133,8 @@ try{
 	// But in the end, handle the request made by the user
 	$entrypoint->handle();
 }catch(\Throwable $e){
+	var_dump($e->getMessage());
+	var_dump($e->getTraceAsString());
 	$cli->debug(get_class($e), $e->getTraceAsString());
 
 	$message = $text->box(get_class($e) . ":\n" . $e->getMessage(), 'wht', 'red');
