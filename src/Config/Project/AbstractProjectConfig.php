@@ -31,7 +31,7 @@ abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfig
     static public function fromPath(string $path, string $project, ?ProjectGroupModel $group=null): ProjectConfigInterface
     {
         return new static("$path/" . static::getDefaultFilename(), $project, $group);
-    }
+	}
 
 	public function getGroup(): ProjectGroupModel
 	{
@@ -43,10 +43,7 @@ abstract class AbstractProjectConfig extends JsonConfig implements ProjectConfig
 		return $this->project;
 	}
 
-	protected function initDataStore(): void
-	{
-		// do nothing
-	}
+	abstract protected function initDataStore(): void;
 
 	public function write(?string $filename=null): bool
 	{

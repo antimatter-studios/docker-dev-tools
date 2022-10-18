@@ -8,6 +8,11 @@ class StandardProjectConfig extends AbstractProjectConfig implements ProjectConf
 {
 	const defaultFilename = 'ddt-project.json';
 
+    protected function initDataStore(): void
+	{
+        // do nothing
+	}
+
 	static public function getDefaultFilename(): string
     {
         return self::defaultFilename;

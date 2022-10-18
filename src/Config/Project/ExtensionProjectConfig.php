@@ -8,6 +8,11 @@ class ExtensionProjectConfig extends JsonConfig
 {
     const defaultFilename = 'ddt-extension.json';
 
+    protected function initDataStore(): void
+	{
+        // do nothing
+	}
+
     static public function getDefaultFilename(): string
     {
         return self::defaultFilename;
