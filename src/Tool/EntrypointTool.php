@@ -72,8 +72,9 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         }
 
         // Special case for the auto-updater
-        // Before handling the request, check to see if the timeout passes and self update
-        if ($toolName !== 'self-update') {
+        // Don't update when you're running the setup tool
+        // Don't update when you're running the self-update tool
+        if (!in_array($toolName, ['setup', 'self-update'])) {
             $this->getTool('self-update')->auto();
         }
 
