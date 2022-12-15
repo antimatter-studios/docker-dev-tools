@@ -2,15 +2,13 @@
 
 namespace DDT\Contract;
 
-interface ChannelInterface
-{
+interface ChannelInterface {
+    public function setName(string $name): void;
     public function getName(): string;
-    public function enable(bool $state);
-    public function status(): bool;
-    public function setLast(string $string);
-    public function getLast(): string;
-    public function tap(bool $state);
-    public function record(string $string);
-    public function history(): array;
-    public function write(string $text): string;
+    public function enable(): void;
+    public function disable(): void;
+    public function isEnabled(): bool;
+    public function attach(ChannelInterface $channel): void;
+    public function unattach(ChannelInterface $channel): ChannelInterface;
+    public function write($string='', ?array $params=[]): string;
 }

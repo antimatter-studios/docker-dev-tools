@@ -23,8 +23,14 @@ class Debug
         self::$cli->enableErrors(true);
         self::$cli->toggleChannel('debug', true);
 
-        if(is_array(self::$enabled) && in_array('container', self::$enabled)){
-            $cli->getChannel('container')->enable(true);
+        if(!is_array(self::$enabled)) return;
+
+        foreach(self::$enabled as $feature) {
+            $channel = $cli->getChannel($feature);
+
+            if($channel) {
+                $channel->enable();
+            }
         }
     }
 

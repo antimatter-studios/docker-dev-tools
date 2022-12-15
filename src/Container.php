@@ -24,7 +24,10 @@ class Container {
 
         $this->cli = $cli;
         $this->instantiator = $instantiator;
-        $this->debug = new CustomChannel($this->cli->getChannel('debug'), 'container', false);
+        
+        $this->debug = new CustomChannel('container', false);
+        $this->debug->disable();
+        $this->debug->attach($this->cli->getChannel('debug'));
         $this->cli->setChannel($this->debug);
     }
 

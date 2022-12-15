@@ -3,33 +3,32 @@
 namespace DDT\CLI\Output;
 
 use DDT\Contract\ChannelInterface;
-use DDT\Text\Text;
 
 class DebugChannel extends Channel
 {
-    private $parent;
-    private $renderer;
-    
-    public function __construct(ChannelInterface $parent, Text $renderer)
+    public function __construct(ChannelInterface $parent)
     {
-        parent::__construct('debug', false);
-
-        $this->parent = $parent;
-        $this->renderer = $renderer;
+        $this->setName('debug');
+        $this->attach($parent);
+        $this->setPrefix('{blu}[DEBUG]:{end} ');
     }
 
-    public function write(?string $string='', ?array $params=[]): string
+    public function write($string='', ?array $params=[]): string
     {
-        $string = $this->coerceToString($string);
+        if($this->isEnabled()){
+            // Make sure the string ends with a newline in all cases
+            $string = trim($string) . "\n";
 
-        $string = $this->renderer->write('{blu}[DEBUG]:{end} ' . $string);
-        $string = !empty($params) ? sprintf($string, ...$params) : $string;
-		$string = trim($string) . "\n";
+            // First, render the passed data to a string using various ways to convert objects, arrays, scalars, etc
+            $string = $this->renderString($string, $params);
 
-        if($this->status()){
-            return $this->parent->write($string);
-        }else{
-            return $this->record($string);
+            // If any, render a prefix to start each string
+            $string = $this->renderPrefix($string);
+
+            // Send out the string to every listener attached
+            $string = $this->sendToListeners($string);
         }
+
+        return $string;
     }
 }

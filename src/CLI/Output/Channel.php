@@ -4,79 +4,113 @@ namespace DDT\CLI\Output;
 
 use DDT\Contract\ChannelInterface;
 
-abstract class Channel implements ChannelInterface
-{
+abstract class Channel implements ChannelInterface {
     private $name;
-    private $last = '';
-    private $tap;
-    private $enabled;
-    private $history = [];
+    private $enabled = true;
+    private $parent = null;
+    private $prefix = '';
+    private $listeners = [];
 
-    public function __construct(string $name, bool $enabled=true)
-    {
+    public function setName(string $name): void {
         $this->name = $name;
-        $this->tap(false);
-        $this->enable($enabled);
     }
 
-    public function setParent(ChannelInterface $parent)
-    {
-        $this->parent = $parent;
-    }
-
-    public function getName(): string
-    {
+    public function getName(): string {
         return $this->name;
     }
 
-    public function enable(bool $state)
+    public function enable(): void
     {
-        $this->enabled = $state;
+        $this->enabled = true;
     }
 
-    public function status(): bool
+    public function disable(): void
+    {
+        $this->enabled = false;
+    }
+
+    public function isEnabled(): bool
     {
         return $this->enabled;
     }
 
-    public function setLast(string $string)
+    public function setPrefix(string $prefix): void 
     {
-        $this->last = $string;
+        $this->prefix = $prefix;
     }
 
-    public function getLast(): string
+    public function removePrefix(): void 
     {
-        return $this->last;
+        $this->prefix = '';
     }
 
-    public function tap(bool $state)
+    public function getParent(): ?ChannelInterface 
     {
-        $this->tap = $state;
-        $this->history = [];
+        return $this->parent;
     }
 
-    public function record(string $string)
+    public function attach(ChannelInterface $channel): void 
     {
-        $this->setLast($string);
+        $this->listeners[] = $channel;
+    }
 
-        if($this->tap){
-            $this->history[] = rtrim($string);
+    public function unattach(ChannelInterface $channel): ChannelInterface 
+    {
+        $index = array_search($channel, $this->listeners);
+        if($index !== false){
+            unset($this->listeners[$index]);
+            $this->listeners = array_values($this->listeners);
+        }
+
+        return $this;
+    }
+
+    abstract function write($string='', ?array $params=[]): string;
+
+    protected function renderString($string, ?array $params = []): string
+    {
+        // coerce whatever string is, to an actual string
+        if(is_object($string)) $string = "class(" . get_class($string) . ")";
+        if(is_array($string)) $string = json_encode($string);
+        if(is_scalar($string)) $string = "$string";
+        if(!is_string($string)) $string = '';
+        if(empty($string)) $string = '';
+
+        // If there are parameters to render into the string
+        $string = $this->renderParams($string, $params);
+
+        return $string;
+    }
+
+    protected function renderParams(string $string, ?array $params = []): string
+    {
+        if(!empty($params)){
+            $string = sprintf($string, ...$params);
         }
 
         return $string;
     }
 
-    public function history(): array
+    protected function renderPrefix(string $string): string
     {
-        return $this->history;
+        if(!empty($this->prefix)) {
+            $append = str_ends_with($string, "\n") ? "\n" : "";
+            
+            $string = implode("\n", array_map(function($str) {
+                return $this->prefix . $str;
+            }, explode("\n", trim($string)) + []));
+            
+            $string = $string . $append;
+        }
+
+        return $string;
     }
 
-    protected function coerceToString($string): string
+    protected function sendToListeners(string $string): string
     {
-        if(is_object($string)) $string = get_class($string);
-        if(is_array($string)) $string = json_encode($string);
-        if(!is_string($string)) $string = '';
-        if(empty($string)) $string = '';
+        foreach($this->listeners as $listener) {
+            $string = $listener->write($string);
+        }
 
         return $string;
     }

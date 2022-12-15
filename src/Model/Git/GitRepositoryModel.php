@@ -2,7 +2,7 @@
 
 namespace DDT\Model\Git;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Exceptions\Git\GitRepositoryCommandException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
 
