@@ -3,7 +3,6 @@
 namespace DDT\Tool;
 
 use DDT\CLI\CLI;
-use DDT\CLI\Output\CustomChannel;
 use DDT\Config\SystemConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeFailureException;
 use DDT\Text\Text;
@@ -165,8 +164,8 @@ class ConfigTool extends Tool
 	public function upgrade(SystemConfig $config)
 	{
 		$versions = [
-			'version 1 projects to version 2' => [$this, 'upgrade_v1_projects'],
-			'version 2 projects to version 3' => [$this, 'upgrade_v2_projects'],
+			'version 1 projects to version 2' => \DDT\Model\Config\SystemConfig\UpgradeToVersion2::class,
+			'version 2 projects to version 3' => \DDT\Model\Config\SystemConfig\UpgradeToVersion3::class,
 		];
 
 		$print = function(string $text, int $indent = 0) {
@@ -179,11 +178,13 @@ class ConfigTool extends Tool
 			$print($text, 1);
 		};
 
-		foreach($versions as $reason => $callback){
+		foreach($versions as $reason => $handler){
 			try{
 				$print("Upgrading '$reason'...\n");
 
-				if(call_user_func($callback, $config, $print1)){
+				$controller = container($handler);
+
+				if($controller->upgrade($config, $print1)){
 					$print1("Upgrade was completed\n\n");
 				}else{
 					$print1("{red}This upgrade was skipped...{end}\n\n");
@@ -195,108 +196,5 @@ class ConfigTool extends Tool
 		}
 
 		$print("{grn}All upgrades were run successfully{end}\n");
-	}
-
-	private function upgrade_v1_projects(SystemConfig $config, callable $print): bool
-	{
-		$version = $config->getVersion();
-		$before = 'projects';
-		$after = 'projects-v2';
-		
-		$beforeConfig = $config->getKey($before);
-		$afterConfig = $config->getKey($after);
-
-		if($version > 1){
-			$print("This upgrade only applies to version 1\n");
-			return false;
-		}
-
-		if($beforeConfig && $afterConfig){
-			if($this->cli->ask("This upgrade between '$before' and '$after' has run before, but the old key was left in the configuration file, do you want to delete it?", ['yes', 'no']) === 'yes'){
-				$config->deleteKey($before);
-				$config->write();
-			}else{
-				$print("{red}You have chosen to not delete it, but we cannot continue, either remove it yourself, or agree to delete it and try again{end}\n");
-			}
-			return false;
-		}
-
-		if(!$beforeConfig){
-			$print("Upgrade between '$before' and '$after' was run previously\n");
-			return false;
-		}
-
-		if($afterConfig){
-			throw new \Exception("Cannot upgrade between '$before' to '$after' because the '$after' key already exists, have you manually edited the file? Please (re)move this key and try again");
-		}
-
-		$print("{blu}Upgrading{end}: from '$before' to '$after'\n");
-
-		$afterConfig = [];
-
-		foreach($beforeConfig as $group => $projectList){
-			foreach($projectList as $name => $project){
-				$project['path'] = rtrim($project['path'], '/');
-
-				if(array_key_exists($project['path'], $afterConfig)){
-					$afterConfig[$project['path']]['group'][] = $group;
-				}else{
-					$newProject = [
-						'name' => $name,
-						'type' => $project['type'],
-						'path' => $project['path'],
-						'group' => [$group],
-					];
-
-					if(array_key_exists('repo', $project)){
-						if(is_string($project['repo'])){
-							$repo = ['vcs' => $project['repo'], 'remote' => 'origin'];
-						}else if(is_array($project['repo'])){
-							$repo = ['vcs' => $project['repo']['url'], 'remote' => $project['repo']['remote']];
-						}else{
-							$repo = [];
-						}
-
-						$newProject = array_merge($newProject, $repo);
-					}
-
-					$afterConfig[$project['path']] = $newProject;
-				}
-			}
-		}
-
-		$config->setKey($after, $afterConfig);
-		if(!$config->write()){
-			throw new ProjectConfigUpgradeFailureException($before, $after);
-		}
-
-		return true;
-	}
-
-	private function upgrade_v2_projects(SystemConfig $config, callable $print): bool
-	{
-		$version = $config->getVersion();
-
-		// This upgrade only applies to versions less than 3
-		if($version >= 3){
-			$print("This upgrade only applies to less than version 3\n");
-			return false;
-		}
-
-		$before = '.projects-v2';
-		$after = '.projects.list';
-		
-		$beforeConfig = $config->getKey($before);
-
-		// we put the entire contents of .projects-v2 into .projects.list
-		$config->setKey($after, $beforeConfig);
-		$config->deleteKey($before);
-		$config->setKey('.version', 3);
-
-		if(!$config->write()){
-			throw new ProjectConfigUpgradeFailureException($before, $after);
-		}
-
-		return true;
 	}
 }
