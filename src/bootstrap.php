@@ -10,16 +10,13 @@ use DDT\Container;
 use DDT\Tool\EntrypointTool;
 use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
-use DDT\Exceptions\Container\ContainerNotInstantiatedException;
 use DDT\Exceptions\Project\ProjectConfigUpgradeException;
-use DDT\Exceptions\Tool\ToolException;
 use DDT\Services\ConfigGeneratorService;
 use DDT\Services\DnsMasqService;
 use DDT\Services\DockerService;
 use DDT\Services\GitService;
 use DDT\Services\ProxyService;
 use DDT\Services\RunService;
-use DDT\Tool\Tool;
 
 try{
 	if (version_compare(phpversion(), '7.4', '<')) {
