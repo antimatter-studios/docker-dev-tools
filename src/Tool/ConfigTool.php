@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\CLI\Output\CustomChannel;
 use DDT\Config\SystemConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeFailureException;

@@ -2,7 +2,7 @@
 
 namespace DDT\Network;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Methods\MacOs\DNS\NetworkSetupMethod;
 use DDT\Methods\Linux\DNS\ResolvConfFileMethod;
 use DDT\Methods\Linux\DNS\SystemdResolvedMethod;

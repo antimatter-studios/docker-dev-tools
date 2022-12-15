@@ -2,7 +2,7 @@
 
 namespace DDT\Services;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\CLI\Output\DockerFilterChannel;
 use DDT\CLI\Output\StringChannel;
 use DDT\Config\Sections\DockerConfig;

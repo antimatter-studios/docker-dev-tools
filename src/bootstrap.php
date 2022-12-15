@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 use DDT\Autowire;
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Debug;
 use DDT\Exceptions\Autowire\CannotAutowireParameterException;
 use DDT\Text\Text;

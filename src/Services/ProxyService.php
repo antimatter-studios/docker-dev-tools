@@ -2,7 +2,7 @@
 
 namespace DDT\Services;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\Services\ProxyConfig;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerNetwork;

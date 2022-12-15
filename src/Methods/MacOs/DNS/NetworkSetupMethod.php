@@ -2,7 +2,7 @@
 
 namespace DDT\Methods\MacOs\DNS;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 
 /**
  * Other useful DNS commands I found online that might be useful

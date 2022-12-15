@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\Sections\ExtensionConfig;
 use DDT\Config\Sections\SelfUpdateConfig;
 use DDT\Helper\DateTimeHelper;

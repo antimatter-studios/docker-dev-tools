@@ -2,7 +2,7 @@
 
 namespace DDT\Methods\Linux\DNS;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 
 // FIXME: this code is all busted, but I've left it here cause I want to implement a working implementation in the future
 

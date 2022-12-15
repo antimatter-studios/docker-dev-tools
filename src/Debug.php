@@ -2,6 +2,8 @@
 
 namespace DDT;
 
+use DDT\CLI\CLI;
+
 class Debug
 {
     static public $enabled = [];

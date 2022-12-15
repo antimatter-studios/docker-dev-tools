@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\Services\DnsConfig;
 use DDT\Config\Sections\IpConfig;
 use DDT\Network\Address;

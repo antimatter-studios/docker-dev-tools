@@ -2,7 +2,7 @@
 
 namespace DDT\Services;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Debug;
 use DDT\Config\Services\ConfigGeneratorConfig;
 use DDT\Docker\DockerContainer;

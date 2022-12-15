@@ -4,7 +4,7 @@ namespace DDT\Test\Autowire;
 
 use DDT\Autowire;
 use DDT\Text\Text;
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\SystemConfig;
 use DDT\Container;
 use DDT\Debug;

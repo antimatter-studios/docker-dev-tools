@@ -2,7 +2,7 @@
 
 namespace DDT\Network;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 
 class Address
 {

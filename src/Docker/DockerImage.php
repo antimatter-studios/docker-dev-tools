@@ -2,7 +2,7 @@
 
 namespace DDT\Docker;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Exceptions\Docker\DockerImageBuildFailureException;
 use DDT\Exceptions\Docker\DockerImageNotFoundException;
 use DDT\Services\DockerService;

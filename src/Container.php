@@ -2,6 +2,7 @@
 
 namespace DDT;
 
+use DDT\CLI\CLI;
 use DDT\CLI\Output\CustomChannel;
 use DDT\Exceptions\Container\ContainerNotInstantiatedException;
 use ReflectionClass;

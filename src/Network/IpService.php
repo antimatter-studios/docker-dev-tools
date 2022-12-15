@@ -2,7 +2,7 @@
 
 namespace DDT\Network;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Methods\MacOs\IP\IfconfigMethod as MacIfconfigMethod;
 use DDT\Methods\Linux\IP\IfconfigMethod as LinuxIfconfigMethod;
 use DDT\Methods\Linux\IP\IpMethod;

@@ -3,7 +3,7 @@
 namespace DDT\Test\Autowire;
 
 use DDT\Autowire;
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Container;
 use DDT\Test\Data\Autowire\TestClassConstructorParameterNoType;
 use DDT\Text\Text;

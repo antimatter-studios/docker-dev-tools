@@ -4,7 +4,7 @@ namespace DDT\Tool;
 
 use Exception;
 use DDT\Autowire;
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Exceptions\Tool\ToolCommandInvalidException;
 use DDT\Exceptions\Tool\ToolCommandNotFoundException;
 

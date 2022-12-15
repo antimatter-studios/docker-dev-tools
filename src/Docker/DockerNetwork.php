@@ -2,7 +2,7 @@
 
 namespace DDT\Docker;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerNetworkAlreadyAttachedException;

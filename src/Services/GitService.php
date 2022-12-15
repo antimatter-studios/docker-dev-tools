@@ -1,7 +1,7 @@
 <?php
 namespace DDT\Services;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Git\GitRepositoryCloneException;
 use DDT\Model\Git\GitRepositoryModel;

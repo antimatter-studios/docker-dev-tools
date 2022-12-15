@@ -2,7 +2,7 @@
 
 namespace DDT\Methods\Linux\IP;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 
 class IpMethod
 {

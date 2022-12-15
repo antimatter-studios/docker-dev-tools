@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
 use DDT\Config\Project\StandardProjectConfig;

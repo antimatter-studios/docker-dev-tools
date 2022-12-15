@@ -1,7 +1,7 @@
 <?php
 namespace DDT\Services;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\CLI\ArgumentList;
 use DDT\Config\Sections\ProjectConfig;
 use DDT\Contract\Project\ProjectConfigInterface;

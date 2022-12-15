@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\Services\ProxyConfig;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;

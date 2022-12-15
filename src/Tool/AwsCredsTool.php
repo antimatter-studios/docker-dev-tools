@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerImage;
 

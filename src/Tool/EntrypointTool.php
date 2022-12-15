@@ -2,7 +2,7 @@
 
 namespace DDT\Tool;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
 use DDT\Exceptions\Autowire\CannotAutowireParameterException;

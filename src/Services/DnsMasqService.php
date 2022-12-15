@@ -2,7 +2,7 @@
 
 namespace DDT\Services;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 use DDT\Config\Services\DnsConfig;
 use DDT\Docker\DockerContainer;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;

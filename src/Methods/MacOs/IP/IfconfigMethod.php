@@ -2,7 +2,7 @@
 
 namespace DDT\Methods\MacOs\IP;
 
-use DDT\CLI;
+use DDT\CLI\CLI;
 
 class IfconfigMethod
 {
