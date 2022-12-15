@@ -37,7 +37,7 @@ class GitService
 
 	public function getRepository(string $path): GitRepositoryModel
 	{
-		return container(GitRepositoryModel::class, ['path' => $path]);
+		return GitRepositoryModel::fromPath($path);
 	}
 
 	/**
@@ -60,6 +60,6 @@ class GitService
 			throw new GitRepositoryCloneException($url, $path);
 		}
 
-		return container(GitRepositoryModel::class, ['path' => $path]);
+		return $this->getRepository($path);
 	}
 }

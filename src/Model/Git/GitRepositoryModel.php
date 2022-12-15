@@ -3,8 +3,10 @@
 namespace DDT\Model\Git;
 
 use DDT\CLI\CLI;
+use DDT\CLI\Output\CustomChannel;
 use DDT\Exceptions\Git\GitRepositoryCommandException;
 use DDT\Exceptions\Git\GitRepositoryNotFoundException;
+use DDT\Exceptions\Git\GitRepositoryPermissionDeniedException;
 
 class GitRepositoryModel
 {
@@ -24,6 +26,11 @@ class GitRepositoryModel
 		}
     }
 
+    static public function fromPath(string $path): self
+    {
+		return container(GitRepositoryModel::class, ['path' => $path]);
+    }
+
     public function exec($command): string
     {
         $command = "git -C $this->path $command";
@@ -41,11 +48,18 @@ class GitRepositoryModel
     {
         $command = "git -C $this->path $command";
 
-        $this->cli->passthru($command);
+        $stderr = new CustomChannel('git', true);
+        $stderr->attach($this->cli->getChannel('stderr'));
+
+        $this->cli->passthru($command, null, $stderr);
 
 		if($this->cli->getExitCode() === 0){
             return true;
         }
+
+        $output = implode("\n", $stderr->getRendered());
+
+        GitRepositoryPermissionDeniedException::throwIfMatches($output);
 
         throw new GitRepositoryCommandException($command);
     }

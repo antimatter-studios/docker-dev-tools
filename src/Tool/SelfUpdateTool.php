@@ -5,6 +5,7 @@ namespace DDT\Tool;
 use DDT\CLI\CLI;
 use DDT\Config\Sections\ExtensionConfig;
 use DDT\Config\Sections\SelfUpdateConfig;
+use DDT\Exceptions\Git\GitRepositoryException;
 use DDT\Helper\DateTimeHelper;
 use DDT\Services\GitService;
 
@@ -132,8 +133,12 @@ class SelfUpdateTool extends Tool
 
         $extensionList = $this->extensionConfig->list();
         foreach($extensionList as $name => $extension){
-            $this->cli->print("Updating extension '$name': ");
-            $this->gitService->getRepository($extension['path'])->pull();
+            try{
+                $this->cli->print("Updating extension '$name': ");
+                $this->gitService->getRepository($extension['path'])->pull();
+            }catch(GitRepositoryException $e){
+                $this->cli->print("{red}".$e->getMessage()."{end}\n");
+            }
         }
 
         $timeout = $this->cli->silenceChannel('stdout', function(){
