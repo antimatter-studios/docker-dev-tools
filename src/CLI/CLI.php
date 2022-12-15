@@ -346,10 +346,10 @@ class CLI
 		return $output;
 	}
 
-	public function passthru(string $command): int
+	public function passthru(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null): int
 	{
-		$stdout = $this->getChannel('stdout');
-		$stderr = $this->getChannel('stderr');
+		$stdout = $stdout ?? $this->getChannel('stdout');
+		$stderr = $stderr ?? $this->getChannel('stderr');
 		
 		$this->exec($command, $stdout, $stderr);
 
