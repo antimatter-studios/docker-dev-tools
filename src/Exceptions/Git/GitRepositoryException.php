@@ -6,6 +6,6 @@ class GitRepositoryException extends \Exception
 {
     public function __construct(string $message, $code = 0, \Throwable $previous = null)
     {
-        parent::__construct("There was a general git repository error: '$message'", $code, $previous);
+        parent::__construct("There was a git repository error: '$message'", $code, $previous);
     }
 }
