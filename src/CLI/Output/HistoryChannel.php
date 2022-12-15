@@ -52,7 +52,7 @@ class HistoryChannel extends Channel implements HistoryChannelInterface {
     /**
      * Render each string before returning it using the parameters when it was added to the history
      *
-     * @return void
+     * @return array
      */
     public function getRendered(): array {
         return array_map(function($item) {
