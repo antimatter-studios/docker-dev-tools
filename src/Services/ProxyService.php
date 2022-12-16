@@ -8,6 +8,7 @@ use DDT\Docker\DockerContainer;
 use DDT\Docker\DockerNetwork;
 use DDT\Docker\DockerVolume;
 use DDT\Exceptions\Docker\DockerContainerNotFoundException;
+use DDT\Exceptions\Docker\DockerException;
 use DDT\Exceptions\Docker\DockerInspectException;
 use DDT\Exceptions\Docker\DockerNetworkNotFoundException;
 
@@ -36,9 +37,14 @@ class ProxyService
 
 	public function getContainerId(): ?string
 	{
-        $data = $this->dockerService->inspect("container", $this->config->getContainerName());
+		try{
+			$name = $this->config->getContainerName();
+			$data = $this->dockerService->inspect("container", $name);
 
-        return is_array($data) && array_key_exists("Id", $data) ? $data["Id"] : null;
+			return is_array($data) && array_key_exists("Id", $data) ? $data["Id"] : null;
+		}catch(DockerInspectException $e){
+			throw new DockerContainerNotFoundException($name, 0, $e);
+		}
 	}
 
 	public function isRunning(): bool
@@ -67,13 +73,17 @@ class ProxyService
 
 	public function getNetworks(?bool $inactive=false): array
 	{
-		$container = $this->getContainer();
+		try{
+			$container = $this->getContainer();
 		
-		$list = array_merge(array_keys($container->listNetworks()), $this->config->listNetworks());
-		$list = array_unique($list);
-		$list = array_filter($list, function($a){ return $a !== 'bridge'; });
-		
-		return $list;
+			$list = array_merge(array_keys($container->listNetworks()), $this->config->listNetworks());
+			$list = array_unique($list);
+			$list = array_filter($list, function($a){ return $a !== 'bridge'; });
+			
+			return $list;
+		}catch(DockerException $e){
+			return [];
+		}
 	}
 
 	public function getContainersOnNetwork(string $network): array
@@ -243,15 +253,14 @@ class ProxyService
 					'ddt_proxy_certs:/etc/nginx/certs',
 					'ddt_proxy_vhost:/etc/nginx/vhost.d',
 					'ddt_proxy_html:/usr/share/nginx/html',
-					'ddt_config_gen:/config',
 				],
 				[], // options
-				['NGINX_CONF=/config/docker-proxy/nginx.conf'],
+				[],
 				['80:80', '443:443'],
 				[
-					'docker-config-gen.input=/docker-proxy/nginx.tmpl',
-					'docker-config-gen.output=/docker-proxy/nginx.conf',
-					'docker-config-gen.exec="/app/reload.sh"',
+					'docker-config-gen.request=/app/scripts/request.sh',
+					'docker-config-gen.response=/app/scripts/response.sh',
+					'docker-config-gen.renderer=nginx',
 				]
 			);
 

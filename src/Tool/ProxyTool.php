@@ -34,7 +34,7 @@ class ProxyTool extends Tool
         foreach([
             'start', 'stop', 'restart', 'reload',
             'logs', 'logs-f', 
-            'add-network', 'remove-network', 
+            'list-networks', 'add-network', 'remove-network', 
             'config', 'status', 
             'container-name', 'docker-image'
         ] as $command){
@@ -64,6 +64,7 @@ class ProxyTool extends Tool
                 "\tlogs-f: View and follow the logs from the Nginx proxy container\n",
 
                 "{cyn}Network Configuration:{end}",
+                "\tlist-networks: List all the networks the proxy is configured to listen on",
                 "\tadd-network <network-name>: Add a new network to a running proxy without needing to restart it",
                 "\tremove-network <network-name>: Remove an existing network from the proxy container so it stops monitoring it\n",
 
@@ -149,6 +150,21 @@ class ProxyTool extends Tool
         $this->proxyService->logs(true, $since);
     }
 
+    public function listNetworks(): void
+    {
+        $this->ui->write("{blu}Proxy Network List{end}\n");
+
+        $networkList = $this->proxyService->getNetworks();
+
+        foreach($networkList as $network) {
+            $this->cli->print("- $network\n");
+        }
+
+        if(empty($networkList)) {
+            $this->cli->print("There are no networks\n");
+        }
+    }
+
     public function addNetwork(string $network)
     {
         if(empty($network)){
@@ -162,6 +178,8 @@ class ProxyTool extends Tool
         try{
             $this->proxyService->addNetwork($network);
             $this->status();
+        }catch(DockerContainerNotFoundException $e){
+            $this->cli->failure("The Docker proxy is not running\n");
 		}catch(DockerNetworkCreateException $e){
 			$this->cli->print("{blu}Network:{end} '{yel}$network{end}' was not found, but creating it also failed\n");
 		}catch(DockerNetworkAlreadyAttachedException $e){
