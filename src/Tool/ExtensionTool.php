@@ -6,6 +6,7 @@ use DDT\CLI\CLI;
 use DDT\Config\Sections\ExtensionConfig;
 use DDT\Config\Project\ExtensionProjectConfig;
 use DDT\Contract\ToolRegistryInterface;
+use DDT\Exceptions\CLI\AskResponseRejectedException;
 use DDT\Exceptions\Config\ConfigWrongTypeException;
 use DDT\Exceptions\Filesystem\DirectoryExistsException;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
@@ -141,7 +142,7 @@ class ExtensionTool extends Tool
         $extension = $this->config->get($name);
 
         if(!$extension){
-            throw new \Exception("The extension '$name' was not found in the configuration");
+            $this->cli->failure("The extension '$name' was not found in the configuration");
         }
 
         $path = $extension['path'];
@@ -154,7 +155,7 @@ class ExtensionTool extends Tool
         
         if($this->cli->silenceChannel('stdout', function() use ($setupTool, $test) {
             return $setupTool->test($test);
-        }) === false){
+        }) === true){
             if($path == "/" || strpos($path, ".") === 0 || strpos($path, "extensions") === false){
                 throw new \Exception("Refusing to work with this path, it's dangerous");
             }
@@ -165,16 +166,20 @@ class ExtensionTool extends Tool
 
             if($this->gitService->exists($path)){
                 $cmd = "rm -rf $path";
-                $this->cli->print("{red}WARNING: BE CAREFUL THE PATH IS CORRECT{end}\n");
-                $answer = $this->cli->ask("Should we remove the extension directory with the command '$cmd'?",["yes"]);
-    
-                if($answer === "yes") {
+                $this->cli->box("WARNING: BE CAREFUL THE PATH IS CORRECT", "wht", "red");
+
+                try{
+                    $answer = $this->cli->ask("\nShould we remove the extension directory with the command '$cmd'?",["yes"]);
                     $this->cli->passthru($cmd);
+                }catch(AskResponseRejectedException $e){
+                    $this->cli->print("User did not answer positively, skipping...\n");
                 }
 
                 $this->config->remove($name);
 
                 $this->cli->success("Extension '$name' was uninstalled\n");
+
+                return;
             }    
         }
 
