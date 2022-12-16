@@ -3,8 +3,8 @@
 namespace DDT\Services;
 
 use DDT\CLI\CLI;
+use DDT\CLI\Output\CustomChannel;
 use DDT\CLI\Output\DockerFilterChannel;
-use DDT\CLI\Output\StringChannel;
 use DDT\Config\Sections\DockerConfig;
 use DDT\Contract\ChannelInterface;
 use DDT\Model\Docker\RunProfileModel;
@@ -99,9 +99,13 @@ class DockerService
 
 		$command = $this->toCommandLine($command);
 
-		$stdout = $stdout ?? new StringChannel();
-		$stderr = $stderr ?? new StringChannel();
-		$filter = new DockerFilterChannel($stderr);
+		$stdout = $stdout ?? new CustomChannel();
+		$stderr = $stderr ?? new CustomChannel();
+		
+		$filter = new CustomChannel();
+		$filter->attach($stderr);
+		$filter->filterOut("WARNING: The requested image");
+		
 		$output = $this->cli->exec($command, $stdout, $filter);
 
 		$this->parseErrors($output);
@@ -111,10 +115,10 @@ class DockerService
 		return $output;
 	}
 
-	public function passthru(string $command): int
+	public function passthru(string $command, ?ChannelInterface $stdout=null, ?ChannelInterface $stderr=null): int
 	{
-		$stdout = $this->cli->getChannel('stdout');
-		$stderr = $this->cli->getChannel('stderr');
+		$stdout = $stdout ?? $this->cli->getChannel('stdout');
+		$stderr = $stderr ?? $this->cli->getChannel('stderr');
 		
 		$this->exec($command, $stdout, $stderr);
 
