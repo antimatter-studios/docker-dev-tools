@@ -2,9 +2,9 @@
 
 namespace DDT\Tool;
 
-use Exception;
 use DDT\Autowire;
 use DDT\CLI\CLI;
+use DDT\CLI\Output\CustomChannel;
 use DDT\Exceptions\Tool\ToolCommandInvalidException;
 use DDT\Exceptions\Tool\ToolCommandNotFoundException;
 
@@ -34,10 +34,15 @@ abstract class Tool
 
     private $autowire;
 
+    protected $ui = null;
+
     public function __construct(string $name, CLI $cli)
 	{
 		$this->cli = $cli;
         $this->autowire = container(Autowire::class);
+
+        $this->ui = new CustomChannel('user-interface', false);
+        $this->ui->attach($cli->getChannel('stdout'));
 
         $this->setEntrypoint($this->cli->getScript(false));
         $this->setToolName($name);
