@@ -266,12 +266,12 @@ class SetupTool extends Tool
                 $this->cli->debug("setup", "{red}[TEST RESULT]:{end} ".$this->cli->exec("exec env -i bash -cl '$script'"));
             }
 
-            $this->cli->box("The path was successfully installed, you might need to open a new terminal to see the effects", "blk", "grn");
+            $this->cli->box("The path was successfully tested, you might need to open a new terminal to see the effects", "blk", "grn");
             
             return true;
         }catch(\Exception $e){
             $this->cli->print($e->getMessage());
-            $this->cli->box("There was a problem testing the installation as one of the testing processes failed. Please report this error", "wht", "red");
+            $this->cli->box("There was a problem testing the path as one of the testing processes failed. Please report this error", "wht", "red");
         }
 
 		return false;
