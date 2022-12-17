@@ -134,7 +134,7 @@ class ProxyService
 		$port = $container['port'];
 
 		foreach($port as $portNumber){
-			preg_match_all("/upstream\s(?P<upstream>".$name."-".$portNumber.")\s{(?P<config>[^}]*)}/m", $nginxConfig, $upstreams);
+			preg_match_all("/upstream\s.*?(?P<upstream>".$name."_".$portNumber.")\s{(?P<config>[^}]*)}/m", $nginxConfig, $upstreams);
 
 			// group all results by index
 			$upstreams = array_map(null, $upstreams['upstream'], $upstreams['config']);
