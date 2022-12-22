@@ -38,9 +38,11 @@ class ArrayCollectionTest extends TestCase
         $this->assertEquals(1, $a['a']);
         $this->assertEquals(2, $a->get('b'));
         $this->assertEquals('a', $a->key());
-        $this->assertEquals(2, $a->next());
+        $a->next();
+        $this->assertEquals(2, $a->current());
         $this->assertEquals('b', $a->key());
-        $this->assertEquals(3, $a->next());
+        $a->next();
+        $this->assertEquals(3, $a->current());
         $this->assertEquals(3, $a->count());
         $this->assertEquals(1, $a->first());
         $this->assertEquals(3, $a->last());
@@ -94,7 +96,8 @@ class ArrayCollectionTest extends TestCase
         $this->assertEquals('is', $a[2]);
 
         $this->assertEquals('that', $a['something']);
-        $this->assertEquals('feature', $a->next());
+        $a->next();
+        $this->assertEquals('feature', $a->current());
         $this->assertEquals(3, $a->find('test'));
     }
 
