@@ -202,7 +202,7 @@ class Autowire
                         if($type === 'bool'){
                             $value = filter_var($data['value'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                             if(is_bool($value)){
-                                Debug::dump("autowire", "FOUND NAMED BOOL: name = '$name', value = '$value}'");
+                                Debug::dump("autowire", "FOUND NAMED BOOL: name = '$name', value = '".($value?"true":"false")."'");
                                 $output[] = $value;
                                 unset($inputParameters[$index]);
                                 continue 2;
@@ -265,7 +265,7 @@ class Autowire
                     if($type === 'bool'){
                         $value = filter_var($data['name'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                         if(is_bool($value)) {
-                            Debug::dump("autowire", "FOUND ANON BOOL: name = '$value'");
+                            Debug::dump("autowire", "FOUND ANON BOOL: name = '".($value?"true":"false")."'");
                             $output[] = $value;
                             unset($inputParameters[$index]);
                             continue 2;

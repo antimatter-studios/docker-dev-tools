@@ -123,7 +123,7 @@ class AwsTool extends Tool
 
             $localAws = $this->cli->isCommand('aws');
 
-            if(false && $localAws){
+            if($localAws){
                 $this->cli->passthru("aws $arguments");
             }else{
                 $env = $this->getEnv();

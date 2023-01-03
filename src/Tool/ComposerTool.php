@@ -15,7 +15,7 @@ class ComposerTool extends Tool
     /** @var PhpComposerConfig */
     private $config;
 
-    /** @var Docker */
+    /** @var DockerService */
     private $docker;
 
     public function __construct(CLI $cli, PhpComposerConfig $config, DockerService $docker)

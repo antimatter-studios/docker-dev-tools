@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 class ProjectListModelTest extends TestCase
 {
-    private $testDataPath = __DIR__ . '/../../data';
+    private $testDataPath = __DIR__ . '/../../Data';
 
     private function getPath(?string $project=null)
     {
@@ -25,10 +25,19 @@ class ProjectListModelTest extends TestCase
 
     public function testAddByRawArray(): void
     {
-        $model = ProjectModel::fromArray(['path' => __DIR__, 'name' => 'test-service', 'group' => new ProjectGroupModel('test-group')]);
-        $list = ProjectListModel::fromArray([$model]);
+        $model = ProjectModel::fromArray([
+            'path' => $this->getPath('path-a/service-a'), 
+            'name' => 'test-service', 
+            'group' => new ProjectGroupModel('test-group')
+        ]);
+        $list = ProjectListModel::fromArray($l=[$model]);
+
+        var_dump(['l current' => current($l)]);
+        var_dump(['list' => $list]);
+        var_dump(['list current' => current($list)]);
 
         $this->assertInstanceOf(ProjectListModel::class, $list);
+        $this->assertInstanceOf(ProjectModel::class, current($list));
     }
 
     public function testAddProjectPathModel(): void
@@ -37,5 +46,6 @@ class ProjectListModelTest extends TestCase
         $list = ProjectListModel::fromArray([$path]);
 
         $this->assertInstanceOf(ProjectListModel::class, $list);
+        $this->assertInstanceOf(ProjectModel::class, current($list));
     }
 }

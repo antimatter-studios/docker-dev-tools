@@ -2,8 +2,8 @@
 
 if [ -z "$(docker image ls | grep ddt-phpunit)" ]; then
 docker build -t ddt-phpunit:latest . -f - <<EOF
-FROM php:7.3-cli-alpine3.13
-RUN apk add --no-cache composer
+FROM php:8.0-alpine
+RUN apk add --no-cache composer linux-headers php-xml php-dom php-tokenizer php-ctype php-xmlwriter
 RUN apk add --no-cache --virtual .build-deps \$PHPIZE_DEPS \
     && pecl install xdebug \
     && docker-php-ext-enable xdebug \

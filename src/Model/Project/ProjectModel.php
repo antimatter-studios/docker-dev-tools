@@ -5,6 +5,7 @@ namespace DDT\Model\Project;
 use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
 use DDT\Config\Project\StandardProjectConfig;
+use DDT\Container;
 use DDT\Contract\Project\ProjectConfigInterface;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Exceptions\Project\ProjectNotFoundException;
@@ -13,9 +14,17 @@ use DDT\Model\Model;
 
 class ProjectModel extends Model
 {
+    /** @var string */
     private $name;
+
+    /** @var string */
     private $path;
+
+    /** @var ProjectGroupModel */
     private $group;
+
+    /** @var ProjectConfigInterface Represents the configuration file from the project */
+    private $config;
 
     /**
      * @param string $path
@@ -27,7 +36,8 @@ class ProjectModel extends Model
     {
         $this->setPath($path);
         $this->setName($name ?? basename($path));
-        $this->setGroup($group ?? new ProjectGroupModel([]));
+        $this->setGroup($group ?? container(ProjectGroupModel::class));
+        $this->setConfig($this->getConfig());
     }
 
     public function setName(string $name): self
@@ -64,10 +74,19 @@ class ProjectModel extends Model
         return $type;
     }
 
+    private function setConfig(ProjectConfigInterface $config): void
+    {
+        $this->config = $config;
+    }
+
     public function getConfig(): ProjectConfigInterface
     {
         $type = $this->getType();
-        $typeMap = ['ddt' => StandardProjectConfig::class, 'node' => NodeProjectConfig::class, 'composer' => ComposerProjectConfig::class];
+        $typeMap = [
+            'ddt' => StandardProjectConfig::class, 
+            'node' => NodeProjectConfig::class, 
+            'composer' => ComposerProjectConfig::class
+        ];
 
         if(array_key_exists($type, $typeMap) && is_subclass_of($typeMap[$type], ProjectConfigInterface::class)){
             return $typeMap[$type]::fromPath($this->getPath(), $this->getName(), $this->getGroups());
@@ -128,9 +147,14 @@ class ProjectModel extends Model
         return $this->group;
     }
 
+    public function getHealthchecks(): ?HealthcheckListModel
+    {
+        return null;
+    }
+
     public function getVcs(): GitRepositoryModel
     {
-        return container(GitRepositoryModel::class, ['path' => $this->getPath()]);
+        return Container::instantiate(GitRepositoryModel::class, ['path' => $this->getPath()]);
     }
 
     static public function fromArray(array $data): self
@@ -152,8 +176,6 @@ class ProjectModel extends Model
             'name' => $this->getName(),
             'path' => $this->getPath(),
             'group' => $this->getGroups()->getData(),
-            //'type' => $this->getType(),
-            //'repo_url' => ... something to get repo url
         ];
     }
 }

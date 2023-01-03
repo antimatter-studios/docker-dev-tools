@@ -96,9 +96,9 @@ abstract class JsonConfig implements ConfigInterface
 
 		$json = json_decode($contents, true);
 
-		if(empty($json)){
-            throw new ConfigInvalidException($filename);
-		}
+        if(!is_array($json)){
+            $json = [];
+        }
 
 		$this->data = $json;
 	}

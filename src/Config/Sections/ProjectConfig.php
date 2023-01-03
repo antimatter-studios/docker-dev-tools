@@ -202,9 +202,16 @@ class ProjectConfig
 		return $this->config->write();
 	}
 
-	public function removeProject(string $project, ?string $path=null): bool
+	public function removeProject(string $name, ?string $path=null): bool
 	{
-		$projectList = $this->listProjects();
+		$projectList = $this->listProjects(self::LIST_PROJECTS);
+
+        $projectList = $projectList->filter(function($project) use ($name, $path) {
+
+        });
+
+        var_dump($projectList);
+        die("DEAD");
 
 		if(!empty($path)){
 			$p = $projectList->findProjectByPath($path);

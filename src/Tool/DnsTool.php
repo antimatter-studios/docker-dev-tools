@@ -126,13 +126,12 @@ class DnsTool extends Tool
     {
         return [
             'title' => 'DNS Tool',
-            'description' => '',
-            'short_description' => 'A tool to manage the DNS configuration used when the system is running',
             'description' => [
                 "This tool will start a docker container and listen on DNS Port 53 and handle",
                 "requests for your local development networks. Whilst pushing upstream all",
                 "other requests it can't resolve to an online DNS server",
             ],
+            'short_description' => 'A tool to manage the DNS configuration used when the system is running',
             'options' => trim(
                 "{cyn}Configuring IP Address and domains:{end}\n".
                 "\tadd-domain yourdomain.com: Add a domain to the running DNS server\n".

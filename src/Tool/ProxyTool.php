@@ -129,7 +129,7 @@ class ProxyTool extends Tool
                 $this->cli->failure("The proxy failed to reload\n");
             }
 		}catch(DockerContainerNotFoundException $e){
-			$this->cli->print("{red}".$e->getMessage."{end}\n");
+			$this->cli->print("{red}".$e->getMessage()."{end}\n");
 			return false;
 		}
     }
@@ -171,7 +171,8 @@ class ProxyTool extends Tool
             throw new \Exception('Network must be a non-empty string');
         }
 
-        $network = $network;
+        // why did I do this?
+        //$network = $network;
 
         $this->cli->print("{blu}Connecting to a new network '$network' to the proxy container '{$this->containerName()}'{end}\n");
 
@@ -199,7 +200,8 @@ class ProxyTool extends Tool
             throw new \Exception('Network must be a non-empty string');
         }
 
-        $network = $network;
+        // why did I do this?
+        //$network = $network;
 
         $this->cli->print("{blu}Disconnecting the network '$network' from the proxy container '{$this->containerName()}'{end}\n");
 

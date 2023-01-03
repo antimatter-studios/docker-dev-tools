@@ -15,7 +15,7 @@ class StatusTool extends Tool
     /** @var SystemConfig  */
     private $config;
 
-    /** @var ToolRegistry */
+    /** @var ToolRegistryInterface */
     private $toolRegistry;
 
     public function __construct(CLI $cli, Text $text, SystemConfig $config, ToolRegistryInterface $toolRegistry)

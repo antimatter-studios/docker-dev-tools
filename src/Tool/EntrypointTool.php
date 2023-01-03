@@ -33,6 +33,8 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
             return $this->cli->print($this->help());
         }
 
+        $this->cli->isRoot();
+
         if ($this->cli->getArg('--version', false, true)) {
             return $this->cli->print($this->invoke('getVersion'));
         }
@@ -75,7 +77,9 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
         // Don't update when you're running the setup tool
         // Don't update when you're running the self-update tool
         if (!in_array($toolName, ['setup', 'self-update'])) {
-            $this->getTool('self-update')->auto();
+            /** @var SelfUpdateTool */
+            $selfUpdate = $this->getTool('self-update');
+            $selfUpdate->auto();
         }
 
         if ($methodName !== null) {
@@ -162,6 +166,7 @@ class EntrypointTool extends Tool implements ToolRegistryInterface
     {
         $extensionBootstraps = glob(config('tools.path') . '/extensions/**/src/bootstrap.php');
 	
+        // NOTE: This is only used inside the require_once
         $entrypoint = $this;
         foreach($extensionBootstraps as $bootstrap){
             require_once($bootstrap);

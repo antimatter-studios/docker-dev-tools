@@ -2,6 +2,7 @@
 
 namespace DDT\CLI\Output;
 
+use DDT\Container;
 use DDT\Contract\HistoryChannelInterface;
 use DDT\Model\CLI\Output\HistoryItem;
 
@@ -33,7 +34,10 @@ class HistoryChannel extends Channel implements HistoryChannelInterface {
     {
         if($this->isEnabled()) {
             // Just record what you were given
-            $this->history[] = new HistoryItem($string, $params);
+            $this->history[] = Container::instantiate(HistoryItem::class, [
+                'string' => $string, 
+                'params' => $params
+            ]);
         }
 
         return $string;

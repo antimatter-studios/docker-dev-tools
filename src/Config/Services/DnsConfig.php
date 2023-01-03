@@ -6,6 +6,9 @@ use DDT\Config\SystemConfig;
 
 class DnsConfig
 {
+	/** @var SystemConfig */
+	private $config;
+
     private $keys = [
 		'docker_image'		=> 'dns.docker_image',
 		'container_name'	=> 'dns.container_name',

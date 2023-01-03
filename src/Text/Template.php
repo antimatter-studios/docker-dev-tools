@@ -4,6 +4,8 @@ namespace DDT\Text;
 
 class Template
 {
+    private $template;
+    private $params;
     public function __construct(string $template, ?array $params=[])
     {
         $this->template = $template;

@@ -12,22 +12,26 @@ class ProjectGroupModel extends Model
      * @param $group
      * @throws \InvalidArgumentException
      */
-    public function __construct($group)
+    public function __construct($group=null)
     {
+        $fromArray = function (array $data) {
+            return array_map(function($v) {
+                if(!is_string($v)) {
+                    throw new \InvalidArgumentException("Elements of the Project Group can only be strings, given = '".json_encode($v)."'");
+                }
+
+                return trim($v);
+            }, $data);
+        };
+
         if($group instanceof self){
             $this->group = $group->getData();
         }else if(is_null($group)){
             $this->group = [];
         }else if(is_string($group)) {
-            $this->group = [$group];
+            $this->group = $fromArray(explode(',', $group) + []);
         }else if(is_array($group)) {
-            $this->group = array_map(function($v) {
-                if(!is_string($v)) {
-                    throw new \InvalidArgumentException("Elements of the Project Group can only be strings");
-                }
-
-                return $v;
-            }, $group);
+            $this->group = $fromArray($group);
         }else {
             throw new \InvalidArgumentException("Group parameter must be a string of an array of strings");
         }
@@ -40,14 +44,10 @@ class ProjectGroupModel extends Model
 
     /**
      * @return string
-     * @throws \Exception
      */
     public function toCsv(): string
     {
-        if(is_string($this->group)) return $this->group;
-        if(is_array($this->group)) return implode(',', $this->group);
-
-        throw new \Exception('The data is not a string or an array, we cannot process this data');
+        return implode(',', $this->group);
     }
 
     public function add(string $name): ProjectGroupModel

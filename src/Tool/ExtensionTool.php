@@ -84,7 +84,7 @@ class ExtensionTool extends Tool
                 $table->addRow([$name, $e['url'], $e['path']]);
             }
 
-            $this->cli->print($table->render(true));
+            $this->cli->print($table->render());
         }catch(ConfigWrongTypeException $e){
             $this->cli->failure($e->getMessage());
         }

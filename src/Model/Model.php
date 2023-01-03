@@ -3,7 +3,7 @@
 namespace DDT\Model;
 
 use DDT\Contract\ModelInterface;
-use DDT\Model\Traits\JsonSerializableTrait;
+use DDT\Helper\Traits\JsonSerializableTrait;
 use JsonSerializable;
 
 abstract class Model implements ModelInterface, JsonSerializable

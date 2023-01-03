@@ -14,7 +14,7 @@ class DockerVolume
     /** @var CLI */
     private $cli;
 
-    /** @var Docker */
+    /** @var DockerService */
     private $docker;
 
     /** @var string the name of this docker volume */

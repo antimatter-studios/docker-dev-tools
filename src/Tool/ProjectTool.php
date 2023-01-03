@@ -36,7 +36,7 @@ class ProjectTool extends Tool
             'add-path', 'remove-path', 'list-paths', 'dedup-path',
             'add-group', 'remove-group', 'clone-project', 'list-groups',
             'add-project', 'remove-project',
-            'pull', 'push',
+            'pull', 'push', 'depends'
         ] as $command){
             $this->setToolCommand($command);
         }
@@ -196,6 +196,14 @@ class ProjectTool extends Tool
         array_map(function($g){
             $this->cli->print(" - " . $g . "\n");
         }, $groups);
+    }
+
+    public function depends(string $project): void
+    {
+        // provide the project name
+        // I want to build a project dependency tree, so I can then provide a callback for each project
+        // and then do customised actions
+        // the dep tree should be 
     }
 
     public function addPath(string $path, ?string $group=null): void
@@ -371,6 +379,8 @@ class ProjectTool extends Tool
         }catch(\Exception $e){
             $this->cli->failure("{red}An attempt to clone the repository was made, but failed. See the terminal output to try to correct the problem manually\n");
         }
+
+        return false;
     }
 
     public function removeProject(string $project, ?string $path=null, ?bool $delete=false): bool

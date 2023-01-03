@@ -7,9 +7,9 @@ use DDT\Model\Project\ProjectListModel;
 use DDT\Model\Project\ProjectModel;
 use DDT\Model\Project\ProjectPathListModel;
 use DDT\Model\Project\ProjectPathModel;
-use PHPUnit\Framework\TestCase;
+use DDT\Test\BaseTestCase;
 
-class ProjectPathListModelTest extends TestCase
+class ProjectPathListModelTest extends BaseTestCase
 {
     private $testDataPath = __DIR__ . '/../../Data';
 
@@ -32,6 +32,8 @@ class ProjectPathListModelTest extends TestCase
         ];
 
         $list = ProjectPathListModel::fromArray($data);
+        var_dump($list);
+        die("DEAD");
         $this->assertCount(2, $list);
         $this->assertEquals(realpath($this->getPath('path-a')), $list->key());
         $this->assertInstanceOf(ProjectPathModel::class, $list->first());

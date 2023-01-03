@@ -4,7 +4,7 @@ namespace DDT\Model\Project;
 
 use DDT\Model\ListModel;
 
-class ProjectPathListModel extends ListModel
+class HealthcheckListModel extends ListModel
 {
     public function __construct(iterable $args)
     {
@@ -29,6 +29,6 @@ class ProjectPathListModel extends ListModel
             return $item->listProjects();
         });
 
-        return ProjectListModel::fromArray($list->toArray());
+        return ProjectListModel::fromArray($list);
     }
 }

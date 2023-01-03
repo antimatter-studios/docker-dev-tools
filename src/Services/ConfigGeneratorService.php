@@ -90,7 +90,7 @@ class ConfigGeneratorService
 			$container->delete();
 			return true;
 		}catch(DockerInspectException $e){
-			$this->cli->print("{red}".$e->getMessage."{end}\n");
+			$this->cli->print("{red}".$e->getMessage()."{end}\n");
 			return false;
 		}
 	}

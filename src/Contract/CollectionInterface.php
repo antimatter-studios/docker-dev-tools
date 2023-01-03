@@ -4,7 +4,7 @@ namespace DDT\Contract;
 
 interface CollectionInterface extends \Countable, \Iterator, \ArrayAccess, \JsonSerializable
 {
-    static public function fromArray(iterable $array): CollectionInterface;
+    static public function fromArray(array $array): static;
     public function getIterator(): \Traversable;
     public function count(): int;
 
@@ -22,14 +22,14 @@ interface CollectionInterface extends \Countable, \Iterator, \ArrayAccess, \Json
     public function rewind(): void;
     public function valid(): bool;
 
-    public function set($key, $item): CollectionInterface;
+    public function set($key, $item): static;
     public function get($key);
     public function has($key): bool;
-    public function add($item): CollectionInterface;
+    public function add($item): static;
     public function remove($key);
 
     public function shift();
-    public function unshift($item): CollectionInterface;
+    public function unshift($item): static;
     public function clear();
 
     public function isEmpty(): bool;
@@ -43,7 +43,7 @@ interface CollectionInterface extends \Countable, \Iterator, \ArrayAccess, \Json
     public function offsetSet($key, $value): void;
     public function offsetUnset($key): void;
 
-    public function filter(callable $callback): CollectionInterface;
-    public function map(callable $callback): CollectionInterface;
+    public function filter(callable $callback): static;
+    public function map(callable $callback): static;
     public function reduce(callable $reducer, $acc);
 }

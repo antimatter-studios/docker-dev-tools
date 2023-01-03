@@ -5,7 +5,7 @@ namespace DDT\Helper;
 use DDT\Contract\CollectionInterface;
 use DDT\Exceptions\ArrayCollection\ArrayCollectionInvalidKeyException;
 use DDT\Exceptions\ArrayCollection\ArrayCollectionKeyNotExistsException;
-use DDT\Model\Traits\JsonSerializableTrait;
+use DDT\Helper\Traits\JsonSerializableTrait;
 
 class ArrayCollection implements CollectionInterface
 {
@@ -13,12 +13,12 @@ class ArrayCollection implements CollectionInterface
 
 	private $data;
 
-	public function __construct(array $data=[])
+	public function __construct(?array $data=[])
 	{
 		$this->data = $data;
 	}
 
-    static public function fromArray(iterable $data): CollectionInterface
+    static public function fromArray(array $data): static
     {
         return new static($data);
     }
@@ -84,7 +84,7 @@ class ArrayCollection implements CollectionInterface
      * @return CollectionInterface
      * @throws ArrayCollectionInvalidKeyException
      */
-    public function set($key, $value): CollectionInterface
+    public function set($key, $value): static
     {
         if(empty($key) || !is_scalar($key)){
             throw new ArrayCollectionInvalidKeyException($key);
@@ -207,7 +207,7 @@ class ArrayCollection implements CollectionInterface
         return array_key_exists($key, $this->data);
     }
 
-    public function add($value): CollectionInterface
+    public function add($value): static
     {
         $this->data[] = $value;
 
@@ -238,14 +238,14 @@ class ArrayCollection implements CollectionInterface
         return array_shift($this->data);
     }
 
-    public function unshift($value): CollectionInterface
+    public function unshift($value): static
     {
         array_unshift($this->data, $value);
 
         return $this;
     }
 
-    public function clear(): CollectionInterface
+    public function clear(): static
     {
         $this->data = [];
         return $this;
@@ -298,12 +298,12 @@ class ArrayCollection implements CollectionInterface
         $this->remove($key);
     }
 
-    public function filter(callable $callback): CollectionInterface
+    public function filter(callable $callback): static
     {
         return new self(array_filter($this->data, $callback));
     }
 
-    public function map(callable $callback): CollectionInterface
+    public function map(callable $callback): static
     {
         return new self(array_map($callback, $this->data));
     }

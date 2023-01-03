@@ -6,6 +6,9 @@ use DDT\Config\SystemConfig;
 
 class IpConfig
 {
+	/** @var SystemConfig */
+	private $config;
+
 	private $keys = [
 		'ip_address' => '.ip_address'
 	];

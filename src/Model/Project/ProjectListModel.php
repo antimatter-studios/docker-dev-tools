@@ -60,7 +60,7 @@ class ProjectListModel extends ListModel
             }
         }
 
-        parent::__construct($data, ProjectModel::class);
+        parent::__construct($data, [ProjectModel::class]);
     }
 
     public function addProject(ProjectModel $project): void
@@ -78,12 +78,12 @@ class ProjectListModel extends ListModel
         return false;
     }
 
-    public function listProjects(): array
+    public function listProjects(): iterable
     {
         return $this->getData();
     }
 
-    public function listProjectsByScript(string $script): CollectionInterface
+    public function listProjectsByScript(string $script): static
     {
         return $this->filter(function(ProjectModel $project) use ($script) {
             try{
@@ -161,12 +161,12 @@ class ProjectListModel extends ListModel
         return $list->first();
     }
 
-    public function filter(callable $callback): CollectionInterface
+    public function filter(callable $callback): static
     {
         return self::fromArray(parent::filter($callback));
     }
 
-    public function map(callable $callback): CollectionInterface
+    public function map(callable $callback): static
     {
         return self::fromArray(parent::map($callback));
     }

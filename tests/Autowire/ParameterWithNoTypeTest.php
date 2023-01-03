@@ -11,6 +11,10 @@ use PHPUnit\Framework\TestCase;
 
 class ParameterWithNoTypeTest extends TestCase
 {
+    private $cli;
+    private $container;
+    private $autowire;
+
     public function setUp(): void
     {
         $text = new Text();

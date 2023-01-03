@@ -5,11 +5,10 @@ namespace DDT\Tool;
 use DDT\CLI\CLI;
 use DDT\Config\SystemConfig;
 use DDT\Contract\ToolRegistryInterface;
-use DDT\Text\Text;
 
 class SetupTool extends Tool
 {
-    /** @var ToolRegistry */
+    /** @var ToolRegistryInterface */
     private $toolRegistry;
 
     /** @var $home */

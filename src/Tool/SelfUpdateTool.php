@@ -16,6 +16,9 @@ class SelfUpdateTool extends Tool
 {
     /** @var SelfUpdateConfig */
     private $selfUpdateConfig;
+
+    /** @var ExtensionConfig */
+    private $extensionConfig;
     
     /** @var GitService */
     private $gitService;

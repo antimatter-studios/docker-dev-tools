@@ -15,12 +15,10 @@ use DDT\Text\Template;
 class TerraformTool extends Tool
 {
     private $image = null;
+    private $imageName = null;
     private $container = null;
-
     private $containerName = "ddt-terraform";
-
     private $awsCredsTool;
-    
     private $dockerfile = '/docker/terraform.dockerfile';
 
     public function __construct(CLI $cli, AwsCredsTool $awsCredsTool) 

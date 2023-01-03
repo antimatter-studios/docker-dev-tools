@@ -38,8 +38,6 @@ class CLI
 		$this->setChannel(new DebugChannel($this->getChannel('stderr')));
 		$this->getChannel('debug')->disable();
 
-		$this->isRoot();
-
 		// This will reset any colours bleeding over from commands by resetting the shell colour codes
 		// Don't do this! This breaks piping output to commands like jq because it'll output a shell code directly into the input of the next command
 		//$this->print("{end}");
@@ -141,14 +139,14 @@ class CLI
 	public function toggleChannel(string $channel, bool $state)
 	{
 		if(array_key_exists($channel, $this->channels)){
-			$this->channels[$channel]->enable($state);
+			$this->channels[$channel]->enable();
 		}
 	}
 
 	public function statusChannel(string $channel): bool
 	{
 		if(array_key_exists($channel, $this->channels)){
-			return $this->channels[$channel]->status();
+			return $this->channels[$channel]->isEnabled();
 		}
 
 		return false;

@@ -2,32 +2,41 @@
 
 namespace DDT\Model;
 
-use DDT\Contract\CollectionInterface;
+use DDT\Exceptions\Model\ListModelDataWrongTypeException;
+use DDT\Exceptions\Model\ListModelMissingKeyException;
 use DDT\Helper\ArrayCollection;
 
 abstract class ListModel extends ArrayCollection
 {
-    protected $type;
+    protected $type = [];
     
-    public function __construct(iterable $data, string $type)
+    public function __construct(iterable $data, array $type)
     {
-        $data = array_filter($data, function($item) use ($type) {
-            return $item instanceof $type;
+        $this->type = array_filter($type, function($t) {
+            return is_string($t);
         });
 
-        $this->type = $type;
+        $data = array_filter((array)$data, function($item) {
+            return $this->isAllowedType($item);
+        });
 
         parent::__construct($data);
     }
 
-    public function set($key, $item): CollectionInterface
+    public function isAllowedType($data): bool
     {
-        if($item instanceof $this->type) {
+        return array_reduce($this->type, function($result, $type) use ($data) {
+            return $data instanceof $type === false ? false : $result;
+        }, true);
+    }
+
+    public function set($key, $item): static
+    {
+        if ($this->isAllowedType($item)) {
             return parent::set($key, $item);
         }
 
-        $type = is_object($item) ? get_class($item) : gettype($item);
-        throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: " . $type);
+        throw new ListModelDataWrongTypeException($item, $this->type);
     }
 
     public function get($key)
@@ -38,17 +47,16 @@ abstract class ListModel extends ArrayCollection
             return $item;
         }
 
-        throw new \InvalidArgumentException("Key '$key' passed to function was not found");
+        throw new ListModelMissingKeyException($key);
     }
 
-    public function add($item): CollectionInterface
+    public function add($item): static
     {
-        if($item instanceof $this->type) {
+        if ($this->isAllowedType($item)) {
             return parent::add($item);
         }
 
-        $type = is_object($item) ? get_class($item) : gettype($item);
-        throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: " . $type);
+        throw new ListModelDataWrongTypeException($item, $this->type);
     }
 
     public function remove($key)
@@ -59,16 +67,15 @@ abstract class ListModel extends ArrayCollection
             return $item;
         }
 
-        throw new \InvalidArgumentException("Key '$key' passed to function was not found");
+        throw new ListModelMissingKeyException($key);
     }
 
-    public function unshift($item): CollectionInterface
+    public function unshift($item): static
     {
-        if($item instanceof $this->type) {
+        if ($this->isAllowedType($item)) {
             return parent::unshift($item);
         }
 
-        $type = is_object($item) ? get_class($item) : gettype($item);
-        throw new \InvalidArgumentException("Parameter passed to function was not instanceof $this->type, was: " . $type);
+        throw new ListModelDataWrongTypeException($item, $this->type);
     }
 }

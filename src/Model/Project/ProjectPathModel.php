@@ -5,6 +5,7 @@ namespace DDT\Model\Project;
 use DDT\Config\Project\ComposerProjectConfig;
 use DDT\Config\Project\NodeProjectConfig;
 use DDT\Config\Project\StandardProjectConfig;
+use DDT\Container;
 use DDT\Exceptions\Filesystem\DirectoryNotExistException;
 use DDT\Model\Model;
 
@@ -20,7 +21,7 @@ class ProjectPathModel extends Model
         }
 
         $this->path = realpath($path);
-        $this->group = $group ?? new ProjectGroupModel([]);
+        $this->group = $group ?? Container::instantiate(ProjectGroupModel::class);
     }
 
     public function getData()
@@ -33,7 +34,10 @@ class ProjectPathModel extends Model
 
     static public function fromPath(string $path, ?string $group=null): self
     {
-        return new self($path, new ProjectGroupModel($group));
+        return Container::instantiate(static::class, [
+            'path' => $path, 
+            'group' => Container::instantiate(ProjectGroupModel::class, ['group' => $group])
+        ]);
     }
 
     /**
@@ -48,10 +52,10 @@ class ProjectPathModel extends Model
         $group = array_key_exists('group', $data) ? $data['group'] : null;
 
         if($group !== null){
-            $group = new ProjectGroupModel($group);
+            $group = Container::instantiate(ProjectGroupModel::class, ['group' => $group]);
         }
 
-        return new self($path, $group);
+        return Container::instantiate(static::class, ['path' => $path, 'group' => $group]);
     }
 
     public function getPath(): string

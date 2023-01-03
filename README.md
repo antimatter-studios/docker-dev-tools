@@ -342,6 +342,7 @@ File: `composer.json` or `package.json`
   ... the other fields from your file
 
   "docker-dev-tools": {
+    "group": "plista",
     "scripts": {
       "start": "docker-compose up -d",
       "stop": "docker-compose stop",
@@ -369,6 +370,11 @@ File: `composer.json` or `package.json`
           "branch": "main"
         },
         "scripts": ["up", "reup", "push", "pull"],
+      },
+      "fakews": {
+        "repo": {
+          "url": "git@github.com:fakews/fakews.git"
+        }
       }
     }
   }

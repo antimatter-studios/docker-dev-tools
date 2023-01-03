@@ -4,7 +4,6 @@ namespace DDT\Tool;
 
 use DDT\CLI\CLI;
 use DDT\Config\SystemConfig;
-use DDT\Exceptions\Project\ProjectConfigUpgradeFailureException;
 use DDT\Text\Text;
 
 class ConfigTool extends Tool

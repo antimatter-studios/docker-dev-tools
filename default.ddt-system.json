@@ -17,6 +17,16 @@
         "container_name": "ddt-config-gen",
         "network": []
     },
+    "healthcheck": {
+        "ip-address": {
+            "type": "callback",
+            "name": ["\\DDT\\Services\\HealthCheckService::class", "checkIpAddress"]
+        },
+        "dns": {
+            "type": "callback",
+            "name": ["\\DDT\\Services\\HealthCheckService::class", "checkDns"]
+        }
+    },
     "projects": {
         "paths": {},
         "list": {}

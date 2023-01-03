@@ -93,10 +93,9 @@ class Text
 
 		if(count($args) === 0){
 			print($this->write(
-				"\n".
+				"{cyn}\n".
 				"dump(): called with no arguments?\n".
-				"Why are you like this? You don't have to be this way.....\n",
-				"cyan"
+				"Why are you like this? You don't have to be this way.....\n{end}",
 			));
 		}
 

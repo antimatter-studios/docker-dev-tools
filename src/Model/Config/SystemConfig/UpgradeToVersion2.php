@@ -2,10 +2,18 @@
 
 namespace DDT\Model\Config\SystemConfig;
 
+use DDT\CLI\CLI;
 use DDT\Config\SystemConfig;
 use DDT\Exceptions\Project\ProjectConfigUpgradeFailureException;
 
 class UpgradeToVersion2 {
+	private $cli;
+
+	public function __construct(CLI $cli)
+	{
+		$this->cli = $cli;
+	}
+
     public function upgrade(SystemConfig $config, callable $print): bool
 	{
 		$version = $config->getVersion();

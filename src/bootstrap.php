@@ -90,12 +90,12 @@ try{
 	// This just centralises all the defaults in one place, there are other ways to do it
 	// But this just seems to be a nice place since you're also setting up the rest of the di-container
 	// TODO: This is already stored in the default.ddt-system.json file and should be used instead of duplicating this here
-	$container->singleton('defaults.ip_address',			'10.254.254.254');
-	$container->singleton('defaults.proxy.docker_image',	'antimatter-studios/docker-proxy:latest');
+	$container->singleton('defaults.ip_address',			'127.0.0.254');
+	$container->singleton('defaults.proxy.docker_image',	'ghcr.io/antimatter-studios/docker-proxy:latest');
 	$container->singleton('defaults.proxy.container_name',	'ddt-proxy');
-	$container->singleton('defaults.proxy.network',			['ddt-proxy']);
-	$container->singleton('defaults.dns.docker_image',		'christhomas/supervisord-dnsmasq');
-	$container->singleton('defaults.dns.container_name',	'ddt-dnsmasq');
+	$container->singleton('defaults.proxy.network',			['public']);
+	$container->singleton('defaults.dns.docker_image',		'ghcr.io/antimatter-studios/docker-dns:latest');
+	$container->singleton('defaults.dns.container_name',	'ddt-dns');
 	
 	// Set these important values for the system configuration
 	$container->singleton('config.tools.path', realpath(__DIR__ . '/..'));
@@ -126,10 +126,11 @@ try{
 
 	$entrypoint->registerTools("Built-in Tools", __DIR__, "\\DDT\\Tool\\");
 	$entrypoint->registerExtensions();
-	
+
 	// But in the end, handle the request made by the user
 	$entrypoint->handle();
 }catch(\Throwable $e){
+	// NOTE: For development, uncomment this
 	var_dump($e->getMessage());
 	var_dump($e->getTraceAsString());
 	$cli->debug(get_class($e), $e->getTraceAsString());
