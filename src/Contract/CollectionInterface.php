@@ -22,7 +22,7 @@ interface CollectionInterface extends \Countable, \Iterator, \ArrayAccess, \Json
     public function rewind(): void;
     public function valid(): bool;
 
-    public function set($key, $item): static;
+    public function set($key, $item);
     public function get($key);
     public function has($key): bool;
     public function add($item): static;

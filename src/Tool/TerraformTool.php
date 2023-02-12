@@ -364,7 +364,7 @@ class TerraformTool extends Tool
             // # These are just abstracted parameters for where terraform will store files
             // # on your local disk whilst working in a consistent way
             // export -p WORKSPACE_PROFILE="${profile}-${project}"
-            $workspaceProfile = "${awsProfile}-${project}";
+            $workspaceProfile = "$awsProfile-$project";
             // export -p WORKSPACE_DIR=${src_dir}
             $workspaceDir = $src_dir;
             // # Export into the current shell, all the AWS credentials we found before

@@ -61,7 +61,7 @@ class AwsCredsTool extends Tool
 
             return null;
         }else if(!in_array($profile, $list)){
-            $this->cli->stderr("AWS Profile '${profile}' was not found, please choose one from the following list and try again\n");
+            $this->cli->stderr("AWS Profile '$profile' was not found, please choose one from the following list and try again\n");
             $this->cli->stderr("Available Profiles: \n");
             foreach($list as $p){
                 $this->cli->stderr("\t- ".trim($p)."\n");

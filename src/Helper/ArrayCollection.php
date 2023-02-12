@@ -84,7 +84,7 @@ class ArrayCollection implements CollectionInterface
      * @return CollectionInterface
      * @throws ArrayCollectionInvalidKeyException
      */
-    public function set($key, $value): static
+    public function set($key, $value)
     {
         if(empty($key) || !is_scalar($key)){
             throw new ArrayCollectionInvalidKeyException($key);
@@ -300,12 +300,12 @@ class ArrayCollection implements CollectionInterface
 
     public function filter(callable $callback): static
     {
-        return new self(array_filter($this->data, $callback));
+        return new static(array_filter($this->data, $callback));
     }
 
     public function map(callable $callback): static
     {
-        return new self(array_map($callback, $this->data));
+        return new static(array_map($callback, $this->data));
     }
 
     public function reduce(callable $reducer, $acc)
