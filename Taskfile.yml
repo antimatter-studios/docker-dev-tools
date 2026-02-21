@@ -1,0 +1,125 @@
+version: "3"
+
+vars:
+  BINARY: ddt
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "none"
+  DATE:
+    sh: date -u '+%Y-%m-%dT%H:%M:%SZ'
+  LDFLAGS: >-
+    -s -w
+    -X main.version={{.VERSION}}
+    -X main.commit={{.COMMIT}}
+    -X main.date={{.DATE}}
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the binary for the current platform
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}} ./cmd/ddt
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - bin/{{.BINARY}}
+
+  run:
+    desc: Build and run ddt
+    deps: [build]
+    cmds:
+      - ./bin/{{.BINARY}} {{.CLI_ARGS}}
+
+  dev:
+    desc: Run ddt directly via go run (no build step)
+    cmds:
+      - go run -ldflags "{{.LDFLAGS}}" ./cmd/ddt {{.CLI_ARGS}}
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -race -cover ./...
+
+  test:verbose:
+    desc: Run all tests with verbose output
+    cmds:
+      - go test -race -cover -v ./...
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format all Go files
+    cmds:
+      - gofmt -s -w .
+      - goimports -w .
+
+  tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy
+
+  clean:
+    desc: Remove build artefacts
+    cmds:
+      - rm -rf bin/ dist/
+
+  install:
+    desc: Install ddt to $GOPATH/bin
+    cmds:
+      - go install -ldflags "{{.LDFLAGS}}" ./cmd/ddt
+
+  # Cross-compilation targets
+  build:all:
+    desc: Build for all target platforms
+    cmds:
+      - task: build:darwin-amd64
+      - task: build:darwin-arm64
+      - task: build:linux-amd64
+      - task: build:linux-arm64
+
+  build:darwin-amd64:
+    desc: Build for macOS amd64
+    env:
+      GOOS: darwin
+      GOARCH: amd64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-darwin-amd64 ./cmd/ddt
+
+  build:darwin-arm64:
+    desc: Build for macOS arm64 (Apple Silicon)
+    env:
+      GOOS: darwin
+      GOARCH: arm64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-darwin-arm64 ./cmd/ddt
+
+  build:linux-amd64:
+    desc: Build for Linux amd64
+    env:
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-linux-amd64 ./cmd/ddt
+
+  build:linux-arm64:
+    desc: Build for Linux arm64
+    env:
+      GOOS: linux
+      GOARCH: arm64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-linux-arm64 ./cmd/ddt
+
+  release:snapshot:
+    desc: Create a snapshot release (no publish)
+    cmds:
+      - goreleaser release --snapshot --clean

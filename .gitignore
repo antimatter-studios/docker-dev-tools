@@ -1,12 +1,37 @@
-.DS_Store
+# Go build output
+bin/
+dist/
+*.exe
+*.test
+*.out
+coverage.out
+
+# IDE
 .idea/
-.vscode
-.phpunit
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Certificates
 /certs
 !/certs/.gitkeep
-/vendor
+
+# Extensions
 /extensions
 !/extensions/.gitkeep
+
+# Config (user-specific)
 .ddt-config.json
 .ddt-project.json
+
+# PHP legacy
+.phpunit/
+.phpunit.result.cache
+/vendor
+
+# Misc
 ZOLD*
