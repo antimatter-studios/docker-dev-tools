@@ -216,6 +216,12 @@ func Banner(icon, title string) string {
 	return fmt.Sprintf("%s %s", i, t)
 }
 
+// Hyperlink wraps text in an OSC 8 terminal hyperlink so it's clickable
+// in supported terminals (iTerm2, Kitty, Windows Terminal, macOS Terminal, etc.).
+func Hyperlink(url, text string) string {
+	return fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", url, text)
+}
+
 // Sparkline renders a mini horizontal bar from 0.0..1.0 using block chars.
 func Sparkline(ratio float64, width int, fg lipgloss.Color) string {
 	if ratio < 0 {

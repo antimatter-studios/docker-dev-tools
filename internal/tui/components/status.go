@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/christhomas/docker-dev-tools/internal/app"
 	"github.com/christhomas/docker-dev-tools/internal/docker"
+	"github.com/christhomas/docker-dev-tools/internal/service"
 	"github.com/christhomas/docker-dev-tools/internal/tui/styles"
 )
 
@@ -43,6 +44,10 @@ func RenderStatusDashboard(a *app.App) string {
 	dnsDetails := a.DNS.ContainerDetails(ctx)
 	proxyDetails := a.Proxy.ContainerDetails(ctx)
 
+	ipStatus := "inactive"
+	if ipActive {
+		ipStatus = "active"
+	}
 	dnsRows := []kvRow{
 		{"Container", a.DNS.ContainerName()},
 		{"Image", a.DNS.Image()},
@@ -55,8 +60,24 @@ func RenderStatusDashboard(a *app.App) string {
 			dnsRows = append(dnsRows, kvRow{"Built", formatImageDate(dnsDetails.ImageCreated)})
 		}
 		dnsRows = append(dnsRows, kvRow{"ID", shortID(dnsDetails.ID)})
+		dnsRows = append(dnsRows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
+		// Deduplicate port bindings by host IP + host port (DNS binds both TCP and UDP).
+		seen := make(map[string]struct{})
 		for _, pb := range dnsDetails.PortBindings {
+			key := pb.HostIP + ":" + pb.HostPort
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
 			dnsRows = append(dnsRows, kvRow{"Port", pb.String()})
+		}
+	}
+	if dnsDetails == nil {
+		dnsRows = append(dnsRows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
+	}
+	if dnsDetails != nil && len(dnsDetails.Networks) > 0 {
+		for _, net := range dnsDetails.Networks {
+			dnsRows = append(dnsRows, kvRow{"Network", net})
 		}
 	}
 	for _, tld := range a.DNS.ConfiguredTLDs() {
@@ -85,28 +106,37 @@ func RenderStatusDashboard(a *app.App) string {
 			proxyRows = append(proxyRows, kvRow{"Port", pb.String()})
 		}
 	}
-	networks := a.Proxy.Networks()
-	if len(networks) > 0 {
-		proxyRows = append(proxyRows, kvRow{"Networks", strings.Join(networks, ", ")})
-	}
+	// Networks are shown per-service in the Proxied Services table below.
 
 	cards := []cardDef{
 		{icon: "📡", title: "DNS Server", active: dnsRunning, rows: dnsRows},
 		{icon: "🔀", title: "Reverse Proxy", active: proxyRunning, rows: proxyRows},
 	}
 
+	// Gather proxy service entries for the layout pass.
+	var proxyEntries []service.ProxyStatusEntry
+	if proxyRunning {
+		proxyEntries, _ = a.Proxy.Status(ctx)
+	}
+
+	// Layout pass: measure the proxy services box natural width so we can
+	// use the wider of the two rows (cards vs proxy box) for both.
+	proxyNatural := proxyServicesNaturalWidth(proxyEntries)
+
 	var b strings.Builder
 	b.WriteString(styles.Banner("⚙", "System Status"))
 	b.WriteString("\n\n")
 
-	cardsStr, cardsWidth := layoutCards(cards, width)
+	cardsStr, cardsWidth := layoutCards(cards, width, proxyNatural)
 	b.WriteString(cardsStr)
 
-	// Build the details box content, constrained to the same width as the cards.
-	details := renderDetailsBox(ctx, a, cardsWidth, ipActive, proxyRunning)
+	// Build the proxied services box at the unified width.
+	// Subtract 2 because lipgloss Width() excludes border chars but the
+	// measured cardsWidth includes them.
+	details := renderProxyServicesBoxFromEntries(proxyEntries, cardsWidth)
 	if details != "" {
 		b.WriteString("\n\n")
-		detailStyle := styles.CardActive.Width(cardsWidth)
+		detailStyle := styles.CardActive.Width(cardsWidth - 2)
 		b.WriteString(detailStyle.Render(details))
 	}
 
@@ -114,79 +144,72 @@ func RenderStatusDashboard(a *app.App) string {
 	return b.String()
 }
 
-// renderDetailsBox combines IP alias and proxy details into a single panel
-// with a title bar matching the card layout above.
-func renderDetailsBox(ctx context.Context, a *app.App, cardsWidth int, ipActive, proxyRunning bool) string {
+// proxyServicesNaturalWidth computes the natural visual width the proxy
+// services box would need to display without truncation. This renders the
+// table unconstrained and adds card chrome (border + padding).
+func proxyServicesNaturalWidth(entries []service.ProxyStatusEntry) int {
+	if len(entries) == 0 {
+		return 0
+	}
+	const cardChrome = 6 // 2 border + 4 padding
+	rows := make([][]string, 0, len(entries))
+	for _, e := range entries {
+		url := e.Proto + "://" + e.Host
+		rows = append(rows, []string{e.Network, e.Container, url, e.Port, e.Path})
+	}
+	tableStr := RenderTable(
+		[]string{"Network", "Container", "Host", "Port", "Path"},
+		rows,
+	)
+	return lipgloss.Width(tableStr) + cardChrome
+}
+
+// renderProxyServicesBoxFromEntries renders the proxied services panel content
+// at the given total width. The caller wraps this in a CardActive style.
+func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, totalWidth int) string {
+	if len(entries) == 0 {
+		return ""
+	}
+
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.Text)
 	iconStyle := lipgloss.NewStyle().Foreground(styles.Secondary)
-	section := lipgloss.NewStyle().Bold(true).Foreground(styles.Secondary)
 
 	// Inner width = total width minus card chrome (2 border + 4 padding).
-	innerWidth := cardsWidth - 6
+	innerWidth := totalWidth - 6
 	if innerWidth < 10 {
 		innerWidth = 10
 	}
 
-	var b strings.Builder
-
-	// Title line + rule, matching the card style.
-	b.WriteString(fmt.Sprintf("%s %s\n",
-		iconStyle.Render("📋"),
-		titleStyle.Render("Details"),
-	))
-	b.WriteString(styles.HorizontalRule(innerWidth))
-	b.WriteString("\n")
-
-	// IP alias line.
-	b.WriteString(section.Render("IP Alias"))
-	b.WriteString(fmt.Sprintf("  %s  %s",
-		styles.Value.Render(a.IP.Get()),
-		styles.StatusBadge(ipActive),
-	))
-
-	// Proxy details.
-	proxySection := renderProxyDetails(ctx, a, proxyRunning)
-	if proxySection != "" {
-		b.WriteString("\n\n")
-		b.WriteString(proxySection)
-	}
-
-	return b.String()
-}
-
-// renderProxyDetails renders the registered proxy services table.
-func renderProxyDetails(ctx context.Context, a *app.App, running bool) string {
-	if !running {
-		return ""
-	}
-
-	entries, err := a.Proxy.Status(ctx)
-	if err != nil || len(entries) == 0 {
-		return ""
-	}
-
-	section := lipgloss.NewStyle().Bold(true).Foreground(styles.Secondary)
-
 	rows := make([][]string, 0, len(entries))
 	for _, e := range entries {
+		url := e.Proto + "://" + e.Host
 		rows = append(rows, []string{
 			e.Network,
 			e.Container,
-			e.Proto + "://" + e.Host,
+			styles.Hyperlink(url, url),
 			e.Port,
 			e.Path,
 		})
 	}
 
 	var b strings.Builder
-	b.WriteString(section.Render("Proxied Services"))
+
+	// Title line + rule, matching the card style.
+	b.WriteString(fmt.Sprintf("%s %s\n",
+		iconStyle.Render("🔀"),
+		titleStyle.Render("Proxied Services"),
+	))
+	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
 	b.WriteString(RenderTable(
 		[]string{"Network", "Container", "Host", "Port", "Path"},
 		rows,
+		innerWidth,
 	))
+
 	return b.String()
 }
+
 
 type cardDef struct {
 	icon   string
@@ -240,9 +263,10 @@ func cardContentWidth(c cardDef) int {
 // layoutCards arranges cards responsively based on available width.
 // Each card is sized to its content. Cards wrap to the next row when they
 // would exceed the terminal width. All cards in the same row share the
-// height of the tallest card. Returns the rendered string and the width
-// of the widest row (for aligning subsequent elements).
-func layoutCards(cards []cardDef, totalWidth int) (string, int) {
+// height of the tallest card. If minRowWidth > 0, each row is expanded to
+// at least that width by growing the last card. Returns the rendered string
+// and the width of the widest row (for aligning subsequent elements).
+func layoutCards(cards []cardDef, totalWidth int, minRowWidth int) (string, int) {
 	n := len(cards)
 	if n == 0 {
 		return "", 0
@@ -252,6 +276,11 @@ func layoutCards(cards []cardDef, totalWidth int) (string, int) {
 	widths := make([]int, n)
 	for i, c := range cards {
 		widths[i] = cardContentWidth(c)
+	}
+
+	// Cap minimum at terminal width.
+	if minRowWidth > totalWidth {
+		minRowWidth = totalWidth
 	}
 
 	// Greedily pack cards into rows that fit within totalWidth.
@@ -271,8 +300,10 @@ func layoutCards(cards []cardDef, totalWidth int) (string, int) {
 			end++
 		}
 
-		if rowWidth > maxRowWidth {
-			maxRowWidth = rowWidth
+		// Expand last card in the row if the row is narrower than the minimum.
+		if minRowWidth > 0 && rowWidth < minRowWidth {
+			extra := minRowWidth - rowWidth
+			widths[end-1] += extra
 		}
 
 		// Render card bodies (without border/padding) and measure heights.
@@ -309,6 +340,11 @@ func layoutCards(cards []cardDef, totalWidth int) (string, int) {
 		gap := strings.Repeat(" ", cardGap)
 		row := lipgloss.JoinHorizontal(lipgloss.Top, interleave(rendered, gap)...)
 		rowStrings = append(rowStrings, row)
+
+		// Measure actual rendered width (accounts for borders lipgloss adds).
+		if w := lipgloss.Width(row); w > maxRowWidth {
+			maxRowWidth = w
+		}
 
 		i = end
 	}

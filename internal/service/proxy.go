@@ -19,10 +19,12 @@ import (
 )
 
 const (
-	configGenVolume = "ddt_config_gen"
-	proxyCertsVol   = "ddt_proxy_certs"
-	proxyVhostVol   = "ddt_proxy_vhost"
-	proxyHTMLVol    = "ddt_proxy_html"
+	configGenVolume    = "ddt_config_gen"
+	proxyCertsVol      = "ddt_proxy_certs"
+	proxyVhostVol      = "ddt_proxy_vhost"
+	proxyHTMLVol       = "ddt_proxy_html"
+	managementVol      = "ddt_proxy_management"
+	managementSockPath = "/var/run/proxy/management.sock"
 )
 
 // ProxyService manages the reverse proxy and config-gen containers.
@@ -218,11 +220,18 @@ func (s *ProxyService) RemoveNetwork(ctx context.Context, name string) error {
 	return s.config.Save()
 }
 
-// Status scans all monitored networks and returns the list of proxied services.
+// Status discovers proxied services from the proxy container's actual Docker networks.
+// Falls back to configured networks if the proxy isn't running.
 func (s *ProxyService) Status(ctx context.Context) ([]ProxyStatusEntry, error) {
 	var entries []ProxyStatusEntry
 
+	// Use proxy container's actual networks (set dynamically by config-gen).
+	// Fall back to configured networks if the proxy isn't running.
 	networks := s.config.Proxy.Network
+	if info, err := s.docker.InspectContainer(ctx, s.config.Proxy.ContainerName); err == nil {
+		networks = info.Networks
+	}
+
 	for _, netName := range networks {
 		containers, err := s.docker.ListContainersOnNetwork(ctx, netName)
 		if err != nil {
@@ -240,34 +249,31 @@ func (s *ProxyService) Status(ctx context.Context) ([]ProxyStatusEntry, error) {
 				continue
 			}
 
-			// Read VIRTUAL_HOST / VIRTUAL_PORT / VIRTUAL_PROTO / VIRTUAL_PATH from env.
-			host := info.Env["VIRTUAL_HOST"]
-			if host == "" {
-				continue
-			}
-			port := info.Env["VIRTUAL_PORT"]
-			if port == "" {
-				port = "80"
-			}
-			proto := info.Env["VIRTUAL_PROTO"]
-			if proto == "" {
-				proto = "http"
-			}
-			path := info.Env["VIRTUAL_PATH"]
-			if path == "" {
-				path = "/"
+			// Check VIRTUAL_HOST env var.
+			if host := info.Env["VIRTUAL_HOST"]; host != "" {
+				port := info.Env["VIRTUAL_PORT"]
+				if port == "" {
+					port = "80"
+				}
+				proto := info.Env["VIRTUAL_PROTO"]
+				if proto == "" {
+					proto = "http"
+				}
+				path := info.Env["VIRTUAL_PATH"]
+				if path == "" {
+					path = "/"
+				}
+				entries = append(entries, ProxyStatusEntry{
+					Network:   netName,
+					Container: cName,
+					Host:      host,
+					Port:      port,
+					Proto:     proto,
+					Path:      path,
+				})
 			}
 
-			entries = append(entries, ProxyStatusEntry{
-				Network:   netName,
-				Container: cName,
-				Host:      host,
-				Port:      port,
-				Proto:     proto,
-				Path:      path,
-			})
-
-			// Also check labels for docker-proxy.* config groups.
+			// Check docker-proxy.* labels (independent of VIRTUAL_HOST).
 			groups := make(map[string]map[string]string)
 			for key, val := range info.Labels {
 				if len(key) > 13 && key[:13] == "docker-proxy." {
@@ -434,13 +440,17 @@ func (s *ProxyService) startConfigGen(ctx context.Context) (string, error) {
 	return s.docker.RunContainer(ctx, s.config.ConfigGen.ContainerName,
 		&container.Config{
 			Image: s.config.ConfigGen.DockerImage,
-			Env:   []string{"CONFIG_PATH=/config"},
+			Env: []string{
+				"MANAGEMENT_SOCKET=" + managementSockPath,
+				"RENDERER=nginx",
+				"PROXY_CONTAINER=" + s.config.Proxy.ContainerName,
+			},
 		},
 		&container.HostConfig{
 			RestartPolicy: container.RestartPolicy{Name: "always"},
 			Mounts: []mount.Mount{
 				{Type: mount.TypeBind, Source: "/var/run/docker.sock", Target: "/var/run/docker.sock", ReadOnly: true},
-				{Type: mount.TypeVolume, Source: configGenVolume, Target: "/config"},
+				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
 			},
 		},
 		nil,
@@ -451,15 +461,9 @@ func (s *ProxyService) startProxy(ctx context.Context) (string, error) {
 	return s.docker.RunContainer(ctx, s.config.Proxy.ContainerName,
 		&container.Config{
 			Image: s.config.Proxy.DockerImage,
-			Env:   []string{"NGINX_CONF=/config/docker-proxy/nginx.conf"},
 			ExposedPorts: nat.PortSet{
 				"80/tcp":  struct{}{},
 				"443/tcp": struct{}{},
-			},
-			Labels: map[string]string{
-				"docker-config-gen.input":  "/docker-proxy/nginx.tmpl",
-				"docker-config-gen.output": "/docker-proxy/nginx.conf",
-				"docker-config-gen.exec":   "/app/reload.sh",
 			},
 		},
 		&container.HostConfig{
@@ -469,10 +473,10 @@ func (s *ProxyService) startProxy(ctx context.Context) (string, error) {
 				"443/tcp": []nat.PortBinding{{HostPort: "443"}},
 			},
 			Mounts: []mount.Mount{
+				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
 				{Type: mount.TypeVolume, Source: proxyCertsVol, Target: "/etc/nginx/certs"},
 				{Type: mount.TypeVolume, Source: proxyVhostVol, Target: "/etc/nginx/vhost.d"},
 				{Type: mount.TypeVolume, Source: proxyHTMLVol, Target: "/usr/share/nginx/html"},
-				{Type: mount.TypeVolume, Source: configGenVolume, Target: "/config"},
 			},
 		},
 		&network.NetworkingConfig{},

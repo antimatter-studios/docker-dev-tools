@@ -215,8 +215,8 @@ func dnsStart(ctx context.Context, a *app.App, pull bool) error {
 		steps.Done()
 		return err
 	}
-	if id := a.Docker.ImageID(ctx, a.DNS.Image()); id != "" {
-		steps.Info(fmt.Sprintf("%s (%s)", a.DNS.Image(), id))
+	if meta := a.Docker.ImageInfo(ctx, a.DNS.Image()); meta != nil {
+		steps.Info(meta.Summary(a.DNS.Image()))
 	}
 
 	steps.Run("Clean up existing container", func() error {

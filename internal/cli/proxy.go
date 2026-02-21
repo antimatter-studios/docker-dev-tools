@@ -219,8 +219,8 @@ func proxyStart(ctx context.Context, a *app.App, pull bool) error {
 		steps.Done()
 		return err
 	}
-	if id := a.Docker.ImageID(ctx, a.Proxy.ConfigGenImage()); id != "" {
-		steps.Info(fmt.Sprintf("%s (%s)", a.Proxy.ConfigGenImage(), id))
+	if meta := a.Docker.ImageInfo(ctx, a.Proxy.ConfigGenImage()); meta != nil {
+		steps.Info(meta.Summary(a.Proxy.ConfigGenImage()))
 	}
 
 	if err := steps.Run("Ensure proxy image available", func() error {
@@ -229,8 +229,8 @@ func proxyStart(ctx context.Context, a *app.App, pull bool) error {
 		steps.Done()
 		return err
 	}
-	if id := a.Docker.ImageID(ctx, a.Proxy.Image()); id != "" {
-		steps.Info(fmt.Sprintf("%s (%s)", a.Proxy.Image(), id))
+	if meta := a.Docker.ImageInfo(ctx, a.Proxy.Image()); meta != nil {
+		steps.Info(meta.Summary(a.Proxy.Image()))
 	}
 
 	steps.Run("Clean up existing containers", func() error {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -84,6 +85,41 @@ func (c *Client) ImageID(ctx context.Context, ref string) string {
 		return id[:12]
 	}
 	return id
+}
+
+// ImageMeta holds short image ID and creation timestamp.
+type ImageMeta struct {
+	ID      string // short hex hash (12 chars)
+	Created string // RFC 3339 timestamp
+}
+
+// ImageInfo returns the short ID and creation date for a local image.
+// Returns nil if the image is not found.
+func (c *Client) ImageInfo(ctx context.Context, ref string) *ImageMeta {
+	api, err := c.connect()
+	if err != nil {
+		return nil
+	}
+	inspect, _, err := api.ImageInspectWithRaw(ctx, ref)
+	if err != nil {
+		return nil
+	}
+	id := strings.TrimPrefix(inspect.ID, "sha256:")
+	if len(id) > 12 {
+		id = id[:12]
+	}
+	return &ImageMeta{ID: id, Created: inspect.Created}
+}
+
+// String returns "image-ref (sha, built date)" suitable for display.
+func (m *ImageMeta) Summary(ref string) string {
+	date := m.Created
+	if t, err := time.Parse(time.RFC3339Nano, m.Created); err == nil {
+		date = t.Local().Format("2006-01-02 15:04")
+	} else if t, err := time.Parse(time.RFC3339, m.Created); err == nil {
+		date = t.Local().Format("2006-01-02 15:04")
+	}
+	return fmt.Sprintf("%s (%s, built %s)", ref, m.ID, date)
 }
 
 // PullImage pulls a Docker image.
@@ -362,6 +398,7 @@ type ContainerInfo struct {
 	Labels       map[string]string
 	Ports        []string
 	PortBindings []PortBinding
+	Networks     []string
 }
 
 // InspectContainer returns metadata about a container.
@@ -401,6 +438,13 @@ func (c *Client) InspectContainer(ctx context.Context, nameOrID string) (*Contai
 		}
 	}
 
+	var networks []string
+	if info.NetworkSettings != nil {
+		for netName := range info.NetworkSettings.Networks {
+			networks = append(networks, netName)
+		}
+	}
+
 	// Fetch image metadata for ID and build date.
 	var imageID, imageCreated string
 	imgInspect, _, err := api.ImageInspectWithRaw(ctx, info.Image)
@@ -420,6 +464,7 @@ func (c *Client) InspectContainer(ctx context.Context, nameOrID string) (*Contai
 		Labels:       info.Config.Labels,
 		Ports:        ports,
 		PortBindings: bindings,
+		Networks:     networks,
 	}, nil
 }
 

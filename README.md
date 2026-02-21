@@ -32,10 +32,10 @@ ddt ip ping         # Test connectivity
 ### Local DNS Server
 Run a dnsmasq-based DNS server with wildcard domain support:
 ```bash
-ddt dns add-domain mycompany.develop    # *.mycompany.develop resolves
+ddt dns add-tld develop                 # *.develop resolves
 ddt dns start
 ddt dns status
-is ddt dns logs -f
+ddt dns logs -f
 ```
 
 ### Reverse Proxy
@@ -45,6 +45,13 @@ ddt proxy add-network backbone
 ddt proxy start
 ddt proxy status
 ```
+
+The reverse proxy is composed of two containers managed by DDT:
+
+- **Proxy** (`docker-proxy`) runs NGINX and attaches to the configured Docker networks.
+- **Configuration generator** (`docker-config-gen`) watches Docker events via the Docker socket and communicates with the proxy over a Unix socket on a shared volume.
+
+The config generator does not need to join your project networks to observe containers; it uses the Docker API via the socket.
 
 Containers expose themselves via environment variables in docker-compose:
 ```yaml
@@ -101,7 +108,7 @@ ddt config reset        # Reset to defaults
 ## Development
 
 ### Prerequisites
-- [Go 1.23+](https://go.dev/dl/)
+- [Go 1.25+](https://go.dev/dl/)
 - [Task](https://taskfile.dev/) (build system)
 - [Docker](https://docs.docker.com/get-docker/)
 
