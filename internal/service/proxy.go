@@ -55,6 +55,14 @@ type ProxyStatusEntry struct {
 	Proto     string
 }
 
+// SidecarStatusEntry represents a sidecar container publishing TCP/UDP ports.
+type SidecarStatusEntry struct {
+	Container string
+	Port      string
+	Proto     string
+	Status    string
+}
+
 type ProxyStartReport struct {
 	ConfigGenStarted bool
 	ProxyStarted     bool
@@ -315,6 +323,36 @@ func (s *ProxyService) Status(ctx context.Context) ([]ProxyStatusEntry, error) {
 				})
 			}
 		}
+	}
+
+	return entries, nil
+}
+
+// SidecarStatus discovers sidecar containers managed by docker-config-gen.
+func (s *ProxyService) SidecarStatus(ctx context.Context) ([]SidecarStatusEntry, error) {
+	containers, err := s.docker.ListRunningContainers(ctx, "docker-proxy.sidecar=true")
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []SidecarStatusEntry
+	for _, c := range containers {
+		port := c.Labels["docker-proxy.sidecar.port"]
+		proto := c.Labels["docker-proxy.sidecar.proto"]
+		name := c.Names[0]
+		if len(name) > 0 && name[0] == '/' {
+			name = name[1:]
+		}
+		status := "running"
+		if c.State != "running" {
+			status = c.State
+		}
+		entries = append(entries, SidecarStatusEntry{
+			Container: name,
+			Port:      port,
+			Proto:     proto,
+			Status:    status,
+		})
 	}
 
 	return entries, nil

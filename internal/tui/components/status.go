@@ -124,14 +124,21 @@ func RenderStatusDashboard(a *app.App, width int) string {
 
 	// Gather proxy service entries for the layout pass.
 	var proxyEntries []service.ProxyStatusEntry
+	var sidecarEntries []service.SidecarStatusEntry
 	if proxyRunning {
 		proxyEntries, _ = a.Proxy.Status(ctx)
 		sortProxyEntries(proxyEntries)
+		sidecarEntries, _ = a.Proxy.SidecarStatus(ctx)
+		sortSidecarEntries(sidecarEntries)
 	}
 
-	// Layout pass: measure the proxy services box natural width so we can
-	// use the wider of the two rows (cards vs proxy box) for both.
+	// Layout pass: measure the proxy services box and sidecar box natural widths
+	// so we can use the wider of the three (cards vs proxy box vs sidecar box) for all.
 	proxyNatural := proxyServicesNaturalWidth(proxyEntries)
+	sidecarNatural := sidecarServicesNaturalWidth(sidecarEntries)
+	if sidecarNatural > proxyNatural {
+		proxyNatural = sidecarNatural
+	}
 
 	var b strings.Builder
 	b.WriteString(styles.Banner("⚙", "System Status"))
@@ -148,6 +155,14 @@ func RenderStatusDashboard(a *app.App, width int) string {
 		b.WriteString("\n\n")
 		detailStyle := styles.CardActive.Width(cardsWidth - 2)
 		b.WriteString(detailStyle.Render(details))
+	}
+
+	// Build the sidecar services box at the unified width.
+	sidecarDetails := renderSidecarServicesBoxFromEntries(sidecarEntries, cardsWidth)
+	if sidecarDetails != "" {
+		b.WriteString("\n\n")
+		detailStyle := styles.CardActive.Width(cardsWidth - 2)
+		b.WriteString(detailStyle.Render(sidecarDetails))
 	}
 
 	b.WriteString("\n")
@@ -169,6 +184,15 @@ func sortProxyEntries(entries []service.ProxyStatusEntry) {
 	})
 }
 
+func sortSidecarEntries(entries []service.SidecarStatusEntry) {
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Proto != entries[j].Proto {
+			return entries[i].Proto < entries[j].Proto
+		}
+		return entries[i].Port < entries[j].Port
+	})
+}
+
 func proxyServicesNaturalWidth(entries []service.ProxyStatusEntry) int {
 	if len(entries) == 0 {
 		return 0
@@ -181,6 +205,22 @@ func proxyServicesNaturalWidth(entries []service.ProxyStatusEntry) int {
 	}
 	tableStr := RenderTable(
 		[]string{"Container", "Network", "Host", "Port", "Path"},
+		rows,
+	)
+	return lipgloss.Width(tableStr) + cardChrome
+}
+
+func sidecarServicesNaturalWidth(entries []service.SidecarStatusEntry) int {
+	if len(entries) == 0 {
+		return 0
+	}
+	const cardChrome = 6 // 2 border + 4 padding
+	rows := make([][]string, 0, len(entries))
+	for _, e := range entries {
+		rows = append(rows, []string{e.Container, e.Proto, e.Port, e.Status})
+	}
+	tableStr := RenderTable(
+		[]string{"Container", "Protocol", "Port", "Status"},
 		rows,
 	)
 	return lipgloss.Width(tableStr) + cardChrome
@@ -225,6 +265,50 @@ func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, total
 	b.WriteString("\n")
 	b.WriteString(RenderTable(
 		[]string{"Container", "Network", "Host", "Port", "Path"},
+		rows,
+		innerWidth,
+	))
+
+	return b.String()
+}
+
+// renderSidecarServicesBoxFromEntries renders the sidecar services panel content
+// at the given total width. The caller wraps this in a CardActive style.
+func renderSidecarServicesBoxFromEntries(entries []service.SidecarStatusEntry, totalWidth int) string {
+	if len(entries) == 0 {
+		return ""
+	}
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.Text)
+	iconStyle := lipgloss.NewStyle().Foreground(styles.Secondary)
+
+	// Inner width = total width minus card chrome (2 border + 4 padding).
+	innerWidth := totalWidth - 6
+	if innerWidth < 10 {
+		innerWidth = 10
+	}
+
+	rows := make([][]string, 0, len(entries))
+	for _, e := range entries {
+		rows = append(rows, []string{
+			e.Container,
+			e.Proto,
+			e.Port,
+			e.Status,
+		})
+	}
+
+	var b strings.Builder
+
+	// Title line + rule, matching the card style.
+	b.WriteString(fmt.Sprintf("%s %s\n",
+		iconStyle.Render("🔌"),
+		titleStyle.Render(fmt.Sprintf("TCP/UDP Sidecars (%d)", len(entries))),
+	))
+	b.WriteString(styles.HorizontalRule(innerWidth))
+	b.WriteString("\n")
+	b.WriteString(RenderTable(
+		[]string{"Container", "Protocol", "Port", "Status"},
 		rows,
 		innerWidth,
 	))
