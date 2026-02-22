@@ -15,9 +15,10 @@ import (
 type containerTab int
 
 const (
-	tabDNS containerTab = iota
-	tabProxy
+	tabProxy containerTab = iota
 	tabConfigGen
+	tabDNS
+	tabStatus
 	numTabs
 )
 

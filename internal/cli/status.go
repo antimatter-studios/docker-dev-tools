@@ -14,7 +14,7 @@ func newStatusCmd(a *app.App) *cobra.Command {
 		Short: "Show system status dashboard",
 		Long:  "Display the status of all ddt services: IP alias, DNS server, reverse proxy, registered domains, and proxied services.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println(components.RenderStatusDashboard(a))
+			fmt.Println(components.RenderStatusDashboard(a, 0))
 			return nil
 		},
 	}

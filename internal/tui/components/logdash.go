@@ -24,8 +24,9 @@ var (
 	logDimText    = lipgloss.Color("#6E78A0") // Muted periwinkle for search non-matches
 	tabDNSColor   = lipgloss.Color("#5BC0EB") // Bright sky blue
 	tabProxyColor = lipgloss.Color("#9B5DE5") // Electric purple
-	tabCGColor    = lipgloss.Color("#00F5D4") // Vivid mint/teal
-	tabInactive   = lipgloss.Color("#7A82AB") // Soft lavender grey
+	tabCGColor     = lipgloss.Color("#00F5D4") // Vivid mint/teal
+	tabStatusColor = lipgloss.Color("#FFB347") // Warm amber
+	tabInactive    = lipgloss.Color("#7A82AB") // Soft lavender grey
 	sepColor      = lipgloss.Color("#4A5899") // Deep indigo for separator
 	markColor     = lipgloss.Color("#FE6D73") // Bright coral pink
 	searchHlBg    = lipgloss.Color("#FFD166") // Sunny golden yellow
@@ -69,6 +70,9 @@ type LogDashModel struct {
 	cancel       context.CancelFunc
 	streams      [numTabs]<-chan []string
 	streamErrors [numTabs]error
+
+	// Status tab content (rendered status dashboard).
+	statusContent string
 }
 
 // NewLogDashModel creates a new logs dashboard model.
@@ -84,11 +88,12 @@ func NewLogDashModel(a *app.App) LogDashModel {
 		app:    a,
 		ctx:    ctx,
 		cancel: cancel,
-		tabNames: [numTabs]string{"DNS", "Proxy", "ConfigGen"},
+		tabNames: [numTabs]string{"Proxy", "ConfigGen", "DNS", "Status"},
 		containers: [numTabs]string{
-			a.Config.DNS.ContainerName,
 			a.Config.Proxy.ContainerName,
 			a.Config.ConfigGen.ContainerName,
+			a.Config.DNS.ContainerName,
+			"", // Status tab doesn't stream logs
 		},
 		searchInput: ti,
 	}
@@ -101,6 +106,15 @@ func NewLogDashModel(a *app.App) LogDashModel {
 	return m
 }
 
+// statusUpdateMsg delivers a freshly rendered status dashboard.
+type statusUpdateMsg struct{ content string }
+
+func pollStatus(a *app.App, width int) tea.Cmd {
+	return tea.Tick(time.Second, func(time.Time) tea.Msg {
+		return statusUpdateMsg{content: RenderStatusDashboard(a, width)}
+	})
+}
+
 func (m LogDashModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	for i := containerTab(0); i < numTabs; i++ {
@@ -108,6 +122,7 @@ func (m LogDashModel) Init() tea.Cmd {
 			cmds = append(cmds, waitForLogLines(m.streams[i], i))
 		}
 	}
+	cmds = append(cmds, pollStatus(m.app, m.width))
 	return tea.Batch(cmds...)
 }
 
@@ -151,6 +166,13 @@ func (m LogDashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case logStreamErrMsg:
 		m.streamErrors[msg.tab] = msg.err
+
+	case statusUpdateMsg:
+		m.statusContent = msg.content
+		if m.activeTab == tabStatus {
+			m.refreshViewport()
+		}
+		cmds = append(cmds, pollStatus(m.app, m.width))
 
 	case tea.MouseMsg:
 		wasAtBottom := m.viewport.AtBottom()
@@ -198,11 +220,13 @@ func (m LogDashModel) handleNormalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.cancel()
 		return m, tea.Quit
 	case "1":
-		m.switchTab(tabDNS)
-	case "2":
 		m.switchTab(tabProxy)
-	case "3":
+	case "2":
 		m.switchTab(tabConfigGen)
+	case "3":
+		m.switchTab(tabDNS)
+	case "4":
+		m.switchTab(tabStatus)
 	case "tab":
 		m.switchTab((m.activeTab + 1) % numTabs)
 	case "shift+tab":
@@ -265,6 +289,13 @@ func (m *LogDashModel) refreshViewport() {
 }
 
 func (m LogDashModel) renderViewportContent() string {
+	if m.activeTab == tabStatus {
+		if m.statusContent == "" {
+			return lipgloss.NewStyle().Foreground(waitingColor).Render("  Loading status...")
+		}
+		return m.statusContent
+	}
+
 	lines := m.buffers[m.activeTab].Lines()
 	if len(lines) == 0 {
 		if m.streamErrors[m.activeTab] != nil {
@@ -335,7 +366,7 @@ func (m LogDashModel) renderViewportContent() string {
 
 func (m LogDashModel) renderTabBar() string {
 	// Each tab gets its own signature colour.
-	tabColors := [numTabs]lipgloss.Color{tabDNSColor, tabProxyColor, tabCGColor}
+	tabColors := [numTabs]lipgloss.Color{tabProxyColor, tabCGColor, tabDNSColor, tabStatusColor}
 
 	var tabs []string
 	for i := containerTab(0); i < numTabs; i++ {
@@ -387,7 +418,7 @@ func (m LogDashModel) renderStatusBar() string {
 	}
 
 	help := lipgloss.NewStyle().Foreground(helpColor).
-		Render("m:mark  /:search  1/2/3:tabs  q:quit")
+		Render("m:mark  /:search  1/2/3/4:tabs  q:quit")
 
 	gap := m.width - lipgloss.Width(left) - lipgloss.Width(help)
 	if gap < 1 {
@@ -403,6 +434,9 @@ func RunLogsDashboard(a *app.App) error {
 
 	// Start log streams for all containers before launching the TUI.
 	for i := containerTab(0); i < numTabs; i++ {
+		if i == tabStatus || m.containers[i] == "" {
+			continue
+		}
 		ch, err := startLogStream(a.Docker, m.containers[i], m.ctx)
 		if err != nil {
 			m.streamErrors[i] = err

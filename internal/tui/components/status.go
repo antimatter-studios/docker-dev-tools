@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,9 +33,11 @@ func termWidth() int {
 
 // RenderStatusDashboard renders the full system status including service cards,
 // DNS details (TLDs, domains, upstreams), and proxy details (registered services).
-func RenderStatusDashboard(a *app.App) string {
+func RenderStatusDashboard(a *app.App, width int) string {
 	ctx := context.Background()
-	width := termWidth()
+	if width <= 0 {
+		width = termWidth()
+	}
 
 	ipActive, _ := a.IP.IsActive()
 	dnsRunning, _ := a.DNS.IsRunning(ctx)
@@ -61,7 +64,10 @@ func RenderStatusDashboard(a *app.App) string {
 		}
 		dnsRows = append(dnsRows, kvRow{"ID", shortID(dnsDetails.ID)})
 		dnsRows = append(dnsRows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
-		// Deduplicate port bindings by host IP + host port (DNS binds both TCP and UDP).
+		// Sort and deduplicate port bindings by host IP + host port (DNS binds both TCP and UDP).
+		sort.Slice(dnsDetails.PortBindings, func(i, j int) bool {
+			return dnsDetails.PortBindings[i].String() < dnsDetails.PortBindings[j].String()
+		})
 		seen := make(map[string]struct{})
 		for _, pb := range dnsDetails.PortBindings {
 			key := pb.HostIP + ":" + pb.HostPort
@@ -102,6 +108,9 @@ func RenderStatusDashboard(a *app.App) string {
 			proxyRows = append(proxyRows, kvRow{"Built", formatImageDate(proxyDetails.ImageCreated)})
 		}
 		proxyRows = append(proxyRows, kvRow{"ID", shortID(proxyDetails.ID)})
+		sort.Slice(proxyDetails.PortBindings, func(i, j int) bool {
+			return proxyDetails.PortBindings[i].String() < proxyDetails.PortBindings[j].String()
+		})
 		for _, pb := range proxyDetails.PortBindings {
 			proxyRows = append(proxyRows, kvRow{"Port", pb.String()})
 		}
@@ -117,6 +126,7 @@ func RenderStatusDashboard(a *app.App) string {
 	var proxyEntries []service.ProxyStatusEntry
 	if proxyRunning {
 		proxyEntries, _ = a.Proxy.Status(ctx)
+		sortProxyEntries(proxyEntries)
 	}
 
 	// Layout pass: measure the proxy services box natural width so we can
@@ -147,6 +157,18 @@ func RenderStatusDashboard(a *app.App) string {
 // proxyServicesNaturalWidth computes the natural visual width the proxy
 // services box would need to display without truncation. This renders the
 // table unconstrained and adds card chrome (border + padding).
+func sortProxyEntries(entries []service.ProxyStatusEntry) {
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Container != entries[j].Container {
+			return entries[i].Container < entries[j].Container
+		}
+		if entries[i].Network != entries[j].Network {
+			return entries[i].Network < entries[j].Network
+		}
+		return entries[i].Host < entries[j].Host
+	})
+}
+
 func proxyServicesNaturalWidth(entries []service.ProxyStatusEntry) int {
 	if len(entries) == 0 {
 		return 0
@@ -155,10 +177,10 @@ func proxyServicesNaturalWidth(entries []service.ProxyStatusEntry) int {
 	rows := make([][]string, 0, len(entries))
 	for _, e := range entries {
 		url := e.Proto + "://" + e.Host
-		rows = append(rows, []string{e.Network, e.Container, url, e.Port, e.Path})
+		rows = append(rows, []string{e.Container, e.Network, url, e.Port, e.Path})
 	}
 	tableStr := RenderTable(
-		[]string{"Network", "Container", "Host", "Port", "Path"},
+		[]string{"Container", "Network", "Host", "Port", "Path"},
 		rows,
 	)
 	return lipgloss.Width(tableStr) + cardChrome
@@ -184,8 +206,8 @@ func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, total
 	for _, e := range entries {
 		url := e.Proto + "://" + e.Host
 		rows = append(rows, []string{
-			e.Network,
 			e.Container,
+			e.Network,
 			styles.Hyperlink(url, url),
 			e.Port,
 			e.Path,
@@ -197,12 +219,12 @@ func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, total
 	// Title line + rule, matching the card style.
 	b.WriteString(fmt.Sprintf("%s %s\n",
 		iconStyle.Render("🔀"),
-		titleStyle.Render("Proxied Services"),
+		titleStyle.Render(fmt.Sprintf("Proxied Services (%d)", len(entries))),
 	))
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
 	b.WriteString(RenderTable(
-		[]string{"Network", "Container", "Host", "Port", "Path"},
+		[]string{"Container", "Network", "Host", "Port", "Path"},
 		rows,
 		innerWidth,
 	))
