@@ -6,15 +6,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newLogsCmd(a *app.App) *cobra.Command {
+func newMonitorCmd(a *app.App) *cobra.Command {
 	return &cobra.Command{
-		Use:   "logs",
-		Short: "Interactive logs dashboard for all DDT containers",
+		Use:   "monitor",
+		Short: "Interactive monitoring dashboard for all DDT services",
 		Long: `Open a full-screen TUI showing real-time logs from DNS, Proxy,
-and ConfigGen containers with tab navigation, search highlighting,
-and mark insertion.`,
+and ConfigGen containers, plus a live status panel with tab navigation,
+search highlighting, and mark insertion.`,
+		Aliases: []string{"mon"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return components.RunLogsDashboard(a)
+			return components.RunMonitorDashboard(a)
 		},
 	}
 }

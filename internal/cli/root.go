@@ -33,7 +33,7 @@ and script execution with dependency resolution.`,
 		newSetupCmd(application),
 		newStatusCmd(application),
 		newVersionCmd(application),
-		newLogsCmd(application),
+		newMonitorCmd(application),
 	)
 
 	return root

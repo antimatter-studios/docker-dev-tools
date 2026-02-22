@@ -428,8 +428,8 @@ func (m LogDashModel) renderStatusBar() string {
 	return left + strings.Repeat(" ", gap) + help
 }
 
-// RunLogsDashboard launches the interactive logs dashboard TUI.
-func RunLogsDashboard(a *app.App) error {
+// RunMonitorDashboard launches the interactive monitoring dashboard TUI.
+func RunMonitorDashboard(a *app.App) error {
 	m := NewLogDashModel(a)
 
 	// Start log streams for all containers before launching the TUI.
