@@ -24,6 +24,8 @@ and script execution with dependency resolution.`,
 
 	// Register subcommands.
 	root.AddCommand(
+		newStartCmd(application),
+		newStopCmd(application),
 		newIPCmd(application),
 		newDNSCmd(application),
 		newProxyCmd(application),
