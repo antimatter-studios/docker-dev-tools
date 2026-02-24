@@ -3,7 +3,7 @@ set -e
 
 REPO="antimatter-studios/docker-dev-tools"
 BINARY="ddt"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${HOME}/.local/bin"
 
 # Detect OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -44,14 +44,18 @@ trap 'rm -rf "$TMPDIR"' EXIT
 curl -fsSL "$URL" -o "${TMPDIR}/${ARCHIVE}"
 tar -xzf "${TMPDIR}/${ARCHIVE}" -C "$TMPDIR"
 
-# Install binary
-if [ -w "$INSTALL_DIR" ]; then
-    mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
-else
-    echo "Installing to ${INSTALL_DIR} (requires sudo)..."
-    sudo mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
-fi
+# Ensure install directory exists
+mkdir -p "$INSTALL_DIR"
 
+# Install binary
+mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
 chmod +x "${INSTALL_DIR}/${BINARY}"
 
 echo "${BINARY} ${VERSION} installed to ${INSTALL_DIR}/${BINARY}"
+
+# Check if install dir is on PATH
+case ":$PATH:" in
+    *":${INSTALL_DIR}:"*) ;;
+    *) echo "WARNING: ${INSTALL_DIR} is not in your PATH. Add it with:"
+       echo "  export PATH=\"${INSTALL_DIR}:\$PATH\"" ;;
+esac
