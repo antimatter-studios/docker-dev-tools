@@ -24,21 +24,23 @@ builds:
       - -X main.date={{.Date}}
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: "checksums.txt"
 
-brews:
-  - repository:
+homebrew_casks:
+  - name: ddt
+    binaries:
+      - ddt
+    repository:
       owner: antimatter-studios
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/antimatter-studios/docker-dev-tools
     description: "Docker development tools CLI"
-    install: |
-      bin.install "ddt"
 
 changelog:
   sort: asc
