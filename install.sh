@@ -51,6 +51,11 @@ mkdir -p "$INSTALL_DIR"
 mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
 chmod +x "${INSTALL_DIR}/${BINARY}"
 
+# Remove macOS quarantine attribute
+if [ "$OS" = "darwin" ]; then
+    xattr -dr com.apple.quarantine "${INSTALL_DIR}/${BINARY}" 2>/dev/null || true
+fi
+
 echo "${BINARY} ${VERSION} installed to ${INSTALL_DIR}/${BINARY}"
 
 # Check if install dir is on PATH

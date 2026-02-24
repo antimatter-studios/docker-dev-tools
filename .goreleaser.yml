@@ -41,6 +41,9 @@ homebrew_casks:
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/antimatter-studios/docker-dev-tools
     description: "Docker development tools CLI"
+    hooks:
+      post:
+        install: xattr -dr com.apple.quarantine "#{staged_path}/ddt"
 
 changelog:
   sort: asc
