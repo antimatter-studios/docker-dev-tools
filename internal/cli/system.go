@@ -31,6 +31,44 @@ func newStartCmd(a *app.App) *cobra.Command {
 	return cmd
 }
 
+func newRestartCmd(a *app.App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart DNS and proxy services",
+		Long:  "Stop then start both the local DNS server and the reverse proxy.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			pull, _ := cmd.Flags().GetBool("pull")
+			ctx := context.Background()
+
+			// Stop proxy first, then DNS.
+			steps := components.NewSteps("🔀", "Stopping Reverse Proxy")
+			steps.Run("Stop proxy container", func() error {
+				a.Proxy.StopProxy(ctx)
+				return nil
+			})
+			steps.Run("Stop config-gen container", func() error {
+				a.Proxy.StopConfigGen(ctx)
+				return nil
+			})
+			steps.Done()
+
+			_ = a.DNS.Stop(ctx)
+			fmt.Println(styles.SuccessStyle.Render("Services stopped"))
+
+			// Start DNS then proxy.
+			if err := dnsStart(ctx, a, pull); err != nil {
+				return fmt.Errorf("DNS: %w", err)
+			}
+			if err := proxyStart(ctx, a, pull); err != nil {
+				return fmt.Errorf("proxy: %w", err)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().Bool("pull", false, "pull latest images before starting")
+	return cmd
+}
+
 func newStopCmd(a *app.App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "stop",

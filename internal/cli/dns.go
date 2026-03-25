@@ -224,17 +224,22 @@ func dnsStart(ctx context.Context, a *app.App, pull bool) error {
 		return nil
 	})
 
-	var aliasExisted bool
-	if err := steps.Run("Configure IP alias ("+a.Config.IPAddress+")", func() error {
-		existed, err := a.DNS.EnsureIPAlias()
-		aliasExisted = existed
-		return err
+	if err := steps.Run("Check IP alias ("+a.Config.IPAddress+")", func() error {
+		active, _ := a.Platform.HasIPAlias(a.Config.IPAddress)
+		if active {
+			steps.Info("IP alias already active")
+			return nil
+		}
+		installed, _ := a.Platform.IsIPAliasInstalled(a.Config.IPAddress)
+		if installed {
+			// Service is installed but alias not active yet — add it ephemerally
+			// (the service will handle it on next boot).
+			return a.Platform.AddIPAlias(a.Config.IPAddress)
+		}
+		return fmt.Errorf("IP alias %s is not configured.\n    Run  ddt install  to set up the persistent IP alias service", a.Config.IPAddress)
 	}); err != nil {
 		steps.Done()
 		return err
-	}
-	if aliasExisted {
-		steps.Info("IP alias already active")
 	}
 
 	port := a.DNS.Port()
