@@ -31,6 +31,9 @@ type Platform interface {
 	FlushDNS() error
 	// GetSystemUpstreams returns the currently configured system DNS servers.
 	GetSystemUpstreams() ([]string, error)
+	// ListResolverDomains returns the domains that have system-level DNS
+	// resolver entries (e.g. files in /etc/resolver/ on macOS).
+	ListResolverDomains() ([]string, error)
 
 	// Name returns the platform name (e.g., "darwin", "linux").
 	Name() string

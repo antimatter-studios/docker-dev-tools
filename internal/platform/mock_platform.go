@@ -11,6 +11,7 @@ type MockPlatform struct {
 	DNSEntries       map[string]string // domain -> "ip:port"
 	FlushedDNS       int
 	Upstreams        []string
+	ResolverDomains  []string
 	Errors           map[string]error // method name -> error to return
 }
 
@@ -109,4 +110,11 @@ func (m *MockPlatform) GetSystemUpstreams() ([]string, error) {
 		return nil, err
 	}
 	return m.Upstreams, nil
+}
+
+func (m *MockPlatform) ListResolverDomains() ([]string, error) {
+	if err := m.Errors["ListResolverDomains"]; err != nil {
+		return nil, err
+	}
+	return m.ResolverDomains, nil
 }

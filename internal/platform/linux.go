@@ -204,3 +204,33 @@ func (l *linuxPlatform) GetSystemUpstreams() ([]string, error) {
 	}
 	return servers, nil
 }
+
+// ListResolverDomains returns domains with system-level DNS resolver entries.
+// Linux doesn't use per-domain resolver files like macOS, so this checks
+// systemd-resolved split DNS domains when available.
+func (l *linuxPlatform) ListResolverDomains() ([]string, error) {
+	if !hasSystemdResolved() {
+		return nil, nil
+	}
+	out, err := exec.Command("resolvectl", "domain").Output()
+	if err != nil {
+		return nil, nil // not critical
+	}
+	var domains []string
+	seen := make(map[string]bool)
+	for _, line := range strings.Split(string(out), "\n") {
+		// Lines look like: "Link 2 (eth0): ~develop ~test"
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		for _, d := range strings.Fields(parts[1]) {
+			d = strings.TrimPrefix(d, "~")
+			if d != "" && !seen[d] {
+				domains = append(domains, d)
+				seen[d] = true
+			}
+		}
+	}
+	return domains, nil
+}

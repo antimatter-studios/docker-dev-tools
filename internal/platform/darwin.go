@@ -255,6 +255,24 @@ func (d *darwinPlatform) GetSystemUpstreams() ([]string, error) {
 	return servers, nil
 }
 
+// ListResolverDomains returns the domains that have resolver files in /etc/resolver/.
+func (d *darwinPlatform) ListResolverDomains() ([]string, error) {
+	entries, err := os.ReadDir("/etc/resolver")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("reading /etc/resolver: %w", err)
+	}
+	var domains []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			domains = append(domains, e.Name())
+		}
+	}
+	return domains, nil
+}
+
 func readResolvConf() []string {
 	data, err := os.ReadFile("/etc/resolv.conf")
 	if err != nil {
