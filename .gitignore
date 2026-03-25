@@ -16,6 +16,9 @@ coverage.out
 .DS_Store
 Thumbs.db
 
+# Claude Code (local settings are user-specific)
+.claude/settings.local.json
+
 # Certificates
 /certs
 !/certs/.gitkeep
