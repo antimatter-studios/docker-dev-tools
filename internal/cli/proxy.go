@@ -127,32 +127,6 @@ func newProxyCmd(a *app.App) *cobra.Command {
 			},
 		},
 		&cobra.Command{
-			Use:   "add-network <name>",
-			Short: "Add a Docker network to monitor",
-			Args:  cobra.ExactArgs(1),
-			RunE: func(cmd *cobra.Command, args []string) error {
-				ctx := context.Background()
-				if err := a.Proxy.AddNetwork(ctx, args[0]); err != nil {
-					return err
-				}
-				fmt.Println(styles.SuccessStyle.Render(fmt.Sprintf("Network %s added", args[0])))
-				return nil
-			},
-		},
-		&cobra.Command{
-			Use:   "remove-network <name>",
-			Short: "Remove a Docker network from monitoring",
-			Args:  cobra.ExactArgs(1),
-			RunE: func(cmd *cobra.Command, args []string) error {
-				ctx := context.Background()
-				if err := a.Proxy.RemoveNetwork(ctx, args[0]); err != nil {
-					return err
-				}
-				fmt.Println(styles.SuccessStyle.Render(fmt.Sprintf("Network %s removed", args[0])))
-				return nil
-			},
-		},
-		&cobra.Command{
 			Use:   "container-name [name]",
 			Short: "Get or set the proxy container name",
 			Args:  cobra.MaximumNArgs(1),
@@ -250,10 +224,6 @@ func proxyStart(ctx context.Context, a *app.App, pull bool) error {
 	}); err != nil {
 		steps.Done()
 		return err
-	}
-
-	for _, net := range a.Proxy.Networks() {
-		steps.Info(fmt.Sprintf("Network: %s", net))
 	}
 
 	steps.Done()

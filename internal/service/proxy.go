@@ -104,15 +104,7 @@ func (s *ProxyService) StartWithReport(ctx context.Context, pull bool) (ProxySta
 	}
 	report.ProxyStarted = true
 
-	// 3. Connect both containers to all configured networks.
-	for _, netName := range s.config.Proxy.Network {
-		if err := s.docker.EnsureNetwork(ctx, netName); err != nil {
-			return report, fmt.Errorf("ensuring network %s: %w", netName, err)
-		}
-		_ = s.docker.ConnectNetwork(ctx, netName, proxyID)
-	}
-
-	// 4. Copy nginx config files into the proxy container.
+	// 3. Copy nginx config files into the proxy container.
 	if err := s.copyProxyConfigs(ctx, proxyID); err != nil {
 		return report, fmt.Errorf("copying proxy configs: %w", err)
 	}
@@ -179,66 +171,16 @@ func (s *ProxyService) NginxConfig(ctx context.Context) (string, error) {
 		[]string{"cat", "/etc/nginx/conf.d/default.conf"})
 }
 
-// AddNetwork adds a Docker network to monitor and connects the running containers.
-func (s *ProxyService) AddNetwork(ctx context.Context, name string) error {
-	// Save to config if not already present.
-	found := false
-	for _, n := range s.config.Proxy.Network {
-		if n == name {
-			found = true
-			break
-		}
-	}
-	if !found {
-		s.config.Proxy.Network = append(s.config.Proxy.Network, name)
-		if err := s.config.Save(); err != nil {
-			return err
-		}
-	}
-
-	// Connect running containers to the network.
-	if err := s.docker.EnsureNetwork(ctx, name); err != nil {
-		return fmt.Errorf("ensuring network %s: %w", name, err)
-	}
-
-	proxyInfo, err := s.docker.InspectContainer(ctx, s.config.Proxy.ContainerName)
-	if err == nil {
-		_ = s.docker.ConnectNetwork(ctx, name, proxyInfo.ID)
-	}
-
-	return nil
-}
-
-// RemoveNetwork removes a Docker network from monitoring and disconnects running containers.
-func (s *ProxyService) RemoveNetwork(ctx context.Context, name string) error {
-	// Disconnect running containers from the network.
-	proxyInfo, err := s.docker.InspectContainer(ctx, s.config.Proxy.ContainerName)
-	if err == nil {
-		_ = s.docker.DisconnectNetwork(ctx, name, proxyInfo.ID)
-	}
-
-	// Remove from config.
-	networks := make([]string, 0, len(s.config.Proxy.Network))
-	for _, n := range s.config.Proxy.Network {
-		if n != name {
-			networks = append(networks, n)
-		}
-	}
-	s.config.Proxy.Network = networks
-	return s.config.Save()
-}
-
-// Status discovers proxied services from the proxy container's actual Docker networks.
-// Falls back to configured networks if the proxy isn't running.
+// Status discovers proxied services from the proxy container's Docker networks.
 func (s *ProxyService) Status(ctx context.Context) ([]ProxyStatusEntry, error) {
 	var entries []ProxyStatusEntry
 
-	// Use proxy container's actual networks (set dynamically by config-gen).
-	// Fall back to configured networks if the proxy isn't running.
-	networks := s.config.Proxy.Network
-	if info, err := s.docker.InspectContainer(ctx, s.config.Proxy.ContainerName); err == nil {
-		networks = info.Networks
+	// Use proxy container's actual networks (managed dynamically by config-gen).
+	info, err := s.docker.InspectContainer(ctx, s.config.Proxy.ContainerName)
+	if err != nil {
+		return entries, nil // proxy not running, nothing to report
 	}
+	networks := info.Networks
 
 	for _, netName := range networks {
 		containers, err := s.docker.ListContainersOnNetwork(ctx, netName)
@@ -371,11 +313,6 @@ func splitLabelKey(s string) []string {
 	return nil
 }
 
-// Networks returns the list of monitored networks.
-func (s *ProxyService) Networks() []string {
-	return s.config.Proxy.Network
-}
-
 // ContainerDetails returns inspection info for the proxy container (nil if not running).
 func (s *ProxyService) ContainerDetails(ctx context.Context) *docker.ContainerInfo {
 	info, err := s.docker.InspectContainer(ctx, s.config.Proxy.ContainerName)
@@ -443,21 +380,14 @@ func (s *ProxyService) StartConfigGenContainer(ctx context.Context) error {
 	return err
 }
 
-// StartProxyContainer creates and starts the proxy container, connects it to
-// all configured networks, and copies the nginx configuration files.
+// StartProxyContainer creates and starts the proxy container and copies
+// the nginx configuration files. Network connections are managed dynamically
+// by docker-config-gen.
 func (s *ProxyService) StartProxyContainer(ctx context.Context) error {
 	proxyID, err := s.startProxy(ctx)
 	if err != nil {
 		return err
 	}
-
-	for _, netName := range s.config.Proxy.Network {
-		if err := s.docker.EnsureNetwork(ctx, netName); err != nil {
-			return fmt.Errorf("ensuring network %s: %w", netName, err)
-		}
-		_ = s.docker.ConnectNetwork(ctx, netName, proxyID)
-	}
-
 	return s.copyProxyConfigs(ctx, proxyID)
 }
 
