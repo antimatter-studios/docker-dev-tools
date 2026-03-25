@@ -94,6 +94,7 @@ func newProxyCmd(a *app.App) *cobra.Command {
 	}
 
 	cmd.AddCommand(
+		newProxyListCmd(a),
 		startCmd,
 		stopCmd,
 		restartCmd,
@@ -162,6 +163,45 @@ func newProxyCmd(a *app.App) *cobra.Command {
 	)
 
 	return cmd
+}
+
+func newProxyListCmd(a *app.App) *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "List proxied services and TCP/UDP sidecars",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
+
+			running, _ := a.Proxy.IsRunning(ctx)
+
+			fmt.Println(components.RenderProxyServiceCard(a, ctx, running))
+
+			if !running {
+				return fmt.Errorf("proxy is not running")
+			}
+
+			entries, _ := a.Proxy.Status(ctx)
+			sidecars, _ := a.Proxy.SidecarStatus(ctx)
+
+			if len(entries) == 0 && len(sidecars) == 0 {
+				fmt.Println()
+				fmt.Println(styles.InfoStyle.Render("No proxied services found"))
+				return nil
+			}
+
+			if len(entries) > 0 {
+				fmt.Println()
+				fmt.Println(components.RenderProxyServicesTable(entries))
+			}
+
+			if len(sidecars) > 0 {
+				fmt.Println()
+				fmt.Println(components.RenderSidecarServicesTable(sidecars))
+			}
+
+			return nil
+		},
+	}
 }
 
 func newProxyLogsCmd(a *app.App) *cobra.Command {
