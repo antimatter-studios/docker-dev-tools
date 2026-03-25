@@ -7,82 +7,164 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Color palette — a cohesive dark-mode palette inspired by catppuccin/nord.
+// theme holds a complete set of colors for one background type.
+type theme struct {
+	Primary, Secondary, Accent, Highlight lipgloss.Color
+	Success, Warning, Error, Info         lipgloss.Color
+	Text, TextDim, Subtle, Muted          lipgloss.Color
+	Surface, Base                          lipgloss.Color
+}
+
+// Dark theme: bright colors for dark terminals. No channel value below 0x55.
+var darkTheme = theme{
+	Primary:   lipgloss.Color("#CF79F2"),
+	Secondary: lipgloss.Color("#56D6FA"),
+	Accent:    lipgloss.Color("#6CB6FF"),
+	Highlight: lipgloss.Color("#FF9E64"),
+	Success:   lipgloss.Color("#5AF78E"),
+	Warning:   lipgloss.Color("#F3F99D"),
+	Error:     lipgloss.Color("#FF6E6E"),
+	Info:      lipgloss.Color("#78DCE8"),
+	Text:    lipgloss.Color("#FFFFFF"),
+	TextDim: lipgloss.Color("#FFFFFF"),
+	Subtle:  lipgloss.Color("#FFFFFF"),
+	Muted:   lipgloss.Color("#FFFFFF"),
+	Surface: lipgloss.Color("#555566"),
+	Base:    lipgloss.Color("#555555"),
+}
+
+// Light theme: dark text on light backgrounds.
+var lightTheme = theme{
+	Primary:   lipgloss.Color("#7C3AED"),
+	Secondary: lipgloss.Color("#0891B2"),
+	Accent:    lipgloss.Color("#2563EB"),
+	Highlight: lipgloss.Color("#B84500"),
+	Success:   lipgloss.Color("#16A34A"),
+	Warning:   lipgloss.Color("#936300"),
+	Error:     lipgloss.Color("#CC2222"),
+	Info:      lipgloss.Color("#0369A1"),
+	Text:      lipgloss.Color("#111111"),
+	TextDim:   lipgloss.Color("#222222"),
+	Subtle:    lipgloss.Color("#444444"),
+	Muted:     lipgloss.Color("#555555"),
+	Surface:   lipgloss.Color("#E8E8E8"),
+	Base:      lipgloss.Color("#F5F5F5"),
+}
+
+// Active palette — set once at init, referenced everywhere.
 var (
-	// Brand / accent colors.
-	Primary   = lipgloss.Color("#B48EAD") // Soft purple
-	Secondary = lipgloss.Color("#88C0D0") // Ice blue
-	Accent    = lipgloss.Color("#81A1C1") // Steel blue
-	Highlight = lipgloss.Color("#D08770") // Warm coral
+	Primary   lipgloss.Color
+	Secondary lipgloss.Color
+	Accent    lipgloss.Color
+	Highlight lipgloss.Color
 
-	// Semantic colors.
-	Success = lipgloss.Color("#A3BE8C") // Soft green
-	Warning = lipgloss.Color("#EBCB8B") // Warm yellow
-	Error   = lipgloss.Color("#BF616A") // Soft red
-	Info    = lipgloss.Color("#A3C4E0") // Light steel blue
+	Success lipgloss.Color
+	Warning lipgloss.Color
+	Error   lipgloss.Color
+	Info    lipgloss.Color
 
-	// Neutral palette.
-	Text    = lipgloss.Color("#ECEFF4") // Bright text
-	TextDim = lipgloss.Color("#D8DEE9") // Slightly dimmed
-	Subtle  = lipgloss.Color("#81868f") // Labels/secondary text
-	Muted   = lipgloss.Color("#7B88A1") // Borders, de-emphasised
-	Surface = lipgloss.Color("#3B4252") // Card backgrounds
-	Base    = lipgloss.Color("#2E3440") // Deep background
+	Text    lipgloss.Color
+	TextDim lipgloss.Color
+	Subtle  lipgloss.Color
+	Muted   lipgloss.Color
+	Surface lipgloss.Color
+	Base    lipgloss.Color
 )
+
+func applyTheme(t theme) {
+	Primary = t.Primary
+	Secondary = t.Secondary
+	Accent = t.Accent
+	Highlight = t.Highlight
+	Success = t.Success
+	Warning = t.Warning
+	Error = t.Error
+	Info = t.Info
+	Text = t.Text
+	TextDim = t.TextDim
+	Subtle = t.Subtle
+	Muted = t.Muted
+	Surface = t.Surface
+	Base = t.Base
+}
+
+func init() {
+	if lipgloss.HasDarkBackground() {
+		applyTheme(darkTheme)
+	} else {
+		applyTheme(lightTheme)
+	}
+	initStyles()
+}
 
 // ── Typography ─────────────────────────────────────────────────────
 
 var (
-	// AppTitle renders the application brand.
-	AppTitle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(Primary).
-			MarginBottom(1)
-
-	// SectionTitle renders a section heading inside a panel.
-	SectionTitle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(Secondary).
-			MarginBottom(1)
-
-	// Heading for groups of key-value pairs.
-	Heading = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(Text).
-		PaddingBottom(0)
-
-	// Label is for key names in key-value displays.
-	Label = lipgloss.NewStyle().
-		Foreground(Subtle).
-		Width(14).
-		Align(lipgloss.Right)
-
-	// Value is for the data shown next to a Label.
-	Value = lipgloss.NewStyle().
-		Foreground(TextDim)
-
-	// ValueBright is for emphasised data values.
-	ValueBright = lipgloss.NewStyle().
-			Foreground(Text).
-			Bold(true)
-
-	// Dimmed renders de-emphasised text.
-	Dimmed = lipgloss.NewStyle().
-		Foreground(Muted)
+	AppTitle     lipgloss.Style
+	SectionTitle lipgloss.Style
+	Heading      lipgloss.Style
+	Label        lipgloss.Style
+	Value        lipgloss.Style
+	ValueBright  lipgloss.Style
+	Dimmed       lipgloss.Style
 )
 
 // ── Semantic text ──────────────────────────────────────────────────
 
 var (
+	SuccessStyle lipgloss.Style
+	WarningStyle lipgloss.Style
+	ErrorStyle   lipgloss.Style
+	InfoStyle    lipgloss.Style
+)
+
+// ── Containers / cards ─────────────────────────────────────────────
+
+var (
+	Card        lipgloss.Style
+	CardActive  lipgloss.Style
+	CardSuccess lipgloss.Style
+	CardError   lipgloss.Style
+	Divider     lipgloss.Style
+)
+
+// ── Notifications ───────────────────────────────────────────────────
+
+var (
+	sudoBox    lipgloss.Style
+	sudoTitle  lipgloss.Style
+	sudoDetail lipgloss.Style
+)
+
+// initStyles builds all styles from the active palette.
+// Called once from init() after the theme is selected.
+func initStyles() {
+	AppTitle = lipgloss.NewStyle().Bold(true).Foreground(Primary).MarginBottom(1)
+	SectionTitle = lipgloss.NewStyle().Bold(true).Foreground(Secondary).MarginBottom(1)
+	Heading = lipgloss.NewStyle().Bold(true).Foreground(Text).PaddingBottom(0)
+	Label = lipgloss.NewStyle().Foreground(Subtle).Width(14).Align(lipgloss.Right)
+	Value = lipgloss.NewStyle().Foreground(TextDim)
+	ValueBright = lipgloss.NewStyle().Foreground(Text).Bold(true)
+	Dimmed = lipgloss.NewStyle().Foreground(Muted)
+
 	SuccessStyle = lipgloss.NewStyle().Foreground(Success)
 	WarningStyle = lipgloss.NewStyle().Foreground(Warning)
-	ErrorStyle   = lipgloss.NewStyle().Foreground(Error)
-	InfoStyle    = lipgloss.NewStyle().Foreground(Info)
-)
+	ErrorStyle = lipgloss.NewStyle().Foreground(Error)
+	InfoStyle = lipgloss.NewStyle().Foreground(Info)
+
+	Card = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Muted).Padding(1, 2)
+	CardActive = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Secondary).Padding(1, 2)
+	CardSuccess = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Success).Padding(1, 2)
+	CardError = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Error).Padding(1, 2)
+	Divider = lipgloss.NewStyle().Foreground(Muted).MarginTop(1).MarginBottom(1)
+
+	sudoBox = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Warning).Padding(0, 2).MarginTop(1).MarginBottom(1)
+	sudoTitle = lipgloss.NewStyle().Foreground(Warning).Bold(true)
+	sudoDetail = lipgloss.NewStyle().Foreground(TextDim)
+}
 
 // ── Status indicators ──────────────────────────────────────────────
 
-// StatusDot returns a colored bullet for running/stopped states.
 func StatusDot(active bool) string {
 	if active {
 		return lipgloss.NewStyle().Foreground(Success).Bold(true).Render("●")
@@ -90,7 +172,6 @@ func StatusDot(active bool) string {
 	return lipgloss.NewStyle().Foreground(Error).Render("○")
 }
 
-// StatusLabel returns a colored word label.
 func StatusLabel(active bool) string {
 	if active {
 		return lipgloss.NewStyle().Foreground(Success).Bold(true).Render("active")
@@ -98,66 +179,27 @@ func StatusLabel(active bool) string {
 	return lipgloss.NewStyle().Foreground(Error).Render("inactive")
 }
 
-// StatusBadge returns dot + label together.
 func StatusBadge(active bool) string {
 	return StatusDot(active) + " " + StatusLabel(active)
 }
 
-// ── Containers / cards ─────────────────────────────────────────────
-
-var (
-	// Card is a rounded bordered panel.
-	Card = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Muted).
-		Padding(1, 2)
-
-	// CardActive is a card with an accent border.
-	CardActive = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Secondary).
-			Padding(1, 2)
-
-	// CardSuccess highlights a success result.
-	CardSuccess = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Success).
-			Padding(1, 2)
-
-	// CardError highlights a failure.
-	CardError = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Error).
-			Padding(1, 2)
-
-	// Divider renders a subtle horizontal rule.
-	Divider = lipgloss.NewStyle().
-		Foreground(Muted).
-		MarginTop(1).
-		MarginBottom(1)
-)
-
 // ── Result markers ─────────────────────────────────────────────────
 
-// SuccessMarker returns "✓ message" in green.
 func SuccessMarker(msg string) string {
 	check := lipgloss.NewStyle().Foreground(Success).Bold(true).Render("✓")
 	return check + " " + lipgloss.NewStyle().Foreground(Text).Render(msg)
 }
 
-// ErrorMarker returns "✗ message" in red.
 func ErrorMarker(msg string) string {
 	cross := lipgloss.NewStyle().Foreground(Error).Bold(true).Render("✗")
 	return cross + " " + lipgloss.NewStyle().Foreground(TextDim).Render(msg)
 }
 
-// WarnMarker returns "⚠ message" in yellow.
 func WarnMarker(msg string) string {
 	icon := lipgloss.NewStyle().Foreground(Warning).Bold(true).Render("⚠")
 	return icon + " " + lipgloss.NewStyle().Foreground(TextDim).Render(msg)
 }
 
-// InfoMarker returns "ℹ message" in blue.
 func InfoMarker(msg string) string {
 	icon := lipgloss.NewStyle().Foreground(Info).Render("ℹ")
 	return icon + " " + lipgloss.NewStyle().Foreground(TextDim).Render(msg)
@@ -165,25 +207,6 @@ func InfoMarker(msg string) string {
 
 // ── Notifications ───────────────────────────────────────────────────
 
-var (
-	// SudoBox renders a bordered notice box for sudo operations.
-	sudoBox = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Warning).
-		Padding(0, 2).
-		MarginTop(1).
-		MarginBottom(1)
-
-	sudoTitle = lipgloss.NewStyle().
-			Foreground(Warning).
-			Bold(true)
-
-	sudoDetail = lipgloss.NewStyle().
-			Foreground(TextDim)
-)
-
-// SudoNotice renders a styled box explaining a sudo operation.
-// Title is a short action label, details are the specifics (file paths, commands).
 func SudoNotice(title string, details ...string) string {
 	lines := []string{sudoTitle.Render("🔐 " + title)}
 	for _, d := range details {
@@ -194,35 +217,28 @@ func SudoNotice(title string, details ...string) string {
 
 // ── Utilities ──────────────────────────────────────────────────────
 
-// KeyValue renders a single key: value row with aligned label.
 func KeyValue(key, value string) string {
 	return Label.Render(key) + "  " + Value.Render(value)
 }
 
-// KeyValueBright renders a key: value row with bright/bold value.
 func KeyValueBright(key, value string) string {
 	return Label.Render(key) + "  " + ValueBright.Render(value)
 }
 
-// HorizontalRule renders a thin line of a given width.
 func HorizontalRule(width int) string {
 	return Divider.Render(strings.Repeat("─", width))
 }
 
-// Banner renders a prominent top-level header with an icon.
 func Banner(icon, title string) string {
 	i := lipgloss.NewStyle().Foreground(Primary).Bold(true).Render(icon)
 	t := lipgloss.NewStyle().Foreground(Text).Bold(true).Render(title)
 	return fmt.Sprintf("%s %s", i, t)
 }
 
-// Hyperlink wraps text in an OSC 8 terminal hyperlink so it's clickable
-// in supported terminals (iTerm2, Kitty, Windows Terminal, macOS Terminal, etc.).
 func Hyperlink(url, text string) string {
 	return fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", url, text)
 }
 
-// Sparkline renders a mini horizontal bar from 0.0..1.0 using block chars.
 func Sparkline(ratio float64, width int, fg lipgloss.Color) string {
 	if ratio < 0 {
 		ratio = 0
