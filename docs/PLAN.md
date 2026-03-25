@@ -40,11 +40,11 @@ docker-dev-tools/
 │   │   ├── project.go        # Project management
 │   │   ├── run.go            # Script runner
 │   │   ├── config.go         # Configuration management
-│   │   ├── setup.go          # Install/uninstall
+│   │   ├── setup.go          # ddt install / ddt uninstall
 │   │   ├── status.go         # System status
 │   │   └── version.go        # Version info
 │   ├── config/               # Configuration system
-│   │   ├── system.go         # System-wide config (~/.ddt-system.json)
+│   │   ├── system.go         # System-wide config (~/.config/docker-dev-tools/config.json)
 │   │   ├── project.go        # Per-project config (ddt-project.json)
 │   │   ├── defaults.go       # Default configuration values
 │   │   └── config.go         # Shared config types and helpers
@@ -104,8 +104,8 @@ docker-dev-tools/
    implementation at compile time.
 
 4. **Configuration compatibility** - The JSON config format remains compatible
-   with the PHP version so existing `~/.ddt-system.json` files work without
-   migration.
+   with the PHP version's JSON structure. Config location moved to
+   `~/.config/docker-dev-tools/config.json` (XDG compliant).
 
 ## Feature Roadmap
 
@@ -119,7 +119,7 @@ docker-dev-tools/
 ### Phase 2: Core Tools
 - [ ] IP tool (set, get, add, remove, ping)
 - [ ] DNS tool (start, stop, add-domain, status, logs)
-- [ ] Proxy tool (start, stop, add-network, status, nginx-config)
+- [ ] Proxy tool (start, stop, status, nginx-config) — networks managed dynamically by config-gen
 - [ ] Status tool (combined dashboard view)
 
 ### Phase 3: Project Management
@@ -143,7 +143,7 @@ docker-dev-tools/
 
 ## Configuration Format
 
-### System Config (~/.ddt-system.json)
+### System Config (~/.config/docker-dev-tools/config.json)
 ```json
 {
   "type": "system",

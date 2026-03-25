@@ -4,17 +4,51 @@ A toolkit for managing local Docker development environments. Provides IP aliasi
 
 Built in Go with a modern terminal UI powered by [Bubbletea](https://github.com/charmbracelet/bubbletea).
 
-## Quick Start
+## Installation
+
+### Homebrew (recommended)
 
 ```bash
-# Install via go
+brew install antimatter-studios/tap/ddt
+```
+
+### Go install
+
+```bash
 go install github.com/christhomas/docker-dev-tools/cmd/ddt@latest
+```
 
-# Or build from source
+### From source
+
+```bash
 task build
-./bin/ddt setup install
+./bin/ddt install
+```
 
-# Check system status
+## Quick Start
+
+After installing, run the interactive setup wizard:
+
+```bash
+ddt install
+```
+
+The wizard walks you through:
+1. **IP address** — configure the loopback alias for host-to-container communication (default: `10.254.254.254`)
+2. **DNS TLDs** — add wildcard top-level domains for local resolution (e.g. `.develop`)
+3. **System services** — installs the IP alias as a persistent system service and configures DNS resolver files
+
+The wizard saves config to `~/.config/docker-dev-tools/config.json` (respects `$XDG_CONFIG_HOME`).
+
+To remove everything the wizard installed:
+
+```bash
+ddt uninstall
+```
+
+Once installed, check system status:
+
+```bash
 ddt status
 ```
 
@@ -39,9 +73,9 @@ ddt dns logs -f
 ```
 
 ### Reverse Proxy
-Auto-configuring NGINX proxy that routes traffic based on container `VIRTUAL_HOST` environment variables:
+Auto-configuring NGINX proxy that routes traffic based on container `VIRTUAL_HOST` environment variables.
+Networks are managed automatically — docker-config-gen discovers which networks have proxied containers and connects the proxy dynamically.
 ```bash
-ddt proxy add-network backbone
 ddt proxy start
 ddt proxy status
 ```
@@ -53,17 +87,38 @@ The reverse proxy is composed of two containers managed by DDT:
 
 The config generator does not need to join your project networks to observe containers; it uses the Docker API via the socket.
 
-Containers expose themselves via environment variables in docker-compose:
+Containers register themselves for proxying using `docker-proxy.*` labels:
 ```yaml
 services:
   website:
-    environment:
-      - VIRTUAL_HOST=www.mycompany.develop
-      - VIRTUAL_PORT=80
-      - VIRTUAL_PATH=^/api
+    labels:
+      - docker-proxy.web.host=www.mycompany.develop
+      - docker-proxy.web.port=80
+      - docker-proxy.web.path=^/api
     networks:
       - backbone
 ```
+
+Labels follow the pattern `docker-proxy.{tag}.{field}` where `tag` is an arbitrary group name and `field` is one of:
+
+| Field   | Default | Description                     |
+|---------|---------|---------------------------------|
+| `host`  | —       | Hostname to route (required)    |
+| `port`  | `80`    | Target container port           |
+| `proto` | `http`  | Protocol (`http` or `https`)    |
+| `path`  | `/`     | URL path regex pattern          |
+
+A single container can define multiple routes using different tags:
+```yaml
+labels:
+  - docker-proxy.app.host=app.develop
+  - docker-proxy.app.port=8080
+  - docker-proxy.api.host=api.develop
+  - docker-proxy.api.port=3000
+  - docker-proxy.api.path=^/v1
+```
+
+Environment variables (`VIRTUAL_HOST`, `VIRTUAL_PORT`, `VIRTUAL_PROTO`, `VIRTUAL_PATH`) are also supported for backward compatibility, but they only allow a single route per container. Labels solve this limitation — by grouping fields under different tags, one container can serve multiple hostnames or path patterns. For example, a container running both a website and an API can expose each on its own hostname with independent port and path settings, which isn't possible with environment variables.
 
 ### Project Management
 Register project directories and manage them as a group:
@@ -116,6 +171,7 @@ ddt config reset        # Reset to defaults
 ```bash
 task build              # Build for current platform
 task run -- status      # Build and run with arguments
+go run ./cmd/ddt -- status  # Run directly without building
 task test               # Run tests
 task lint               # Run linter
 task fmt                # Format code
@@ -156,7 +212,7 @@ docs/                 Architecture and planning docs
 
 ## Configuration
 
-System config lives at `~/.ddt-system.json`. Project configs can be:
+Project configs can be:
 1. `ddt-project.json` (preferred)
 2. `composer.json` with `"docker-dev-tools"` section
 3. `package.json` with `"docker-dev-tools"` section

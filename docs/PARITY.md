@@ -80,7 +80,7 @@ One command to see if everything is healthy.
 ---
 
 ## 7. Configuration management
-JSON config at `~/.ddt-system.json` — stores all settings, project paths, networks, etc.
+JSON config at `~/.config/docker-dev-tools/config.json` — stores all settings, project paths, networks, etc.
 
 - [x] View the full config / config path
 - [x] Reset to defaults
