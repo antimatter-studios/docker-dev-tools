@@ -51,6 +51,117 @@ func (d *darwinPlatform) HasIPAlias(ip string) (bool, error) {
 	return strings.Contains(string(out), ip), nil
 }
 
+const launchDaemonDir = "/Library/LaunchDaemons"
+
+func launchDaemonLabel(ip string) string {
+	safe := strings.ReplaceAll(ip, ".", "-")
+	return fmt.Sprintf("com.ddt.ip-alias.%s", safe)
+}
+
+func launchDaemonPath(ip string) string {
+	return filepath.Join(launchDaemonDir, launchDaemonLabel(ip)+".plist")
+}
+
+func launchDaemonPlist(ip string) string {
+	label := launchDaemonLabel(ip)
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>%s</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/sbin/ifconfig</string>
+		<string>lo0</string>
+		<string>alias</string>
+		<string>%s</string>
+		<string>netmask</string>
+		<string>255.255.255.255</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>
+`, label, ip)
+}
+
+func (d *darwinPlatform) InstallIPAlias(ip string) error {
+	plistPath := launchDaemonPath(ip)
+	content := launchDaemonPlist(ip)
+
+	// Check if already installed with correct content.
+	if existing, err := os.ReadFile(plistPath); err == nil && string(existing) == content {
+		// Ensure the daemon is loaded.
+		_ = exec.Command("sudo", "launchctl", "load", "-w", plistPath).Run()
+		return nil
+	}
+
+	fmt.Fprintln(os.Stderr, styles.SudoNotice("Installing IP alias LaunchDaemon",
+		fmt.Sprintf("File: %s", plistPath),
+		fmt.Sprintf("IP: %s on lo0", ip)))
+
+	// Write the plist file.
+	cmd := exec.Command("sudo", "tee", plistPath)
+	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdout = nil
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("writing LaunchDaemon plist: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+
+	// Set ownership and permissions.
+	if err := exec.Command("sudo", "chmod", "644", plistPath).Run(); err != nil {
+		return fmt.Errorf("setting plist permissions: %w", err)
+	}
+	if err := exec.Command("sudo", "chown", "root:wheel", plistPath).Run(); err != nil {
+		return fmt.Errorf("setting plist ownership: %w", err)
+	}
+
+	// Load the daemon (this also runs it immediately due to RunAtLoad).
+	if out, err := exec.Command("sudo", "launchctl", "load", "-w", plistPath).CombinedOutput(); err != nil {
+		return fmt.Errorf("loading LaunchDaemon: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+
+	return nil
+}
+
+func (d *darwinPlatform) UninstallIPAlias(ip string) error {
+	plistPath := launchDaemonPath(ip)
+
+	// Check if installed.
+	if _, err := os.Stat(plistPath); os.IsNotExist(err) {
+		return nil
+	}
+
+	fmt.Fprintln(os.Stderr, styles.SudoNotice("Removing IP alias LaunchDaemon",
+		fmt.Sprintf("File: %s", plistPath)))
+
+	// Unload the daemon.
+	_ = exec.Command("sudo", "launchctl", "unload", "-w", plistPath).Run()
+
+	// Remove the plist file.
+	if out, err := exec.Command("sudo", "rm", "-f", plistPath).CombinedOutput(); err != nil {
+		return fmt.Errorf("removing LaunchDaemon plist: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+
+	// Remove the alias itself.
+	_ = d.RemoveIPAlias(ip)
+
+	return nil
+}
+
+func (d *darwinPlatform) IsIPAliasInstalled(ip string) (bool, error) {
+	plistPath := launchDaemonPath(ip)
+	_, err := os.Stat(plistPath)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // EnableDNS creates a /etc/resolver/<domain> file pointing to the given IP and port.
 // macOS automatically reads /etc/resolver/ for per-domain DNS configuration.
 // Returns true if the file was written, false if it already had the correct content.

@@ -7,12 +7,20 @@ import (
 
 // Platform abstracts OS-specific operations for IP aliasing and DNS configuration.
 type Platform interface {
-	// AddIPAlias adds an IP alias to a network interface.
+	// AddIPAlias adds an IP alias to a network interface (ephemeral, lost on reboot).
 	AddIPAlias(ip string) error
 	// RemoveIPAlias removes an IP alias from a network interface.
 	RemoveIPAlias(ip string) error
 	// HasIPAlias checks if an IP alias is currently active.
 	HasIPAlias(ip string) (bool, error)
+
+	// InstallIPAlias creates a persistent system service that sets the IP alias
+	// at boot (e.g. LaunchDaemon on macOS, systemd unit on Linux).
+	InstallIPAlias(ip string) error
+	// UninstallIPAlias removes the persistent IP alias service.
+	UninstallIPAlias(ip string) error
+	// IsIPAliasInstalled checks if the persistent IP alias service is installed.
+	IsIPAliasInstalled(ip string) (bool, error)
 
 	// EnableDNS configures the system to resolve a domain via the given IP and port.
 	// Returns true if a change was made (file written), false if already up to date.

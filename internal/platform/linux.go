@@ -54,6 +54,23 @@ func (l *linuxPlatform) HasIPAlias(ip string) (bool, error) {
 	return strings.Contains(string(out), ip), nil
 }
 
+func (l *linuxPlatform) InstallIPAlias(ip string) error {
+	// TODO: implement persistent IP alias for Linux (e.g. systemd-networkd .netdev unit).
+	// For now, fall back to the ephemeral alias.
+	return l.AddIPAlias(ip)
+}
+
+func (l *linuxPlatform) UninstallIPAlias(ip string) error {
+	// TODO: implement persistent IP alias removal for Linux.
+	return l.RemoveIPAlias(ip)
+}
+
+func (l *linuxPlatform) IsIPAliasInstalled(ip string) (bool, error) {
+	// TODO: check for persistent systemd unit.
+	// For now, just check if the alias is currently active.
+	return l.HasIPAlias(ip)
+}
+
 // hasSystemdResolved checks if systemd-resolved is available.
 func hasSystemdResolved() bool {
 	_, err := exec.LookPath("systemd-resolve")
