@@ -171,3 +171,34 @@ func TestMockGetSystemUpstreams(t *testing.T) {
 		t.Errorf("expected 2 upstreams, got %d", len(servers))
 	}
 }
+
+func TestMockListResolverDomains(t *testing.T) {
+	m := NewMockPlatform("test")
+
+	// Initially empty.
+	domains, err := m.ListResolverDomains()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(domains) != 0 {
+		t.Errorf("expected 0 domains initially, got %d", len(domains))
+	}
+
+	// Set some domains.
+	m.ResolverDomains = []string{"develop", "test", "local"}
+	domains, err = m.ListResolverDomains()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(domains) != 3 {
+		t.Errorf("expected 3 domains, got %d", len(domains))
+	}
+
+	// Error injection.
+	testErr := errors.New("resolver error")
+	m.Errors["ListResolverDomains"] = testErr
+	_, err = m.ListResolverDomains()
+	if !errors.Is(err, testErr) {
+		t.Errorf("expected injected error, got: %v", err)
+	}
+}

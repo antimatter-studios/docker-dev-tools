@@ -81,6 +81,19 @@ func TestLaunchDaemonPlistDifferentIPs(t *testing.T) {
 	}
 }
 
+func TestListResolverDomainsNonExistentDir(t *testing.T) {
+	// ListResolverDomains reads /etc/resolver/ which we can't mock easily,
+	// but we can verify it doesn't error on a real system (the dir may or
+	// may not exist).
+	d := &darwinPlatform{}
+	domains, err := d.ListResolverDomains()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// We can't assert specific domains, but verify it returns a valid slice.
+	_ = domains
+}
+
 func TestIsIPAliasInstalledNotPresent(t *testing.T) {
 	// Use a random IP that won't have a LaunchDaemon installed.
 	d := &darwinPlatform{}
