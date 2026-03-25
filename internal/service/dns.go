@@ -273,6 +273,11 @@ func (s *DNSService) ConfiguredTLDs() []string {
 	return s.config.DNS.TLDs
 }
 
+// ListSystemResolvers returns the domains that have OS-level resolver entries.
+func (s *DNSService) ListSystemResolvers() ([]string, error) {
+	return s.platform.ListResolverDomains()
+}
+
 func (s *DNSService) writeTLDConfig(ctx context.Context, tld, ip string) {
 	// address=/.develop/10.254.254.254 resolves *.develop and develop itself.
 	confContent := fmt.Sprintf("address=/.%s/%s", tld, ip)

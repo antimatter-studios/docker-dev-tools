@@ -44,6 +44,7 @@ func newDNSCmd(a *app.App) *cobra.Command {
 	restartCmd.Flags().Bool("pull", false, "pull latest image before restarting")
 
 	cmd.AddCommand(
+		newDNSListCmd(a),
 		startCmd,
 		&cobra.Command{
 			Use:   "stop",
@@ -204,6 +205,21 @@ func newDNSCmd(a *app.App) *cobra.Command {
 	)
 
 	return cmd
+}
+
+func newDNSListCmd(a *app.App) *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "Show TLD status across config, container, and system resolvers",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
+			dnsRunning, _ := a.DNS.IsRunning(ctx)
+			fmt.Println(components.RenderDNSServiceCard(a, ctx, dnsRunning))
+			fmt.Println()
+			fmt.Println(components.RenderDNSTLDTable(a, ctx, dnsRunning))
+			return nil
+		},
+	}
 }
 
 func dnsStart(ctx context.Context, a *app.App, pull bool) error {
