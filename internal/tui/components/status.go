@@ -33,38 +33,28 @@ func termWidth() int {
 
 // RenderStatusDashboard renders the full system status including service cards,
 // DNS details (TLDs, domains, upstreams), and proxy details (registered services).
-func RenderStatusDashboard(a *app.App, width int) string {
-	ctx := context.Background()
-	if width <= 0 {
-		width = termWidth()
-	}
-
+// gatherDNSCard builds the DNS service info card definition.
+func gatherDNSCard(a *app.App, ctx context.Context, dnsRunning bool) cardDef {
 	ipActive, _ := a.IP.IsActive()
-	dnsRunning, _ := a.DNS.IsRunning(ctx)
-	proxyRunning, _ := a.Proxy.IsRunning(ctx)
-
-	// Gather container details for richer display.
 	dnsDetails := a.DNS.ContainerDetails(ctx)
-	proxyDetails := a.Proxy.ContainerDetails(ctx)
 
 	ipStatus := "inactive"
 	if ipActive {
 		ipStatus = "active"
 	}
-	dnsRows := []kvRow{
+	rows := []kvRow{
 		{"Container", a.DNS.ContainerName()},
 		{"Image", a.DNS.Image()},
 	}
 	if dnsDetails != nil {
 		if dnsDetails.ImageID != "" {
-			dnsRows = append(dnsRows, kvRow{"Image ID", shortImageID(dnsDetails.ImageID)})
+			rows = append(rows, kvRow{"Image ID", shortImageID(dnsDetails.ImageID)})
 		}
 		if dnsDetails.ImageCreated != "" {
-			dnsRows = append(dnsRows, kvRow{"Built", formatImageDate(dnsDetails.ImageCreated)})
+			rows = append(rows, kvRow{"Built", formatImageDate(dnsDetails.ImageCreated)})
 		}
-		dnsRows = append(dnsRows, kvRow{"ID", shortID(dnsDetails.ID)})
-		dnsRows = append(dnsRows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
-		// Sort and deduplicate port bindings by host IP + host port (DNS binds both TCP and UDP).
+		rows = append(rows, kvRow{"ID", shortID(dnsDetails.ID)})
+		rows = append(rows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
 		sort.Slice(dnsDetails.PortBindings, func(i, j int) bool {
 			return dnsDetails.PortBindings[i].String() < dnsDetails.PortBindings[j].String()
 		})
@@ -75,52 +65,90 @@ func RenderStatusDashboard(a *app.App, width int) string {
 				continue
 			}
 			seen[key] = struct{}{}
-			dnsRows = append(dnsRows, kvRow{"Port", pb.String()})
+			rows = append(rows, kvRow{"Port", pb.String()})
 		}
 	}
 	if dnsDetails == nil {
-		dnsRows = append(dnsRows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
+		rows = append(rows, kvRow{"IP Alias", a.IP.Get() + " (" + ipStatus + ")"})
 	}
 	if dnsDetails != nil && len(dnsDetails.Networks) > 0 {
 		for _, net := range dnsDetails.Networks {
-			dnsRows = append(dnsRows, kvRow{"Network", net})
+			rows = append(rows, kvRow{"Network", net})
 		}
-	}
-	for _, tld := range a.DNS.ConfiguredTLDs() {
-		dnsRows = append(dnsRows, kvRow{"TLD", "*." + tld + " \u2192 " + a.Config.IPAddress})
 	}
 	if dnsRunning {
 		upstreams, _ := a.DNS.ListUpstreams(ctx)
 		for _, u := range upstreams {
-			dnsRows = append(dnsRows, kvRow{"Upstream", u})
+			rows = append(rows, kvRow{"Upstream", u})
 		}
 	}
+	return cardDef{icon: "📡", title: "DNS Server", active: dnsRunning, rows: rows}
+}
 
-	proxyRows := []kvRow{
+// gatherProxyCard builds the Proxy service info card definition.
+func gatherProxyCard(a *app.App, ctx context.Context, proxyRunning bool) cardDef {
+	proxyDetails := a.Proxy.ContainerDetails(ctx)
+
+	rows := []kvRow{
 		{"Container", a.Proxy.ContainerName()},
 		{"Image", a.Proxy.Image()},
 	}
 	if proxyDetails != nil {
 		if proxyDetails.ImageID != "" {
-			proxyRows = append(proxyRows, kvRow{"Image ID", shortImageID(proxyDetails.ImageID)})
+			rows = append(rows, kvRow{"Image ID", shortImageID(proxyDetails.ImageID)})
 		}
 		if proxyDetails.ImageCreated != "" {
-			proxyRows = append(proxyRows, kvRow{"Built", formatImageDate(proxyDetails.ImageCreated)})
+			rows = append(rows, kvRow{"Built", formatImageDate(proxyDetails.ImageCreated)})
 		}
-		proxyRows = append(proxyRows, kvRow{"ID", shortID(proxyDetails.ID)})
+		rows = append(rows, kvRow{"ID", shortID(proxyDetails.ID)})
 		sort.Slice(proxyDetails.PortBindings, func(i, j int) bool {
 			return proxyDetails.PortBindings[i].String() < proxyDetails.PortBindings[j].String()
 		})
 		for _, pb := range proxyDetails.PortBindings {
-			proxyRows = append(proxyRows, kvRow{"Port", pb.String()})
+			rows = append(rows, kvRow{"Port", pb.String()})
 		}
 	}
-	// Networks are shown per-service in the Proxied Services table below.
+	return cardDef{icon: "🔀", title: "Reverse Proxy", active: proxyRunning, rows: rows}
+}
 
-	cards := []cardDef{
-		{icon: "📡", title: "DNS Server", active: dnsRunning, rows: dnsRows},
-		{icon: "🔀", title: "Reverse Proxy", active: proxyRunning, rows: proxyRows},
+// RenderServiceCard renders a single service info card as a standalone string.
+func RenderServiceCard(card cardDef) string {
+	w := cardContentWidth(card)
+	innerW := w - 6
+	if innerW < 10 {
+		innerW = 10
 	}
+	body := renderCardBody(card, innerW)
+	cardStyle := styles.Card.Width(w)
+	if card.active {
+		cardStyle = styles.CardActive.Width(w)
+	}
+	return cardStyle.Render(body)
+}
+
+// RenderDNSServiceCard renders the DNS service info card for standalone use.
+func RenderDNSServiceCard(a *app.App, ctx context.Context, dnsRunning bool) string {
+	return RenderServiceCard(gatherDNSCard(a, ctx, dnsRunning))
+}
+
+// RenderProxyServiceCard renders the Proxy service info card for standalone use.
+func RenderProxyServiceCard(a *app.App, ctx context.Context, proxyRunning bool) string {
+	return RenderServiceCard(gatherProxyCard(a, ctx, proxyRunning))
+}
+
+func RenderStatusDashboard(a *app.App, width int) string {
+	ctx := context.Background()
+	if width <= 0 {
+		width = termWidth()
+	}
+
+	dnsRunning, _ := a.DNS.IsRunning(ctx)
+	proxyRunning, _ := a.Proxy.IsRunning(ctx)
+
+	dnsCard := gatherDNSCard(a, ctx, dnsRunning)
+	proxyCard := gatherProxyCard(a, ctx, proxyRunning)
+
+	cards := []cardDef{dnsCard, proxyCard}
 
 	// Gather proxy service entries for the layout pass.
 	var proxyEntries []service.ProxyStatusEntry
@@ -132,24 +160,34 @@ func RenderStatusDashboard(a *app.App, width int) string {
 		sortSidecarEntries(sidecarEntries)
 	}
 
-	// Layout pass: measure the proxy services box and sidecar box natural widths
-	// so we can use the wider of the three (cards vs proxy box vs sidecar box) for all.
+	// Measure natural widths for all boxes to determine unified width.
+	dnsTableNatural := dnsTLDTableNaturalWidth(a, ctx, dnsRunning)
 	proxyNatural := proxyServicesNaturalWidth(proxyEntries)
 	sidecarNatural := sidecarServicesNaturalWidth(sidecarEntries)
-	if sidecarNatural > proxyNatural {
-		proxyNatural = sidecarNatural
+	minWidth := proxyNatural
+	if dnsTableNatural > minWidth {
+		minWidth = dnsTableNatural
+	}
+	if sidecarNatural > minWidth {
+		minWidth = sidecarNatural
 	}
 
 	var b strings.Builder
 	b.WriteString(styles.Banner("⚙", "System Status"))
 	b.WriteString("\n\n")
 
-	cardsStr, cardsWidth := layoutCards(cards, width, proxyNatural)
+	cardsStr, cardsWidth := layoutCards(cards, width, minWidth)
 	b.WriteString(cardsStr)
 
-	// Build the proxied services box at the unified width.
-	// Subtract 2 because lipgloss Width() excludes border chars but the
-	// measured cardsWidth includes them.
+	// DNS TLD status table.
+	dnsTable := renderDNSTLDBoxFromApp(a, ctx, dnsRunning, cardsWidth)
+	if dnsTable != "" {
+		b.WriteString("\n\n")
+		detailStyle := styles.CardActive.Width(cardsWidth - 2)
+		b.WriteString(detailStyle.Render(dnsTable))
+	}
+
+	// Proxied services table with probing.
 	details := renderProxyServicesBoxFromEntries(proxyEntries, cardsWidth)
 	if details != "" {
 		b.WriteString("\n\n")
@@ -157,7 +195,7 @@ func RenderStatusDashboard(a *app.App, width int) string {
 		b.WriteString(detailStyle.Render(details))
 	}
 
-	// Build the sidecar services box at the unified width.
+	// Sidecar services table.
 	sidecarDetails := renderSidecarServicesBoxFromEntries(sidecarEntries, cardsWidth)
 	if sidecarDetails != "" {
 		b.WriteString("\n\n")
@@ -193,20 +231,225 @@ func sortSidecarEntries(entries []service.SidecarStatusEntry) {
 	})
 }
 
+// ── DNS TLD table ────────────────────────────────────────────────────
+
+// DNSTLDData holds the gathered TLD state from all three sources.
+type DNSTLDData struct {
+	AllTLDs      []string
+	InConfig     map[string]bool
+	InContainer  map[string]bool
+	InSystem     map[string]bool
+	DNSRunning   bool
+}
+
+// GatherDNSTLDData collects TLD information from config, container, and system resolvers.
+func GatherDNSTLDData(a *app.App, ctx context.Context, dnsRunning bool) DNSTLDData {
+	configTLDs := a.DNS.ConfiguredTLDs()
+
+	var containerTLDs []string
+	if dnsRunning {
+		entries, _ := a.DNS.ListDomains(ctx)
+		for _, e := range entries {
+			d := strings.TrimPrefix(e.Domain, ".")
+			containerTLDs = append(containerTLDs, d)
+		}
+	}
+
+	systemTLDs, _ := a.DNS.ListSystemResolvers()
+
+	// Build union.
+	seen := make(map[string]bool)
+	for _, t := range configTLDs {
+		seen[t] = true
+	}
+	for _, t := range containerTLDs {
+		seen[t] = true
+	}
+	for _, t := range systemTLDs {
+		seen[t] = true
+	}
+
+	allTLDs := make([]string, 0, len(seen))
+	for t := range seen {
+		allTLDs = append(allTLDs, t)
+	}
+	sort.Strings(allTLDs)
+
+	inConfig := toSet(configTLDs)
+	inContainer := toSet(containerTLDs)
+	inSystem := toSet(systemTLDs)
+
+	return DNSTLDData{
+		AllTLDs:     allTLDs,
+		InConfig:    inConfig,
+		InContainer: inContainer,
+		InSystem:    inSystem,
+		DNSRunning:  dnsRunning,
+	}
+}
+
+func toSet(items []string) map[string]bool {
+	m := make(map[string]bool, len(items))
+	for _, s := range items {
+		m[s] = true
+	}
+	return m
+}
+
+// CheckMark returns a styled check or cross mark.
+func CheckMark(ok bool) string {
+	if ok {
+		return styles.SuccessStyle.Render("✓")
+	}
+	return styles.ErrorStyle.Render("✗")
+}
+
+var dnsTLDHeaders = []string{"TLD", "Config", "Container", "Resolver"}
+
+func buildDNSTLDRows(data DNSTLDData) [][]string {
+	rows := make([][]string, 0, len(data.AllTLDs))
+	for _, tld := range data.AllTLDs {
+		rows = append(rows, []string{
+			"." + tld,
+			CheckMark(data.InConfig[tld]),
+			CheckMark(data.DNSRunning && data.InContainer[tld]),
+			CheckMark(data.InSystem[tld]),
+		})
+	}
+	return rows
+}
+
+// RenderDNSTLDTable renders a standalone DNS TLD status table.
+func RenderDNSTLDTable(a *app.App, ctx context.Context, dnsRunning bool) string {
+	data := GatherDNSTLDData(a, ctx, dnsRunning)
+	if len(data.AllTLDs) == 0 {
+		return styles.InfoStyle.Render("No TLDs configured")
+	}
+
+	headers := make([]string, len(dnsTLDHeaders))
+	copy(headers, dnsTLDHeaders)
+	if !dnsRunning {
+		headers[2] = "Container (stopped)"
+	}
+
+	rows := buildDNSTLDRows(data)
+
+	var b strings.Builder
+	b.WriteString(styles.Banner("📡", fmt.Sprintf("DNS TLD Status (%d)", len(data.AllTLDs))))
+	b.WriteString("\n\n")
+	b.WriteString(RenderTable(headers, rows))
+	return b.String()
+}
+
+func dnsTLDTableNaturalWidth(a *app.App, ctx context.Context, dnsRunning bool) int {
+	data := GatherDNSTLDData(a, ctx, dnsRunning)
+	if len(data.AllTLDs) == 0 {
+		return 0
+	}
+	const cardChrome = 6
+	rows := buildDNSTLDRows(data)
+	tableStr := RenderTable(dnsTLDHeaders, rows)
+	return lipgloss.Width(tableStr) + cardChrome
+}
+
+func renderDNSTLDBoxFromApp(a *app.App, ctx context.Context, dnsRunning bool, totalWidth int) string {
+	data := GatherDNSTLDData(a, ctx, dnsRunning)
+	if len(data.AllTLDs) == 0 {
+		return ""
+	}
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.Text)
+	iconStyle := lipgloss.NewStyle().Foreground(styles.Secondary)
+
+	innerWidth := totalWidth - 6
+	if innerWidth < 10 {
+		innerWidth = 10
+	}
+
+	headers := make([]string, len(dnsTLDHeaders))
+	copy(headers, dnsTLDHeaders)
+	if !dnsRunning {
+		headers[2] = "Container (stopped)"
+	}
+
+	rows := buildDNSTLDRows(data)
+
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("%s %s\n",
+		iconStyle.Render("📡"),
+		titleStyle.Render(fmt.Sprintf("DNS TLD Status (%d)", len(data.AllTLDs))),
+	))
+	b.WriteString(styles.HorizontalRule(innerWidth))
+	b.WriteString("\n")
+	b.WriteString(RenderTable(headers, rows, innerWidth))
+
+	return b.String()
+}
+
+// ── Proxy services table ─────────────────────────────────────────────
+
+// buildProxyRows probes all entries in parallel and returns table rows with a Status column.
+func buildProxyRows(entries []service.ProxyStatusEntry, hyperlinks bool) [][]string {
+	probes := service.ProbeServices(entries)
+	rows := make([][]string, 0, len(entries))
+	for i, e := range entries {
+		url := e.Proto + "://" + e.Host
+		if hyperlinks {
+			url = styles.Hyperlink(url, url)
+		}
+		status := FormatHTTPStatus(probes[i].StatusCode, probes[i].Status)
+		if probes[i].Fallback {
+			status += " " + styles.WarningStyle.Render("(no upstream)")
+		}
+		rows = append(rows, []string{e.Container, e.Network, url, e.Port, e.Path, status})
+	}
+	return rows
+}
+
+var proxyHeaders = []string{"Container", "Network", "Host", "Port", "Path", "Status"}
+var sidecarHeaders = []string{"Container", "Protocol", "Port", "Status"}
+
+// RenderProxyServicesTable renders a standalone proxy services table with probing.
+func RenderProxyServicesTable(entries []service.ProxyStatusEntry) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	rows := buildProxyRows(entries, false)
+	var b strings.Builder
+	b.WriteString(styles.Banner("🔀", fmt.Sprintf("Proxied Services (%d)", len(entries))))
+	b.WriteString("\n\n")
+	b.WriteString(RenderTable(proxyHeaders, rows))
+	return b.String()
+}
+
+// RenderSidecarServicesTable renders a standalone sidecar services table.
+func RenderSidecarServicesTable(entries []service.SidecarStatusEntry) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	rows := make([][]string, 0, len(entries))
+	for _, e := range entries {
+		rows = append(rows, []string{e.Container, e.Proto, e.Port, e.Status})
+	}
+	var b strings.Builder
+	b.WriteString(styles.Banner("🔌", fmt.Sprintf("TCP/UDP Sidecars (%d)", len(entries))))
+	b.WriteString("\n\n")
+	b.WriteString(RenderTable(sidecarHeaders, rows))
+	return b.String()
+}
+
 func proxyServicesNaturalWidth(entries []service.ProxyStatusEntry) int {
 	if len(entries) == 0 {
 		return 0
 	}
 	const cardChrome = 6 // 2 border + 4 padding
+	// Use a dummy status column width for measurement.
 	rows := make([][]string, 0, len(entries))
 	for _, e := range entries {
 		url := e.Proto + "://" + e.Host
-		rows = append(rows, []string{e.Container, e.Network, url, e.Port, e.Path})
+		rows = append(rows, []string{e.Container, e.Network, url, e.Port, e.Path, "200"})
 	}
-	tableStr := RenderTable(
-		[]string{"Container", "Network", "Host", "Port", "Path"},
-		rows,
-	)
+	tableStr := RenderTable(proxyHeaders, rows)
 	return lipgloss.Width(tableStr) + cardChrome
 }
 
@@ -219,15 +462,12 @@ func sidecarServicesNaturalWidth(entries []service.SidecarStatusEntry) int {
 	for _, e := range entries {
 		rows = append(rows, []string{e.Container, e.Proto, e.Port, e.Status})
 	}
-	tableStr := RenderTable(
-		[]string{"Container", "Protocol", "Port", "Status"},
-		rows,
-	)
+	tableStr := RenderTable(sidecarHeaders, rows)
 	return lipgloss.Width(tableStr) + cardChrome
 }
 
 // renderProxyServicesBoxFromEntries renders the proxied services panel content
-// at the given total width. The caller wraps this in a CardActive style.
+// at the given total width with HTTP probing. The caller wraps this in a CardActive style.
 func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, totalWidth int) string {
 	if len(entries) == 0 {
 		return ""
@@ -236,38 +476,21 @@ func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, total
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.Text)
 	iconStyle := lipgloss.NewStyle().Foreground(styles.Secondary)
 
-	// Inner width = total width minus card chrome (2 border + 4 padding).
 	innerWidth := totalWidth - 6
 	if innerWidth < 10 {
 		innerWidth = 10
 	}
 
-	rows := make([][]string, 0, len(entries))
-	for _, e := range entries {
-		url := e.Proto + "://" + e.Host
-		rows = append(rows, []string{
-			e.Container,
-			e.Network,
-			styles.Hyperlink(url, url),
-			e.Port,
-			e.Path,
-		})
-	}
+	rows := buildProxyRows(entries, true)
 
 	var b strings.Builder
-
-	// Title line + rule, matching the card style.
 	b.WriteString(fmt.Sprintf("%s %s\n",
 		iconStyle.Render("🔀"),
 		titleStyle.Render(fmt.Sprintf("Proxied Services (%d)", len(entries))),
 	))
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
-	b.WriteString(RenderTable(
-		[]string{"Container", "Network", "Host", "Port", "Path"},
-		rows,
-		innerWidth,
-	))
+	b.WriteString(RenderTable(proxyHeaders, rows, innerWidth))
 
 	return b.String()
 }
@@ -282,7 +505,6 @@ func renderSidecarServicesBoxFromEntries(entries []service.SidecarStatusEntry, t
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.Text)
 	iconStyle := lipgloss.NewStyle().Foreground(styles.Secondary)
 
-	// Inner width = total width minus card chrome (2 border + 4 padding).
 	innerWidth := totalWidth - 6
 	if innerWidth < 10 {
 		innerWidth = 10
@@ -290,30 +512,37 @@ func renderSidecarServicesBoxFromEntries(entries []service.SidecarStatusEntry, t
 
 	rows := make([][]string, 0, len(entries))
 	for _, e := range entries {
-		rows = append(rows, []string{
-			e.Container,
-			e.Proto,
-			e.Port,
-			e.Status,
-		})
+		rows = append(rows, []string{e.Container, e.Proto, e.Port, e.Status})
 	}
 
 	var b strings.Builder
-
-	// Title line + rule, matching the card style.
 	b.WriteString(fmt.Sprintf("%s %s\n",
 		iconStyle.Render("🔌"),
 		titleStyle.Render(fmt.Sprintf("TCP/UDP Sidecars (%d)", len(entries))),
 	))
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
-	b.WriteString(RenderTable(
-		[]string{"Container", "Protocol", "Port", "Status"},
-		rows,
-		innerWidth,
-	))
+	b.WriteString(RenderTable(sidecarHeaders, rows, innerWidth))
 
 	return b.String()
+}
+
+// FormatHTTPStatus returns a styled status string for display in tables.
+func FormatHTTPStatus(code int, status string) string {
+	if status == "error" {
+		return styles.ErrorStyle.Render("error")
+	}
+	text := fmt.Sprintf("%d", code)
+	switch {
+	case code >= 200 && code < 300:
+		return styles.SuccessStyle.Render(text)
+	case code >= 300 && code < 400:
+		return styles.InfoStyle.Render(text)
+	case code >= 400 && code < 500:
+		return styles.WarningStyle.Render(text)
+	default:
+		return styles.ErrorStyle.Render(text)
+	}
 }
 
 
