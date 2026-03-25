@@ -1,7 +1,6 @@
 package config
 
-// DefaultSystemConfig returns the default system configuration,
-// matching the structure from default.ddt-system.json.
+// DefaultSystemConfig returns the default system configuration.
 func DefaultSystemConfig() *SystemConfig {
 	return &SystemConfig{
 		Description: "The Tools Configuration file",
@@ -17,12 +16,10 @@ func DefaultSystemConfig() *SystemConfig {
 		Proxy: ProxyConfig{
 			DockerImage:   "ghcr.io/antimatter-studios/docker-proxy:latest",
 			ContainerName: "ddt-proxy",
-			Network:       []string{},
 		},
 		ConfigGen: ConfigGenConfig{
 			DockerImage:   "ghcr.io/antimatter-studios/docker-config-gen:latest",
 			ContainerName: "ddt-config-gen",
-			Network:       []string{},
 		},
 		Projects: ProjectsConfig{
 			Paths: map[string]string{},

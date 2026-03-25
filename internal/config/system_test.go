@@ -59,6 +59,7 @@ func TestLoadOrDefaultMissingFile(t *testing.T) {
 	// doesn't find a real config file.
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	cfg := LoadOrDefault()
 

@@ -8,21 +8,32 @@ import (
 )
 
 const (
-	// SystemConfigFilename is the name of the system-wide config file.
-	SystemConfigFilename = ".ddt-system.json"
+	// ConfigDirName is the directory name under XDG_CONFIG_HOME.
+	ConfigDirName = "docker-dev-tools"
+	// SystemConfigFilename is the config file name inside the config directory.
+	SystemConfigFilename = "config.json"
 	// ProjectConfigFilename is the name of per-project config files.
 	ProjectConfigFilename = "ddt-project.json"
 	// CurrentVersion is the config schema version.
 	CurrentVersion = "3"
 )
 
-// ConfigPath returns the full path to the system config file.
-func ConfigPath() string {
+// ConfigDir returns the directory for ddt configuration files.
+// Uses $XDG_CONFIG_HOME/docker-dev-tools if set, otherwise ~/.config/docker-dev-tools.
+func ConfigDir() string {
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		return filepath.Join(xdg, ConfigDirName)
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return SystemConfigFilename
+		return ConfigDirName
 	}
-	return filepath.Join(home, SystemConfigFilename)
+	return filepath.Join(home, ".config", ConfigDirName)
+}
+
+// ConfigPath returns the full path to the system config file.
+func ConfigPath() string {
+	return filepath.Join(ConfigDir(), SystemConfigFilename)
 }
 
 // LoadJSON reads a JSON file into the target struct.
@@ -38,10 +49,14 @@ func LoadJSON(path string, target any) error {
 }
 
 // SaveJSON writes a struct to a JSON file with indentation.
+// Creates parent directories if they don't exist.
 func SaveJSON(path string, data any) error {
 	bytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshalling config: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
 	}
 	if err := os.WriteFile(path, bytes, 0644); err != nil {
 		return fmt.Errorf("writing config %s: %w", path, err)

@@ -43,16 +43,14 @@ func (d *DNSConfig) PortOrDefault() int {
 
 // ProxyConfig holds reverse proxy container settings.
 type ProxyConfig struct {
-	DockerImage   string   `json:"docker_image"`
-	ContainerName string   `json:"container_name"`
-	Network       []string `json:"network"`
+	DockerImage   string `json:"docker_image"`
+	ContainerName string `json:"container_name"`
 }
 
 // ConfigGenConfig holds the config generator container settings.
 type ConfigGenConfig struct {
-	DockerImage   string   `json:"docker_image"`
-	ContainerName string   `json:"container_name"`
-	Network       []string `json:"network"`
+	DockerImage   string `json:"docker_image"`
+	ContainerName string `json:"container_name"`
 }
 
 // ProjectsConfig holds project path and list configuration.
@@ -84,7 +82,7 @@ func (c *SystemConfig) Save() error {
 	return SaveJSON(c.path, c)
 }
 
-// LoadOrDefault loads the system config from ~/.ddt-system.json,
+// LoadOrDefault loads the system config from the XDG config path,
 // falling back to defaults if the file doesn't exist.
 func LoadOrDefault() *SystemConfig {
 	path := ConfigPath()
