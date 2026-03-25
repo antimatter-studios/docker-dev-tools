@@ -43,14 +43,17 @@ tasks:
       - go run -ldflags "{{.LDFLAGS}}" ./cmd/ddt {{.CLI_ARGS}}
 
   test:
-    desc: Run all tests
+    desc: Run all tests with verbose output, coverage, and summary stats
     cmds:
-      - go test -race -cover ./...
-
-  test:verbose:
-    desc: Run all tests with verbose output
-    cmds:
-      - go test -race -cover -v ./...
+      - go test -race -cover -count=1 -v ./... 2>&1 | tee /tmp/ddt-test.out
+      - echo ""
+      - echo "── Summary ──────────────────────────────────"
+      - 'grep -c "^--- PASS" /tmp/ddt-test.out | xargs printf "  Tests passed:   %4s\n"'
+      - 'grep -c "^--- FAIL" /tmp/ddt-test.out | xargs printf "  Tests failed:   %4s\n" || printf "  Tests failed:      0\n"'
+      - 'grep -c "^ok" /tmp/ddt-test.out | xargs printf "  Packages passed: %3s\n"'
+      - 'grep "coverage:" /tmp/ddt-test.out | sed "s/.*coverage: //" | sed "s/ of.*//" | awk "{sum+=\$1; n++} END {if(n>0) printf \"  Average coverage: %5.1f%%\n\", sum/n}"'
+      - echo "─────────────────────────────────────────────"
+    silent: true
 
   lint:
     desc: Run linter
