@@ -8,13 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -65,7 +64,7 @@ func (c *Client) HasImage(ctx context.Context, ref string) bool {
 	if err != nil {
 		return false
 	}
-	_, _, err = api.ImageInspectWithRaw(ctx, ref)
+	_, err = api.ImageInspect(ctx, ref)
 	return err == nil
 }
 
@@ -76,7 +75,7 @@ func (c *Client) ImageID(ctx context.Context, ref string) string {
 	if err != nil {
 		return ""
 	}
-	inspect, _, err := api.ImageInspectWithRaw(ctx, ref)
+	inspect, err := api.ImageInspect(ctx, ref)
 	if err != nil {
 		return ""
 	}
@@ -100,7 +99,7 @@ func (c *Client) ImageInfo(ctx context.Context, ref string) *ImageMeta {
 	if err != nil {
 		return nil
 	}
-	inspect, _, err := api.ImageInspectWithRaw(ctx, ref)
+	inspect, err := api.ImageInspect(ctx, ref)
 	if err != nil {
 		return nil
 	}
@@ -132,7 +131,7 @@ func (c *Client) PullImage(ctx context.Context, ref string) error {
 	if err != nil {
 		return fmt.Errorf("pulling image %s: %w", ref, err)
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 	_, _ = io.Copy(io.Discard, reader)
 	return nil
 }
@@ -142,14 +141,14 @@ func (c *Client) PullImage(ctx context.Context, ref string) error {
 func (c *Client) EnsureImage(ctx context.Context, ref string, forcePull bool, w io.Writer) error {
 	if forcePull {
 		if w != nil {
-			fmt.Fprintf(w, "Pulling image %s ...\n", ref)
+			_, _ = fmt.Fprintf(w, "Pulling image %s ...\n", ref)
 		}
 		return c.PullImage(ctx, ref)
 	}
 
 	if !c.HasImage(ctx, ref) {
 		if w != nil {
-			fmt.Fprintf(w, "Image %s not found locally, pulling ...\n", ref)
+			_, _ = fmt.Fprintf(w, "Image %s not found locally, pulling ...\n", ref)
 		}
 		return c.PullImage(ctx, ref)
 	}
@@ -223,7 +222,7 @@ func (c *Client) StopAndRemoveContainerWithReport(ctx context.Context, nameOrID 
 	info, err := api.ContainerInspect(ctx, nameOrID)
 	if err != nil {
 		// Treat not-found as a non-error; caller can decide what to print.
-		if errdefs.IsNotFound(err) || strings.Contains(err.Error(), "No such container") {
+		if cerrdefs.IsNotFound(err) || strings.Contains(err.Error(), "No such container") {
 			return StopRemoveResult{Found: false}, nil
 		}
 		return StopRemoveResult{}, fmt.Errorf("inspecting container %s: %w", nameOrID, err)
@@ -240,7 +239,7 @@ func (c *Client) StopAndRemoveContainerWithReport(ctx context.Context, nameOrID 
 
 	if err := c.RemoveContainer(ctx, nameOrID, true); err != nil {
 		// If it disappears between inspect and remove, treat as removed.
-		if errdefs.IsNotFound(err) || strings.Contains(err.Error(), "No such container") {
+		if cerrdefs.IsNotFound(err) || strings.Contains(err.Error(), "No such container") {
 			res.Removed = true
 			return res, nil
 		}
@@ -447,7 +446,7 @@ func (c *Client) InspectContainer(ctx context.Context, nameOrID string) (*Contai
 
 	// Fetch image metadata for ID and build date.
 	var imageID, imageCreated string
-	imgInspect, _, err := api.ImageInspectWithRaw(ctx, info.Image)
+	imgInspect, err := api.ImageInspect(ctx, info.Image)
 	if err == nil {
 		imageID = imgInspect.ID
 		imageCreated = imgInspect.Created
@@ -488,7 +487,7 @@ func (c *Client) ListContainersOnNetwork(ctx context.Context, networkName string
 }
 
 // ListRunningContainers returns all running containers, optionally filtered by labels.
-func (c *Client) ListRunningContainers(ctx context.Context, labelFilter ...string) ([]types.Container, error) {
+func (c *Client) ListRunningContainers(ctx context.Context, labelFilter ...string) ([]container.Summary, error) {
 	api, err := c.connect()
 	if err != nil {
 		return nil, err

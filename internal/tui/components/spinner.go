@@ -97,10 +97,10 @@ func (m OperationModel) View() string {
 				Render(fmt.Sprintf("completed in %s", m.elapsed.Round(time.Millisecond))))
 		}
 	} else {
-		b.WriteString(fmt.Sprintf("%s %s",
+		fmt.Fprintf(&b, "%s %s",
 			m.spinner.View(),
 			lipgloss.NewStyle().Foreground(styles.TextDim).Render(m.title),
-		))
+		)
 		if m.detail != "" {
 			b.WriteString("\n")
 			b.WriteString(lipgloss.NewStyle().PaddingLeft(2).Foreground(styles.Subtle).Render(m.detail))

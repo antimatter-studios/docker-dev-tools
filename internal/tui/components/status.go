@@ -235,11 +235,11 @@ func sortSidecarEntries(entries []service.SidecarStatusEntry) {
 
 // DNSTLDData holds the gathered TLD state from all three sources.
 type DNSTLDData struct {
-	AllTLDs      []string
-	InConfig     map[string]bool
-	InContainer  map[string]bool
-	InSystem     map[string]bool
-	DNSRunning   bool
+	AllTLDs     []string
+	InConfig    map[string]bool
+	InContainer map[string]bool
+	InSystem    map[string]bool
+	DNSRunning  bool
 }
 
 // GatherDNSTLDData collects TLD information from config, container, and system resolvers.
@@ -375,10 +375,10 @@ func renderDNSTLDBoxFromApp(a *app.App, ctx context.Context, dnsRunning bool, to
 	rows := buildDNSTLDRows(data)
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s %s\n",
+	fmt.Fprintf(&b, "%s %s\n",
 		iconStyle.Render("📡"),
 		titleStyle.Render(fmt.Sprintf("DNS TLD Status (%d)", len(data.AllTLDs))),
-	))
+	)
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
 	b.WriteString(RenderTable(headers, rows, innerWidth))
@@ -484,10 +484,10 @@ func renderProxyServicesBoxFromEntries(entries []service.ProxyStatusEntry, total
 	rows := buildProxyRows(entries, true)
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s %s\n",
+	fmt.Fprintf(&b, "%s %s\n",
 		iconStyle.Render("🔀"),
 		titleStyle.Render(fmt.Sprintf("Proxied Services (%d)", len(entries))),
-	))
+	)
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
 	b.WriteString(RenderTable(proxyHeaders, rows, innerWidth))
@@ -516,10 +516,10 @@ func renderSidecarServicesBoxFromEntries(entries []service.SidecarStatusEntry, t
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%s %s\n",
+	fmt.Fprintf(&b, "%s %s\n",
 		iconStyle.Render("🔌"),
 		titleStyle.Render(fmt.Sprintf("TCP/UDP Sidecars (%d)", len(entries))),
-	))
+	)
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
 	b.WriteString(RenderTable(sidecarHeaders, rows, innerWidth))
@@ -544,7 +544,6 @@ func FormatHTTPStatus(code int, status string) string {
 		return styles.ErrorStyle.Render(text)
 	}
 }
-
 
 type cardDef struct {
 	icon   string
@@ -711,11 +710,11 @@ func renderCardBody(c cardDef, innerWidth int) string {
 	// Title line.
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(styles.Text)
 	iconStyle := lipgloss.NewStyle().Foreground(styles.Secondary)
-	b.WriteString(fmt.Sprintf("%s %s  %s\n",
+	fmt.Fprintf(&b, "%s %s  %s\n",
 		iconStyle.Render(c.icon),
 		titleStyle.Render(c.title),
 		styles.StatusBadge(c.active),
-	))
+	)
 
 	b.WriteString(styles.HorizontalRule(innerWidth))
 	b.WriteString("\n")
@@ -736,7 +735,7 @@ func renderCardBody(c cardDef, innerWidth int) string {
 			Align(lipgloss.Right).
 			Render(r.Key)
 		val := lipgloss.NewStyle().Foreground(styles.TextDim).Render(r.Value)
-		b.WriteString(fmt.Sprintf("%s  %s\n", label, val))
+		fmt.Fprintf(&b, "%s  %s\n", label, val)
 	}
 
 	return b.String()

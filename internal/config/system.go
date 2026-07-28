@@ -19,11 +19,24 @@ type SystemConfig struct {
 
 	// path is the file this config was loaded from.
 	path string
+
+	// imageNotes records any docker_image the load reconciled, for the caller to
+	// report. Replacing a value silently is how someone loses a local image build
+	// without ever being told which one.
+	imageNotes []string
 }
+
+// ImageNotes returns a line per docker_image that loading brought into line with this
+// binary's pinned digests. Empty unless something changed.
+func (c *SystemConfig) ImageNotes() []string { return c.imageNotes }
 
 // DNSConfig holds DNS server container settings.
 type DNSConfig struct {
-	DockerImage   string   `json:"docker_image"`
+	DockerImage string `json:"docker_image"`
+	// CustomImage marks DockerImage as the user's own, so ddt leaves it alone instead
+	// of reconciling it against the digest this binary was built with. Additive and
+	// absent by default: a missing key decodes to false, which is the wanted default.
+	CustomImage   bool     `json:"custom_image,omitempty"`
 	ContainerName string   `json:"container_name"`
 	Port          int      `json:"port,omitempty"`
 	TLDs          []string `json:"tlds,omitempty"`
@@ -43,20 +56,24 @@ func (d *DNSConfig) PortOrDefault() int {
 
 // ProxyConfig holds reverse proxy container settings.
 type ProxyConfig struct {
-	DockerImage   string `json:"docker_image"`
+	DockerImage string `json:"docker_image"`
+	// CustomImage: see DNSConfig.CustomImage.
+	CustomImage   bool   `json:"custom_image,omitempty"`
 	ContainerName string `json:"container_name"`
 }
 
 // ConfigGenConfig holds the config generator container settings.
 type ConfigGenConfig struct {
-	DockerImage   string `json:"docker_image"`
+	DockerImage string `json:"docker_image"`
+	// CustomImage: see DNSConfig.CustomImage.
+	CustomImage   bool   `json:"custom_image,omitempty"`
 	ContainerName string `json:"container_name"`
 }
 
 // ProjectsConfig holds project path and list configuration.
 type ProjectsConfig struct {
-	Paths map[string]string         `json:"paths"`
-	List  map[string]ProjectEntry   `json:"list"`
+	Paths map[string]string       `json:"paths"`
+	List  map[string]ProjectEntry `json:"list"`
 }
 
 // ProjectEntry represents a single project in the system config.
@@ -102,7 +119,37 @@ func LoadOrDefault() *SystemConfig {
 
 	cfg.path = path
 	cfg.migrateDomainsTLDs()
+	cfg.reconcileImages()
 	return cfg
+}
+
+// reconcileImages brings each service's docker_image into line with the digests this
+// binary was built against, and persists the result.
+//
+// It runs on every load because the config file outlives the binary: a config written by
+// an older ddt records whatever that version used — usually `:latest` — so without this
+// a release that pins digests would still run floating images for every existing user.
+// Blocks marked custom_image are left alone. See ReconcileImage.
+func (c *SystemConfig) reconcileImages() {
+	changed := false
+	reconcile := func(service string, current *string, expected string, custom bool) {
+		next, note := ReconcileImage(service, *current, expected, custom)
+		if next != *current {
+			*current = next
+			changed = true
+		}
+		if note != "" {
+			c.imageNotes = append(c.imageNotes, note)
+		}
+	}
+
+	reconcile("dns", &c.DNS.DockerImage, DNSImage, c.DNS.CustomImage)
+	reconcile("proxy", &c.Proxy.DockerImage, ProxyImage, c.Proxy.CustomImage)
+	reconcile("config_gen", &c.ConfigGen.DockerImage, ConfigGenImage, c.ConfigGen.CustomImage)
+
+	if changed {
+		_ = c.Save()
+	}
 }
 
 // migrateDomainsTLDs converts any legacy per-domain entries into wildcard TLDs
@@ -125,7 +172,6 @@ func (c *SystemConfig) migrateDomainsTLDs() {
 			if tld != "" && !existing[tld] {
 				c.DNS.TLDs = append(c.DNS.TLDs, tld)
 				existing[tld] = true
-				changed = true
 			}
 		}
 	}

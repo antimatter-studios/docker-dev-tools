@@ -22,6 +22,19 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
+      # The images THIS ddt is compatible with, as immutable digests resolved by the
+      # release workflow just before this runs. A binary then always drives the
+      # components it was released against, which matters because some pairs are only
+      # correct together — a proxy image whose template expects a value its generator
+      # does not supply yet renders an nginx config that will not load.
+      #
+      # Guarded so a build from source still works: with the variables unset nothing is
+      # stamped, the defaults in internal/config stay at :latest, and startup leaves
+      # every configured docker_image alone. Stamping an empty string instead would
+      # write empty image names into a fresh config.
+      - '{{ if isEnvSet "DDT_DNS_IMAGE" }}-X github.com/christhomas/docker-dev-tools/internal/config.DNSImage={{ .Env.DDT_DNS_IMAGE }}{{ end }}'
+      - '{{ if isEnvSet "DDT_PROXY_IMAGE" }}-X github.com/christhomas/docker-dev-tools/internal/config.ProxyImage={{ .Env.DDT_PROXY_IMAGE }}{{ end }}'
+      - '{{ if isEnvSet "DDT_CONFIG_GEN_IMAGE" }}-X github.com/christhomas/docker-dev-tools/internal/config.ConfigGenImage={{ .Env.DDT_CONFIG_GEN_IMAGE }}{{ end }}'
 
 archives:
   - formats:

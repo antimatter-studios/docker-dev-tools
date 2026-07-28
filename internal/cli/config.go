@@ -54,7 +54,9 @@ func newConfigCmd(a *app.App) *cobra.Command {
 			Short: "Reset configuration to defaults",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				defaults := config.DefaultSystemConfig()
-				defaults.Save()
+				if err := defaults.Save(); err != nil {
+					return err
+				}
 				fmt.Println(styles.SuccessStyle.Render("Configuration reset to defaults"))
 				return nil
 			},

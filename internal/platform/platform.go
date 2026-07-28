@@ -49,7 +49,7 @@ func CheckPortAvailable(ip string, port int) error {
 	if err != nil {
 		return fmt.Errorf("TCP port %d on %s is already in use", port, ip)
 	}
-	ln.Close()
+	_ = ln.Close()
 
 	// Check UDP.
 	ua, err := net.ResolveUDPAddr("udp", addr)
@@ -60,7 +60,7 @@ func CheckPortAvailable(ip string, port int) error {
 	if err != nil {
 		return fmt.Errorf("UDP port %d on %s is already in use", port, ip)
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	return nil
 }

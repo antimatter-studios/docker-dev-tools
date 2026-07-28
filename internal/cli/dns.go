@@ -235,7 +235,7 @@ func dnsStart(ctx context.Context, a *app.App, pull bool) error {
 		steps.Info(meta.Summary(a.DNS.Image()))
 	}
 
-	steps.Run("Clean up existing container", func() error {
+	_ = steps.Run("Clean up existing container", func() error {
 		a.DNS.Cleanup(ctx)
 		return nil
 	})
@@ -283,7 +283,7 @@ func dnsStart(ctx context.Context, a *app.App, pull bool) error {
 		return err
 	}
 
-	steps.Run("Configure wildcard TLDs", func() error {
+	_ = steps.Run("Configure wildcard TLDs", func() error {
 		a.DNS.ConfigureTLDs(ctx)
 		a.DNS.Reload(ctx)
 		return nil
@@ -346,7 +346,7 @@ func quickPing(target string) string {
 		}
 		return styles.WarningStyle.Render("resolved but port 80 unreachable")
 	}
-	conn.Close()
+	_ = conn.Close()
 	elapsed := time.Since(start)
 	return styles.SuccessStyle.Render(fmt.Sprintf("ok (%s)", elapsed.Round(time.Millisecond)))
 }
@@ -362,7 +362,7 @@ func newDNSLogsCmd(a *app.App) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer reader.Close()
+			defer func() { _ = reader.Close() }()
 			_, err = io.Copy(os.Stdout, reader)
 			return err
 		},
