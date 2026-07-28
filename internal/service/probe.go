@@ -45,7 +45,7 @@ func ProbeServices(entries []ProxyStatusEntry) []ProbeResult {
 				results[idx] = ProbeResult{Status: "error"}
 				return
 			}
-			resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			results[idx] = ProbeResult{
 				StatusCode: resp.StatusCode,
 				Status:     fmt.Sprintf("%d", resp.StatusCode),

@@ -42,12 +42,12 @@ func newRestartCmd(a *app.App) *cobra.Command {
 
 			// Stop proxy first, then DNS.
 			steps := components.NewSteps("🔀", "Stopping Reverse Proxy")
-			steps.Run("Stop proxy container", func() error {
-				a.Proxy.StopProxy(ctx)
+			_ = steps.Run("Stop proxy container", func() error {
+				_, _ = a.Proxy.StopProxy(ctx)
 				return nil
 			})
-			steps.Run("Stop config-gen container", func() error {
-				a.Proxy.StopConfigGen(ctx)
+			_ = steps.Run("Stop config-gen container", func() error {
+				_, _ = a.Proxy.StopConfigGen(ctx)
 				return nil
 			})
 			steps.Done()
@@ -78,7 +78,7 @@ func newStopCmd(a *app.App) *cobra.Command {
 			ctx := context.Background()
 
 			steps := components.NewSteps("🔀", "Stopping Reverse Proxy")
-			steps.Run("Stop proxy container", func() error {
+			_ = steps.Run("Stop proxy container", func() error {
 				res, _ := a.Proxy.StopProxy(ctx)
 				if !res.Found {
 					steps.Info("Proxy container not found")
@@ -87,7 +87,7 @@ func newStopCmd(a *app.App) *cobra.Command {
 				}
 				return nil
 			})
-			steps.Run("Stop config-gen container", func() error {
+			_ = steps.Run("Stop config-gen container", func() error {
 				res, _ := a.Proxy.StopConfigGen(ctx)
 				if !res.Found {
 					steps.Info("Config-gen container not found")

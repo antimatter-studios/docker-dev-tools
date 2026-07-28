@@ -47,13 +47,13 @@ func startLogStream(d *docker.Client, containerName string, ctx context.Context)
 	ch := make(chan []string, 8)
 
 	go func() {
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 		defer close(ch)
 
 		// Demux the Docker multiplexed stream (stdout+stderr) into a single pipe.
 		pr, pw := io.Pipe()
 		go func() {
-			defer pw.Close()
+			defer func() { _ = pw.Close() }()
 			// Merge stdout and stderr into one stream.
 			_, _ = stdcopy.StdCopy(pw, pw, reader)
 		}()

@@ -315,7 +315,7 @@ func doPing(target string, seq int) tea.Cmd {
 				}}
 			}
 		}
-		conn.Close()
+		_ = conn.Close()
 
 		return pingResultMsg{result: PingResult{
 			Seq:     seq,

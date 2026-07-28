@@ -60,6 +60,6 @@ func (s *IPService) Ping() (time.Duration, error) {
 			return 0, fmt.Errorf("host %s unreachable: %w", s.config.IPAddress, err)
 		}
 	}
-	conn.Close()
+	_ = conn.Close()
 	return time.Since(start), nil
 }
