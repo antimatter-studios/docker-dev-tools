@@ -22,11 +22,38 @@ jobs:
           go-version: "1.23"
           cache: true
 
+      # Resolve the images this release is built against to immutable digests, so the
+      # binary declares exactly which components it works with instead of following a
+      # tag that moves under it. `:latest` is what a source build falls back to; it is
+      # not what ships.
+      #
+      # The digest taken is the manifest LIST digest, so it still resolves per
+      # architecture on the user's machine.
+      - name: Resolve component image digests
+        run: |
+          set -euo pipefail
+          resolve() {
+            local repo="$1" var="$2" digest
+            digest=$(docker buildx imagetools inspect "ghcr.io/antimatter-studios/${repo}:latest" \
+              --format '{{ .Manifest.Digest }}')
+            case "$digest" in
+              sha256:*) ;;
+              *) echo "unexpected digest for ${repo}: ${digest}" >&2; exit 1 ;;
+            esac
+            echo "${var}=ghcr.io/antimatter-studios/${repo}@${digest}" >> "$GITHUB_ENV"
+            echo "  ${repo} -> ${digest}"
+          }
+          resolve docker-dns DDT_DNS_IMAGE
+          resolve docker-proxy DDT_PROXY_IMAGE
+          resolve docker-config-gen DDT_CONFIG_GEN_IMAGE
+
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           distribution: goreleaser
-          version: latest
+          # Pinned, not `latest`: goreleaser builds the binary users install and writes
+          # the Homebrew cask, so it is part of the supply chain.
+          version: v2.17.0
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

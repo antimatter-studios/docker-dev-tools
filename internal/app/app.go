@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
@@ -38,6 +39,14 @@ type App struct {
 // New creates and wires up a new App instance.
 func New(build BuildInfo) *App {
 	cfg := config.LoadOrDefault()
+
+	// Loading may have rewritten a docker_image to match the digests this build pins.
+	// On stderr so it never lands in the output of a command being parsed, but said out
+	// loud — a silently replaced image is the one thing this mechanism must not do.
+	for _, note := range cfg.ImageNotes() {
+		fmt.Fprintln(os.Stderr, note)
+	}
+
 	plat := platform.Detect()
 	dockerClient := docker.NewClient()
 
