@@ -39,3 +39,6 @@ Thumbs.db
 # Misc
 ZOLD*
 .task/checksum/*
+
+# Editor local-history snapshots (VS Code Local History and similar)
+.history/
