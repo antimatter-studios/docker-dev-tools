@@ -1,13 +1,10 @@
 package service
 
 import (
-	"archive/tar"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -29,14 +26,13 @@ const (
 
 // ProxyService manages the reverse proxy and config-gen containers.
 type ProxyService struct {
-	config   *config.SystemConfig
-	docker   *docker.Client
-	toolsDir string // directory containing proxy-config/
+	config *config.SystemConfig
+	docker *docker.Client
 }
 
 // NewProxyService creates a new proxy service.
-func NewProxyService(cfg *config.SystemConfig, d *docker.Client, toolsDir string) *ProxyService {
-	return &ProxyService{config: cfg, docker: d, toolsDir: toolsDir}
+func NewProxyService(cfg *config.SystemConfig, d *docker.Client) *ProxyService {
+	return &ProxyService{config: cfg, docker: d}
 }
 
 // ProxyStopReport contains the stop/remove results for proxy and config-gen.
@@ -68,8 +64,11 @@ type ProxyStartReport struct {
 	ProxyStarted     bool
 }
 
-// Start launches the config-gen container, then the proxy container, connects
-// them to all configured networks, and copies the nginx config files in.
+// Start launches the config-gen container, then the proxy container.
+//
+// It no longer copies nginx configuration in: the generator writes the config, and
+// proxy.conf ships inside the proxy image. Network connections are managed
+// dynamically by the generator too.
 func (s *ProxyService) Start(ctx context.Context, pull bool) error {
 	_, err := s.StartWithReport(ctx, pull)
 	return err
@@ -98,16 +97,11 @@ func (s *ProxyService) StartWithReport(ctx context.Context, pull bool) (ProxySta
 	report.ConfigGenStarted = true
 
 	// 2. Start the proxy (nginx).
-	proxyID, err := s.startProxy(ctx)
+	_, err = s.startProxy(ctx)
 	if err != nil {
 		return report, fmt.Errorf("starting proxy: %w", err)
 	}
 	report.ProxyStarted = true
-
-	// 3. Copy nginx config files into the proxy container.
-	if err := s.copyProxyConfigs(ctx, proxyID); err != nil {
-		return report, fmt.Errorf("copying proxy configs: %w", err)
-	}
 
 	return report, nil
 }
@@ -380,15 +374,11 @@ func (s *ProxyService) StartConfigGenContainer(ctx context.Context) error {
 	return err
 }
 
-// StartProxyContainer creates and starts the proxy container and copies
-// the nginx configuration files. Network connections are managed dynamically
-// by docker-config-gen.
+// StartProxyContainer creates and starts the proxy container.
+// Network connections are managed dynamically by docker-config-gen.
 func (s *ProxyService) StartProxyContainer(ctx context.Context) error {
-	proxyID, err := s.startProxy(ctx)
-	if err != nil {
-		return err
-	}
-	return s.copyProxyConfigs(ctx, proxyID)
+	_, err := s.startProxy(ctx)
+	return err
 }
 
 // ConfigGenContainerName returns the configured config-gen container name.
@@ -451,39 +441,3 @@ func (s *ProxyService) startProxy(ctx context.Context) (string, error) {
 	)
 }
 
-func (s *ProxyService) copyProxyConfigs(ctx context.Context, containerID string) error {
-	files := map[string]string{
-		filepath.Join(s.toolsDir, "proxy-config", "global.conf"):      "/etc/nginx/conf.d/global.conf",
-		filepath.Join(s.toolsDir, "proxy-config", "nginx-proxy.conf"): "/etc/nginx/proxy.conf",
-	}
-
-	for src, dest := range files {
-		if err := s.copyFileToContainer(ctx, containerID, src, dest); err != nil {
-			return fmt.Errorf("copying %s: %w", filepath.Base(src), err)
-		}
-	}
-	return nil
-}
-
-func (s *ProxyService) copyFileToContainer(ctx context.Context, containerID, srcPath, destPath string) error {
-	data, err := os.ReadFile(srcPath)
-	if err != nil {
-		return err
-	}
-
-	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-	if err := tw.WriteHeader(&tar.Header{
-		Name: filepath.Base(destPath),
-		Mode: 0644,
-		Size: int64(len(data)),
-	}); err != nil {
-		return err
-	}
-	if _, err := tw.Write(data); err != nil {
-		return err
-	}
-	_ = tw.Close()
-
-	return s.docker.CopyToContainer(ctx, containerID, filepath.Dir(destPath), &buf)
-}

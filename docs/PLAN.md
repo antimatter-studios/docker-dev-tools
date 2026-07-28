@@ -77,7 +77,6 @@ docker-dev-tools/
 │       ├── project.go        # Project model
 │       ├── script.go         # Script/run configuration
 │       └── docker.go         # Docker profile models
-├── proxy-config/             # NGINX proxy configuration (carried over)
 ├── docs/                     # Documentation
 │   └── PLAN.md               # This file
 ├── .github/workflows/        # CI/CD

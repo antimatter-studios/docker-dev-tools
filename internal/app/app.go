@@ -2,8 +2,6 @@ package app
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
@@ -35,7 +33,6 @@ type App struct {
 	Project  *service.ProjectService
 	Runner   *service.RunnerService
 	Git      *service.GitService
-	ToolsDir string // directory containing proxy-config/, etc.
 }
 
 // New creates and wires up a new App instance.
@@ -43,11 +40,10 @@ func New(build BuildInfo) *App {
 	cfg := config.LoadOrDefault()
 	plat := platform.Detect()
 	dockerClient := docker.NewClient()
-	toolsDir := detectToolsDir()
 
 	ipSvc := service.NewIPService(cfg, plat)
 	dnsSvc := service.NewDNSService(cfg, dockerClient, plat)
-	proxySvc := service.NewProxyService(cfg, dockerClient, toolsDir)
+	proxySvc := service.NewProxyService(cfg, dockerClient)
 	projectSvc := service.NewProjectService(cfg)
 	gitSvc := service.NewGitService()
 	runnerSvc := service.NewRunnerService(cfg, projectSvc)
@@ -63,31 +59,5 @@ func New(build BuildInfo) *App {
 		Project:  projectSvc,
 		Runner:   runnerSvc,
 		Git:      gitSvc,
-		ToolsDir: toolsDir,
 	}
-}
-
-// detectToolsDir finds the project root (where proxy-config/ lives).
-// It walks up from the executable location looking for proxy-config/.
-// Falls back to the current working directory.
-func detectToolsDir() string {
-	// Try executable directory first.
-	exe, err := os.Executable()
-	if err == nil {
-		dir := filepath.Dir(exe)
-		// If exe is in bin/, go up one level.
-		if filepath.Base(dir) == "bin" {
-			dir = filepath.Dir(dir)
-		}
-		if _, err := os.Stat(filepath.Join(dir, "proxy-config")); err == nil {
-			return dir
-		}
-	}
-
-	// Fall back to CWD.
-	if cwd, err := os.Getwd(); err == nil {
-		return cwd
-	}
-
-	return "."
 }
