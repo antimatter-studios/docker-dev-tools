@@ -32,9 +32,15 @@ func ReconcileImage(service, current, expected string, custom bool) (next, note 
 	case custom:
 		// Declared as the user's own: never touched, whatever the binary expects.
 		return current, ""
-	case expected == "":
-		// Nothing stamped — a build from source. Leave the file as it is rather than
-		// blanking a working configuration.
+	case !isPinned(expected):
+		// No instruction to act on. This covers both an unstamped build (expected is
+		// empty) and a build from source, where expected is the `:latest` default from
+		// defaults.go — which is NOT the absence of an opinion but the opposite one.
+		//
+		// 2.2.0 shipped without this and consequently unpinned itself: running a
+		// locally built ddt once replaced all three digests a release had written and
+		// announced each one. A floating tag means this binary does not know which
+		// build it wants, so it must not overrule one that did.
 		return current, ""
 	case current == expected:
 		return current, ""
@@ -45,6 +51,14 @@ func ReconcileImage(service, current, expected string, custom bool) (next, note 
 			"%s: replaced docker_image (was %s) with %s — add \"custom_image\": true beside it to keep your own",
 			service, shortRef(current), shortRef(expected))
 	}
+}
+
+// isPinned reports whether a reference names one exact build.
+//
+// Only a digest does. A tag — `:latest`, `:2.2.0`, anything — is a pointer its publisher
+// can move, which is the whole reason this file exists.
+func isPinned(ref string) bool {
+	return strings.Contains(ref, "@sha256:")
 }
 
 // shortRef abbreviates an image reference for display. A digest-pinned ghcr.io
