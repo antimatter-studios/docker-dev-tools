@@ -12,7 +12,9 @@ func newVersionCmd(a *app.App) *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println(a.Build.String())
+			// The same output as `ddt --version`, so the two cannot drift apart.
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n%s",
+				cmd.Root().Name(), a.Build.String(), a.Build.Details())
 			return nil
 		},
 	}

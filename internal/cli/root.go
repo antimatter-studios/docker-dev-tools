@@ -19,6 +19,11 @@ and script execution with dependency resolution.`,
 		Version:       application.Build.String(),
 	}
 
+	// cobra's default template is "{{.Name}} version {{.Version}}", and Version used to
+	// carry the program name too. Dropping "version" as well: `ddt 2.2.0` reads better
+	// than `ddt version 2.2.0`, and matches how the details beneath it are laid out.
+	root.SetVersionTemplate("{{.Name}} {{.Version}}\n" + application.Build.Details())
+
 	// Global flags.
 	root.PersistentFlags().Bool("debug", false, "enable debug output")
 
