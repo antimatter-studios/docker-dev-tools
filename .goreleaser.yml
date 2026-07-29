@@ -44,19 +44,19 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
-homebrew_casks:
-  - name: ddt
-    binaries:
-      - ddt
-    repository:
-      owner: antimatter-studios
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    homepage: https://github.com/antimatter-studios/docker-dev-tools
-    description: "Docker development tools CLI"
-    hooks:
-      post:
-        install: 'system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ddt"]'
+# No `homebrew_casks:` block here, deliberately.
+#
+# goreleaser can write the cask straight into antimatter-studios/homebrew-tap, and this
+# release used to do exactly that with a token that had write access to the tap. That
+# means a release from this repository could change what `brew install ddt` fetches,
+# with nothing between the two.
+#
+# The tap is a PULL consumer instead, as it is for every other project in it: its "Sync
+# formulae from releases" workflow reads this repository's public releases, hashes the
+# assets it downloaded, and pushes a branch. A person opens the PR and merges it.
+#
+# To publish a release to brew: run that workflow in the tap, then open and merge the
+# PR it leaves behind.
 
 changelog:
   sort: asc
