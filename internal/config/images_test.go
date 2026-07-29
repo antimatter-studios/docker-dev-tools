@@ -59,6 +59,32 @@ func TestReconcileImage(t *testing.T) {
 		}
 	})
 
+	// Shipped broken in 2.2.0: the defaults in defaults.go are `:latest`, so a build
+	// from source has expected = "…:latest" rather than "". That is not "no opinion",
+	// it is the opposite opinion, and it UNPINNED a config a release had pinned —
+	// running a locally built ddt once replaced all three digests and announced it.
+	//
+	// Only a digest is an instruction. A floating tag means this binary does not know
+	// which build it wants, so it must not overrule one that did.
+	t.Run("a source build does not unpin a pinned config", func(t *testing.T) {
+		next, note := ReconcileImage("proxy", expected, "ghcr.io/antimatter-studios/docker-proxy:latest", false)
+		if next != expected {
+			t.Errorf("next = %q, want the pinned digest %q left alone", next, expected)
+		}
+		if note != "" {
+			t.Errorf("note = %q, want silence — nothing should have changed", note)
+		}
+	})
+
+	// The same rule must not stop a release from correcting a `:latest` config, which is
+	// the case the mechanism exists for.
+	t.Run("a pinned build still corrects a floating config", func(t *testing.T) {
+		next, note := ReconcileImage("proxy", "ghcr.io/antimatter-studios/docker-proxy:latest", expected, false)
+		if next != expected || note == "" {
+			t.Errorf("next = %q note = %q, want the digest applied and reported", next, note)
+		}
+	})
+
 	// A real digest reference is ~110 characters, so a note naming two of them is a
 	// ~230-character line that wraps several times and hides its own point.
 	t.Run("a note stays readable with real-length references", func(t *testing.T) {
