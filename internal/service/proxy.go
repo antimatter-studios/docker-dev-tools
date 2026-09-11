@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker/docker/api/types/network"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
 	"github.com/christhomas/docker-dev-tools/internal/docker"
@@ -301,7 +301,7 @@ func (s *ProxyService) SidecarStatus(ctx context.Context) ([]SidecarStatusEntry,
 		}
 		status := "running"
 		if c.State != "running" {
-			status = c.State
+			status = string(c.State)
 		}
 		entries = append(entries, SidecarStatusEntry{
 			Container: name,

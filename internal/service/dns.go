@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/netip"
 	"os"
 	"regexp"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	nat "github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
 	"github.com/christhomas/docker-dev-tools/internal/docker"
@@ -65,19 +66,28 @@ func (s *DNSService) Port() int {
 func (s *DNSService) StartContainer(ctx context.Context) error {
 	ip := s.config.IPAddress
 	hostPort := fmt.Sprintf("%d", s.config.DNS.PortOrDefault())
+	// The binding takes a parsed address; an empty one still binds every interface.
+	var hostIP netip.Addr
+	if ip != "" {
+		parsed, err := netip.ParseAddr(ip)
+		if err != nil {
+			return fmt.Errorf("binding %s:%s: %w", ip, hostPort, err)
+		}
+		hostIP = parsed
+	}
 	_, err := s.docker.RunContainer(ctx, s.config.DNS.ContainerName,
 		&container.Config{
 			Image: s.config.DNS.DockerImage,
-			ExposedPorts: nat.PortSet{
-				"53/tcp": struct{}{},
-				"53/udp": struct{}{},
+			ExposedPorts: network.PortSet{
+				network.MustParsePort("53/tcp"): struct{}{},
+				network.MustParsePort("53/udp"): struct{}{},
 			},
 		},
 		&container.HostConfig{
 			RestartPolicy: container.RestartPolicy{Name: "always"},
-			PortBindings: nat.PortMap{
-				"53/tcp": []nat.PortBinding{{HostIP: ip, HostPort: hostPort}},
-				"53/udp": []nat.PortBinding{{HostIP: ip, HostPort: hostPort}},
+			PortBindings: network.PortMap{
+				network.MustParsePort("53/tcp"): []network.PortBinding{{HostIP: hostIP, HostPort: hostPort}},
+				network.MustParsePort("53/udp"): []network.PortBinding{{HostIP: hostIP, HostPort: hostPort}},
 			},
 			Mounts: []mount.Mount{},
 		},
