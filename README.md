@@ -101,12 +101,15 @@ services:
 
 Labels follow the pattern `docker-proxy.{tag}.{field}` where `tag` is an arbitrary group name and `field` is one of:
 
-| Field   | Default | Description                     |
-|---------|---------|---------------------------------|
-| `host`  | —       | Hostname to route (required)    |
-| `port`  | `80`    | Target container port           |
-| `proto` | `http`  | Protocol (`http` or `https`)    |
-| `path`  | `/`     | URL path regex pattern          |
+| Field      | Default | Description                         |
+|------------|---------|-------------------------------------|
+| `host`     | —       | Hostname to route (required)        |
+| `port`     | `80`    | Target container port               |
+| `protocol` | `http`  | Upstream scheme (`http` or `https`) |
+| `path`     | `/`     | URL path regex pattern              |
+
+A group with `proto=tcp` or `proto=udp` is a raw TCP or UDP stream rather than
+an HTTP route; docker-config-gen proxies those separately.
 
 A single container can define multiple routes using different tags:
 ```yaml

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -258,14 +259,17 @@ func labelRoutes(labels map[string]string) []labelRoute {
 	}
 	var routes []labelRoute
 	for _, g := range groups {
-		if g["host"] == "" {
+		// .proto=tcp|udp marks a raw stream, which docker-config-gen proxies
+		// separately; it is not an HTTP route.
+		if g["host"] == "" || isStreamProto(g["proto"]) {
 			continue
 		}
 		p := g["port"]
 		if p == "" {
 			p = "80"
 		}
-		pr := g["proto"]
+		// The upstream scheme is .protocol, the label docker-config-gen reads.
+		pr := g["protocol"]
 		if pr == "" {
 			pr = "http"
 		}
@@ -276,6 +280,11 @@ func labelRoutes(labels map[string]string) []labelRoute {
 		routes = append(routes, labelRoute{Host: g["host"], Port: p, Proto: pr, Path: pa})
 	}
 	return routes
+}
+
+func isStreamProto(proto string) bool {
+	p := strings.ToLower(proto)
+	return p == "tcp" || p == "udp"
 }
 
 // SidecarStatus discovers sidecar containers managed by docker-config-gen.
