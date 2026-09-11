@@ -53,3 +53,14 @@ func DefaultSystemConfig() *SystemConfig {
 		},
 	}
 }
+
+// ResetSystemConfig writes the default configuration to ConfigPath, replacing whatever
+// is there, and returns it. DefaultSystemConfig alone carries no path to save to.
+func ResetSystemConfig() (*SystemConfig, error) {
+	cfg := DefaultSystemConfig()
+	cfg.path = ConfigPath()
+	if err := cfg.Save(); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}

@@ -21,7 +21,7 @@ go install github.com/christhomas/docker-dev-tools/cmd/ddt@latest
 ### From source
 
 ```bash
-task build
+chore build
 ./bin/ddt install
 ```
 

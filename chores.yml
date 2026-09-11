@@ -1,4 +1,5 @@
 version: "3"
+chore_min_version: 0.11.0
 
 # The everyday commands for this repo, run with `chore <name>`.
 
@@ -149,10 +150,10 @@ tasks:
           exit 1
         }
 
-        # It replaces any ddt-proxy and needs ports 80 and 443, so it never runs where
-        # ddt is already in use unless asked to.
-        if docker ps -a --format '{{`{{.Names}}`}}' | grep -qx ddt-proxy && [ -z "$E2E_TAKE_OVER" ]; then
-          echo "ddt's proxy already exists here; the end-to-end test would replace it and take ports 80 and 443. Run it in CI, or set E2E_TAKE_OVER=1." >&2
+        # `ddt proxy start` replaces both ddt-proxy and ddt-config-gen and needs ports 80
+        # and 443, so this never runs where either already exists unless asked to.
+        if docker ps -a --format '{{`{{.Names}}`}}' | grep -Eq '^(ddt-proxy|ddt-config-gen)$' && [ -z "$E2E_TAKE_OVER" ]; then
+          echo "ddt's proxy or config-gen already exists here; the end-to-end test would replace it and take ports 80 and 443. Run it in CI, or set E2E_TAKE_OVER=1." >&2
           exit 1
         fi
 

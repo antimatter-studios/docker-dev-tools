@@ -3,8 +3,15 @@ name: CI
 on:
   push:
     branches: [main]
+  # Every pull request, not only those into main. With `branches: [main]` a pull
+  # request based on another branch got no run at all, and GitHub then reports it as
+  # clean: no checks means no failing checks.
   pull_request:
-    branches: [main]
+
+# A newer commit on the same branch supersedes the run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -16,6 +23,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +52,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -65,6 +76,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [test, lint]
+    timeout-minutes: 20
     strategy:
       matrix:
         goos: [darwin, linux]
@@ -98,6 +110,8 @@ jobs:
   e2e:
     name: End to end
     runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -155,6 +169,8 @@ jobs:
     needs: [test, lint, build, e2e]
     if: always()
     runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
     steps:
       - run: |
           for r in '${{ needs.test.result }}' '${{ needs.lint.result }}' '${{ needs.build.result }}' '${{ needs.e2e.result }}'; do
