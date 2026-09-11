@@ -26,7 +26,7 @@ jobs:
     # A hang fails the job instead of holding a runner for six hours.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
@@ -55,7 +55,7 @@ jobs:
     # A hang fails the job instead of holding a runner for six hours.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
@@ -82,7 +82,7 @@ jobs:
         goos: [darwin, linux]
         goarch: [amd64, arm64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
@@ -113,14 +113,14 @@ jobs:
     # A hang fails the job instead of holding a runner for six hours.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: docker-dev-tools
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: antimatter-studios/docker-proxy
           path: docker-proxy
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: antimatter-studios/docker-config-gen
           path: docker-config-gen
