@@ -7,9 +7,6 @@ on:
   # request based on another branch got no run at all, and GitHub then reports it as
   # clean: no checks means no failing checks.
   pull_request:
-  # merge-on-green starts CI by hand after bringing an out-of-date pull request up to
-  # date, because the update it pushes starts no workflow on its own.
-  workflow_dispatch:
 
 # A newer commit on the same branch supersedes the run in progress.
 concurrency:

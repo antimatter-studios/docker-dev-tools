@@ -4,10 +4,10 @@ name: Merge on green
 # step: they are cut by pushing a version tag, which release.yml builds.
 #
 # When another pull request merged first, this one is out of date with main and
-# branch protection refuses it. It is then brought up to date and CI runs on the
-# result; when that passes, this workflow runs again and merges it. A branch update
-# made with this workflow's token starts no workflow, so that CI run is started
-# explicitly (workflow_dispatch is the exception).
+# branch protection refuses it. It is then brought up to date, and merged once CI
+# passes on the result. That update, made with this workflow's token, starts the pull
+# request's CI held for approval, and the run's result does not start this workflow
+# again, so the run is approved and waited for here.
 on:
   workflow_run:
     workflows: [CI]
@@ -22,16 +22,16 @@ jobs:
   merge:
     name: Merge
     # A successful CI run on a pull request from this repository (Dependabot's
-    # included), or the run started here after bringing one up to date. Pull requests
-    # from forks are left for a person.
+    # included). Pull requests from forks are left for a person.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.event == 'pull_request' ||
-       github.event.workflow_run.event == 'workflow_dispatch') &&
+      github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    # Long enough to wait out CI on an updated branch a few times over.
+    timeout-minutes: 45
     steps:
-      - name: Merge the pull request, or bring it up to date
+      - name: Merge the pull request, bringing it up to date if main moved on
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -47,34 +47,64 @@ jobs:
             echo "No open, ready pull request into $BASE at $HEAD_SHA."
             exit 0
           fi
-          # Only the commit CI just passed, never one pushed since.
-          if gh pr merge "$pr" -R "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA"; then
-            exit 0
-          fi
 
-          # Refused. If only because main moved on, bring the branch up to date and run
-          # CI on the result; any other reason is for a person.
-          state=UNKNOWN
-          for _ in $(seq 1 6); do
-            state=$(gh pr view "$pr" -R "$REPO" --json mergeStateStatus --jq .mergeStateStatus)
-            [ "$state" != UNKNOWN ] && break
-            sleep 5
+          sha="$HEAD_SHA"
+          for _ in 1 2 3; do
+            # Only a commit CI passed on, never one pushed since.
+            if gh pr merge "$pr" -R "$REPO" --squash --delete-branch --match-head-commit "$sha"; then
+              exit 0
+            fi
+
+            # Refused. If only because main moved on, bring the branch up to date; any
+            # other reason is for a person.
+            state=UNKNOWN
+            for _ in $(seq 1 6); do
+              state=$(gh pr view "$pr" -R "$REPO" --json mergeStateStatus --jq .mergeStateStatus)
+              [ "$state" != UNKNOWN ] && break
+              sleep 5
+            done
+            if [ "$state" != BEHIND ]; then
+              echo "#$pr was not merged, and not because it is behind $BASE (merge state: $state)." >&2
+              exit 1
+            fi
+            gh pr update-branch "$pr" -R "$REPO"
+
+            # The update lands a moment later.
+            new="$sha"
+            for _ in $(seq 1 30); do
+              new=$(gh pr view "$pr" -R "$REPO" --json headRefOid --jq .headRefOid)
+              [ "$new" != "$sha" ] && break
+              sleep 2
+            done
+            if [ "$new" = "$sha" ]; then
+              echo "#$pr was not brought up to date within a minute." >&2
+              exit 1
+            fi
+
+            # Its CI run, held for approval because this token pushed the update.
+            run=""
+            for _ in $(seq 1 30); do
+              run=$(gh run list -R "$REPO" --workflow ci.yml --event pull_request --commit "$new" \
+                --json databaseId --jq '.[0].databaseId // empty')
+              [ -n "$run" ] && break
+              sleep 2
+            done
+            if [ -z "$run" ]; then
+              echo "No CI run started for the updated #$pr." >&2
+              exit 1
+            fi
+            if [ "$(gh run view "$run" -R "$REPO" --json conclusion --jq .conclusion)" = action_required ]; then
+              gh api -X POST "repos/$REPO/actions/runs/$run/approve" >/dev/null
+              for _ in $(seq 1 30); do
+                [ "$(gh run view "$run" -R "$REPO" --json conclusion --jq .conclusion)" != action_required ] && break
+                sleep 2
+              done
+            fi
+            if ! gh run watch "$run" -R "$REPO" --exit-status --interval 15 >/dev/null; then
+              echo "CI failed on the updated #$pr." >&2
+              exit 1
+            fi
+            sha="$new"
           done
-          if [ "$state" != BEHIND ]; then
-            echo "#$pr was not merged, and not because it is behind $BASE (merge state: $state)." >&2
-            exit 1
-          fi
-          gh pr update-branch "$pr" -R "$REPO"
-          # The update can land a moment later, and CI has to run on the updated head.
-          head="$HEAD_SHA"
-          for _ in $(seq 1 30); do
-            head=$(gh pr view "$pr" -R "$REPO" --json headRefOid --jq .headRefOid)
-            [ "$head" != "$HEAD_SHA" ] && break
-            sleep 2
-          done
-          if [ "$head" = "$HEAD_SHA" ]; then
-            echo "#$pr was not brought up to date within a minute." >&2
-            exit 1
-          fi
-          gh workflow run ci.yml -R "$REPO" --ref "$BRANCH"
-          echo "#$pr was behind $BASE: brought it up to date and started CI on it."
+          echo "#$pr fell behind $BASE three times in a row; leaving it for a person." >&2
+          exit 1
