@@ -37,7 +37,6 @@ The wizard walks you through:
 1. **IP address** — configure the loopback alias for host-to-container communication (default: `10.254.254.254`)
 2. **DNS TLDs** — add wildcard top-level domains for local resolution (e.g. `.develop`)
 3. **System services** — installs the IP alias as a persistent system service and configures DNS resolver files
-4. **HTTPS** — creates a local certificate authority restricted to those TLDs and trusts it, so proxied hosts work over `https://` (see [HTTPS](#https))
 
 The wizard saves config to `~/.config/docker-dev-tools/config.json` (respects `$XDG_CONFIG_HOME`).
 
@@ -122,14 +121,14 @@ labels:
 Environment variables (`VIRTUAL_HOST`, `VIRTUAL_PORT`, `VIRTUAL_PROTO`, `VIRTUAL_PATH`) are also supported for backward compatibility, but they only allow a single route per container. Labels solve this limitation — by grouping fields under different tags, one container can serve multiple hostnames or path patterns. For example, a container running both a website and an API can expose each on its own hostname with independent port and path settings, which isn't possible with environment variables.
 
 ### HTTPS
-Every proxied host is served over HTTPS as well as HTTP, with no label needed. ddt keeps a local certificate authority in `~/.config/docker-dev-tools/ca/`, restricted by name constraints to the TLDs it resolves, so it cannot vouch for real sites. docker-config-gen issues each host a certificate from it, and the proxy never sees the CA's key.
+Every proxied host is served over HTTPS as well as HTTP, with no label needed. When the proxy starts, ddt makes sure there is a local certificate authority in `~/.config/docker-dev-tools/ca/`, restricted by name constraints to the TLDs it resolves, and docker-config-gen issues each host a certificate from it. The proxy never sees the CA's key.
+
+ddt does not add the CA to this machine's trust store, on purpose: a development tool should not change which certificates your system accepts. Software that should verify the proxy trusts the CA itself, and browsers show a warning page you can click through:
 ```bash
-ddt ca trust        # Create the CA if needed and trust it (ddt install does this too)
-ddt ca simulators   # Trust it in every booted iOS simulator, which keep their own trust store
-ddt ca path         # Print the CA certificate, e.g. for curl --cacert
+curl --cacert "$(ddt ca path)" https://app.develop
 ```
 
-Browsers and native apps use the system trust store. Firefox and some command-line tools, `curl` among them, bring their own, so point them at `ddt ca path`. Changing the TLDs replaces the CA; run `ddt ca trust` and then `ddt proxy restart`.
+Changing the TLDs replaces the CA on the next `ddt proxy start`, so anything pinned to the old one needs the new file.
 
 ### Project Management
 Register project directories and manage them as a group:

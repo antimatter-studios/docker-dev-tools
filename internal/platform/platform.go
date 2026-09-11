@@ -5,8 +5,7 @@ import (
 	"net"
 )
 
-// Platform abstracts OS-specific operations for IP aliasing, DNS configuration, and
-// trusting ddt's certificate authority.
+// Platform abstracts OS-specific operations for IP aliasing and DNS configuration.
 type Platform interface {
 	// AddIPAlias adds an IP alias to a network interface (ephemeral, lost on reboot).
 	AddIPAlias(ip string) error
@@ -35,18 +34,6 @@ type Platform interface {
 	// ListResolverDomains returns the domains that have system-level DNS
 	// resolver entries (e.g. files in /etc/resolver/ on macOS).
 	ListResolverDomains() ([]string, error)
-
-	// TrustCA adds the CA certificate at certPath to the system trust store, so
-	// browsers and native apps accept the certificates it signs.
-	TrustCA(certPath string) error
-	// UntrustCA removes the CA certificate at certPath from the system trust store.
-	UntrustCA(certPath string) error
-	// IsCATrusted reports whether the CA certificate at certPath is in the system
-	// trust store.
-	IsCATrusted(certPath string) (bool, error)
-	// TrustCAInSimulators adds the CA certificate to every booted iOS simulator, each
-	// of which keeps its own trust store, and returns how many it was added to.
-	TrustCAInSimulators(certPath string) (int, error)
 
 	// Name returns the platform name (e.g., "darwin", "linux").
 	Name() string

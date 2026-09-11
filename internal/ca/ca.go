@@ -1,6 +1,6 @@
 // Package ca manages ddt's local certificate authority: the one docker-config-gen
-// issues the proxy's host certificates with, trusted on this machine so browsers and
-// the iOS simulator accept HTTPS on development hosts.
+// issues the proxy's host certificates with. It is never added to the machine's trust
+// store; software that verifies the proxy's certificates trusts this CA itself.
 package ca
 
 import (
@@ -41,7 +41,7 @@ type Authority struct {
 	dir  string
 }
 
-// CertPath is the CA certificate's file: the one to trust.
+// CertPath is the CA certificate's file: what software that verifies the proxy trusts.
 func (a *Authority) CertPath() string { return filepath.Join(a.dir, CertFile) }
 
 // Fingerprint is the certificate's SHA-1 in upper-case hex, which is how macOS's
@@ -104,8 +104,8 @@ func Create(dir string, domains []string) (*Authority, error) {
 		SerialNumber: serial,
 		Subject: pkix.Name{
 			Organization: []string{"docker-dev-tools"},
-			// Named for its owner, as mkcert does, so it can be told apart in a trust
-			// store that holds several.
+			// Named for its owner, as mkcert does, so one machine's CA can be told
+			// apart from another's.
 			CommonName: "ddt development CA " + owner(),
 		},
 		NotBefore:             now.Add(-time.Hour),

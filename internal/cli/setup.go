@@ -84,11 +84,6 @@ func newInstallCmd(a *app.App) *cobra.Command {
 				_ = a.Platform.FlushDNS()
 			}
 
-			// 4. The CA behind HTTPS, restricted to those TLDs.
-			if err := installCA(a); err != nil {
-				return err
-			}
-
 			fmt.Println(styles.SuccessStyle.Render("ddt installed successfully"))
 			return nil
 		},
@@ -98,14 +93,9 @@ func newInstallCmd(a *app.App) *cobra.Command {
 func newUninstallCmd(a *app.App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "uninstall",
-		Short: "Remove ddt: IP alias service, DNS resolvers, and trust in its CA",
+		Short: "Remove ddt: IP alias service and DNS resolvers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ip := a.Config.IPAddress
-
-			// 0. Stop trusting the CA behind HTTPS.
-			if err := uninstallCA(a); err != nil {
-				return err
-			}
 
 			// 1. Remove persistent IP alias.
 			installed, _ := a.Platform.IsIPAliasInstalled(ip)

@@ -86,6 +86,12 @@ func (s *ProxyService) StartWithReport(ctx context.Context, pull bool) (ProxySta
 	s.cleanupConfigGen(ctx)
 	s.cleanupProxy(ctx)
 
+	// config-gen issues the host certificates from ddt's CA, and only finds it if it
+	// exists when the container starts. A CA problem costs HTTPS, not the proxy.
+	if _, err := ensureCA(config.CADir(), s.config.DNS.TLDs); err != nil {
+		fmt.Fprintf(os.Stderr, "HTTPS is off: %v\n", err)
+	}
+
 	// 1. Start config-gen (watches Docker socket, generates nginx configs).
 	_, err := s.startConfigGen(ctx)
 	if err != nil {

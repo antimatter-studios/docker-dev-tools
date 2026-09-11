@@ -6,18 +6,13 @@ import "fmt"
 // All operations are recorded in memory with no side effects.
 type MockPlatform struct {
 	PlatformName     string
-	Aliases          map[string]bool   // active IP aliases
-	InstalledAliases map[string]bool   // persistently installed aliases
+	Aliases          map[string]bool // active IP aliases
+	InstalledAliases map[string]bool // persistently installed aliases
 	DNSEntries       map[string]string // domain -> "ip:port"
 	FlushedDNS       int
 	Upstreams        []string
 	ResolverDomains  []string
 	Errors           map[string]error // method name -> error to return
-
-	TrustedCAs       map[string]bool // CA certificate paths in the trust store
-	CATrustLog       []string        // "trust:<path>" / "untrust:<path>", in call order
-	BootedSimulators int             // how many simulators TrustCAInSimulators reaches
-	SimulatorCAs     []string        // CA certificate paths added to simulators
 }
 
 // NewMockPlatform creates a MockPlatform with initialized maps.
