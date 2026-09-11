@@ -3,8 +3,15 @@ name: CI
 on:
   push:
     branches: [main]
+  # Every pull request, not only those into main. With `branches: [main]` a pull
+  # request based on another branch got no run at all, and GitHub then reports it as
+  # clean: no checks means no failing checks.
   pull_request:
-    branches: [main]
+
+# A newer commit on the same branch supersedes the run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -16,6 +23,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +52,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -65,6 +76,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [test, lint]
+    timeout-minutes: 20
     strategy:
       matrix:
         goos: [darwin, linux]
@@ -90,3 +102,77 @@ jobs:
         with:
           name: ddt-${{ matrix.goos }}-${{ matrix.goarch }}
           path: bin/ddt-*
+
+  # The whole stack, the way a developer uses it: ddt starts the proxy and config-gen,
+  # a labelled container is routed over HTTP and HTTPS, and unknown names are refused.
+  # The proxy and config-gen are built from their main branches, checked out beside
+  # this repository.
+  e2e:
+    name: End to end
+    runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: docker-dev-tools
+      - uses: actions/checkout@v4
+        with:
+          repository: antimatter-studios/docker-proxy
+          path: docker-proxy
+      - uses: actions/checkout@v4
+        with:
+          repository: antimatter-studios/docker-config-gen
+          path: docker-config-gen
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: docker-dev-tools/go.mod
+          cache-dependency-path: docker-dev-tools/go.sum
+
+      - name: Install chore (pinned + checksum-verified)
+        # CI runs the same tasks a developer does, so it has to use the same runner.
+        # A pinned release tarball, verified against its sha256, never an install
+        # script piped from the network.
+        env:
+          CHORE_VERSION: 0.11.0
+          # sha256 of chore-${CHORE_VERSION}-linux-x86_64.tar.gz, from that release's
+          # checksums.txt. Bump both together.
+          CHORE_SHA256: 0616bf7f7e21f1b3b951161c35c56da17eb59fcb7e59e90f8aa8ef32f1f2ff2c
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          asset="chore-${CHORE_VERSION}-linux-x86_64.tar.gz"
+          curl --location --silent --show-error --fail \
+            "https://github.com/antimatter-studios/chore/releases/download/v${CHORE_VERSION}/${asset}" \
+            -o "$tmp/chore.tar.gz"
+          echo "${CHORE_SHA256}  $tmp/chore.tar.gz" | sha256sum -c -
+          tar -xzf "$tmp/chore.tar.gz" -C "$tmp" chore
+          sudo install -m 0755 "$tmp/chore" /usr/local/bin/chore
+          rm -rf "$tmp"
+          chore --version
+
+      - name: Build the proxy and config-gen images
+        run: |
+          docker build -t e2e/docker-proxy docker-proxy
+          docker build -t e2e/docker-config-gen docker-config-gen
+
+      - name: Run the stack through ddt
+        working-directory: docker-dev-tools
+        run: chore e2e PROXY_IMAGE=e2e/docker-proxy CONFIG_GEN_IMAGE=e2e/docker-config-gen
+
+  # The one check main requires (.githooks/required-checks). Jobs above can be renamed,
+  # added or split into a matrix without stranding a merge on a check that no longer
+  # reports.
+  ci:
+    name: CI
+    needs: [test, lint, build, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    # A hang fails the job instead of holding a runner for six hours.
+    timeout-minutes: 20
+    steps:
+      - run: |
+          for r in '${{ needs.test.result }}' '${{ needs.lint.result }}' '${{ needs.build.result }}' '${{ needs.e2e.result }}'; do
+            case "$r" in success) ;; *) echo "a job CI depends on ended with: $r" >&2; exit 1 ;; esac
+          done

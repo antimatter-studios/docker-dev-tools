@@ -1,0 +1,200 @@
+version: "3"
+chore_min_version: 0.11.0
+
+# The everyday commands for this repo, run with `chore <name>`.
+
+vars:
+  BINARY: ddt
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "none"
+  DATE:
+    sh: date -u '+%Y-%m-%dT%H:%M:%SZ'
+  LDFLAGS: >-
+    -s -w
+    -X main.version={{.VERSION}}
+    -X main.commit={{.COMMIT}}
+    -X main.date={{.DATE}}
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - chore --list
+
+  build:
+    desc: Build the binary for the current platform
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}} ./cmd/ddt
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - bin/{{.BINARY}}
+
+  run:
+    desc: Build and run ddt
+    deps: [build]
+    cmds:
+      - ./bin/{{.BINARY}} {{.CLI_ARGS}}
+
+  dev:
+    desc: Run ddt directly via go run (no build step)
+    cmds:
+      - go run -ldflags "{{.LDFLAGS}}" ./cmd/ddt {{.CLI_ARGS}}
+
+  test:
+    desc: Run all tests with verbose output, coverage, and summary stats
+    cmds:
+      - go test -race -cover -count=1 -v ./... 2>&1 | tee /tmp/ddt-test.out
+      - echo ""
+      - echo "── Summary ──────────────────────────────────"
+      - 'grep -c "^--- PASS" /tmp/ddt-test.out | xargs printf "  Tests passed:   %4s\n"'
+      - 'grep -c "^--- FAIL" /tmp/ddt-test.out | xargs printf "  Tests failed:   %4s\n" || printf "  Tests failed:      0\n"'
+      - 'grep -c "^ok" /tmp/ddt-test.out | xargs printf "  Packages passed: %3s\n"'
+      - 'grep "coverage:" /tmp/ddt-test.out | sed "s/.*coverage: //" | sed "s/ of.*//" | awk "{sum+=\$1; n++} END {if(n>0) printf \"  Average coverage: %5.1f%%\n\", sum/n}"'
+      - echo "─────────────────────────────────────────────"
+    silent: true
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format all Go files
+    cmds:
+      - gofmt -s -w .
+      - goimports -w .
+
+  tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy
+
+  clean:
+    desc: Remove build artefacts
+    cmds:
+      - rm -rf bin/ dist/
+
+  install:
+    desc: Install ddt to $GOPATH/bin
+    cmds:
+      - go install -ldflags "{{.LDFLAGS}}" ./cmd/ddt
+
+  # Cross-compilation targets
+  build:all:
+    desc: Build for all target platforms
+    cmds:
+      - task: build:darwin-amd64
+      - task: build:darwin-arm64
+      - task: build:linux-amd64
+      - task: build:linux-arm64
+
+  build:darwin-amd64:
+    desc: Build for macOS amd64
+    env:
+      GOOS: darwin
+      GOARCH: amd64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-darwin-amd64 ./cmd/ddt
+
+  build:darwin-arm64:
+    desc: Build for macOS arm64 (Apple Silicon)
+    env:
+      GOOS: darwin
+      GOARCH: arm64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-darwin-arm64 ./cmd/ddt
+
+  build:linux-amd64:
+    desc: Build for Linux amd64
+    env:
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-linux-amd64 ./cmd/ddt
+
+  build:linux-arm64:
+    desc: Build for Linux arm64
+    env:
+      GOOS: linux
+      GOARCH: arm64
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}-linux-arm64 ./cmd/ddt
+
+  release:snapshot:
+    desc: Create a snapshot release (no publish)
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  e2e:
+    desc: "Start the stack through ddt (proxy, config-gen and a web container) and check HTTP, HTTPS against ddt's CA, and refusal of unknown names. Takes over ports 80 and 443."
+    vars:
+      PROXY_IMAGE: '{{.PROXY_IMAGE | default "ghcr.io/antimatter-studios/docker-proxy:latest"}}'
+      CONFIG_GEN_IMAGE: '{{.CONFIG_GEN_IMAGE | default "ghcr.io/antimatter-studios/docker-config-gen:latest"}}'
+      TLD: e2e
+      # Names this run's throwaway config directory, web container and network.
+      RUN:
+        sh: echo "ddt-e2e-$(date +%s)-$$"
+    cmds:
+      - defer: 'XDG_CONFIG_HOME="${TMPDIR:-/tmp}/{{.RUN}}" "${TMPDIR:-/tmp}/{{.RUN}}/ddt" proxy stop >/dev/null 2>&1; docker rm -f {{.RUN}} >/dev/null 2>&1; docker network rm {{.RUN}} >/dev/null 2>&1; rm -rf "${TMPDIR:-/tmp}/{{.RUN}}"'
+      - |
+        set -e
+        fail() {
+          echo "FAIL: $*" >&2
+          docker logs ddt-config-gen 2>&1 | tail -20 >&2
+          docker logs ddt-proxy 2>&1 | tail -20 >&2
+          exit 1
+        }
+
+        # `ddt proxy start` replaces both ddt-proxy and ddt-config-gen and needs ports 80
+        # and 443, so this never runs where either already exists unless asked to.
+        if docker ps -a --format '{{`{{.Names}}`}}' | grep -Eq '^(ddt-proxy|ddt-config-gen)$' && [ -z "$E2E_TAKE_OVER" ]; then
+          echo "ddt's proxy or config-gen already exists here; the end-to-end test would replace it and take ports 80 and 443. Run it in CI, or set E2E_TAKE_OVER=1." >&2
+          exit 1
+        fi
+
+        # A ddt built from this checkout, with a config of its own.
+        export XDG_CONFIG_HOME="${TMPDIR:-/tmp}/{{.RUN}}"
+        mkdir -p "$XDG_CONFIG_HOME"
+        ddt="$XDG_CONFIG_HOME/ddt"
+        go build -o "$ddt" ./cmd/ddt
+        "$ddt" config reset >/dev/null
+        # HTTPS needs a TLD to restrict the CA to, and a fresh config has none. `ddt dns
+        # add-tld` would also rewrite this machine's resolver, so the TLD goes straight
+        # into the throwaway config.
+        cfg="$("$ddt" config path)"
+        jq --arg tld {{.TLD}} '.dns.tlds = [$tld]' "$cfg" > "$cfg.new" && mv "$cfg.new" "$cfg"
+        "$ddt" proxy docker-image {{.PROXY_IMAGE}} >/dev/null
+        "$ddt" proxy config-gen-image {{.CONFIG_GEN_IMAGE}} >/dev/null
+        "$ddt" proxy start
+
+        # A web server, labelled the way a developer would label it.
+        docker network create {{.RUN}} >/dev/null
+        docker run -d --name {{.RUN}} --network {{.RUN}} \
+          --label docker-proxy.web.host=app.{{.TLD}} --label docker-proxy.web.port=80 \
+          nginx:alpine >/dev/null
+
+        echo "- HTTP is routed to the container"
+        code=""
+        for i in $(seq 1 30); do
+          code=$(curl -s -o /dev/null -w '%{http_code}' --resolve app.{{.TLD}}:80:127.0.0.1 http://app.{{.TLD}}/ || true)
+          [ "$code" = 200 ] && break
+          sleep 2
+        done
+        [ "$code" = 200 ] || fail "http://app.{{.TLD}} answered ${code:-nothing}, not 200"
+
+        echo "- HTTPS is served with a certificate that verifies against ddt's CA"
+        ca="$("$ddt" ca path)"
+        body=$(curl -fsS --retry 15 --retry-delay 2 --retry-all-errors --cacert "$ca" \
+          --resolve app.{{.TLD}}:443:127.0.0.1 https://app.{{.TLD}}/) || fail "https://app.{{.TLD}} failed or did not verify"
+        echo "$body" | grep -qi nginx || fail "https://app.{{.TLD}} did not reach the container"
+
+        echo "- a name with no certificate has its handshake refused"
+        rc=0
+        curl -sS -k --resolve nope.{{.TLD}}:443:127.0.0.1 https://nope.{{.TLD}}/ -o /dev/null 2>/dev/null || rc=$?
+        [ "$rc" = 35 ] || fail "https://nope.{{.TLD}} was not refused (curl exit $rc)"
+        echo "end-to-end test passed"

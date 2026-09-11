@@ -1,0 +1,42 @@
+name: Merge on green
+
+# Squash-merges a pull request as soon as CI passes on it. Releases stay a deliberate
+# step: they are cut by pushing a version tag, which release.yml builds.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    name: Merge
+    # A successful CI run on a pull request from this repository (Dependabot's
+    # included). Pull requests from forks are left for a person.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.repository.default_branch }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr list -R "$REPO" --head "$BRANCH" --state open \
+            --json number,isDraft,baseRefName,headRefOid \
+            --jq '.[] | select(.headRefOid == env.HEAD_SHA and (.isDraft | not) and .baseRefName == env.BASE) | .number' | head -1)
+          if [ -z "$pr" ]; then
+            echo "No open, ready pull request into $BASE at $HEAD_SHA."
+            exit 0
+          fi
+          # Only the commit CI just passed, never one pushed since.
+          gh pr merge "$pr" -R "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA"
