@@ -70,7 +70,8 @@ jobs:
         # turn this red on an unrelated commit.
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.12.2
+          # 2.13.0 is the first release that supports a go1.27 target.
+          version: v2.13.2
 
   build:
     name: Build
