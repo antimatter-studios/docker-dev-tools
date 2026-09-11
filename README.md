@@ -177,25 +177,33 @@ ddt config reset        # Reset to defaults
 
 ### Prerequisites
 - [Go 1.25+](https://go.dev/dl/)
-- [Task](https://taskfile.dev/) (build system)
+- [chore](https://github.com/antimatter-studios/chore) (task runner)
 - [Docker](https://docs.docker.com/get-docker/)
 
 ### Build & Run
 ```bash
-task build              # Build for current platform
-task run -- status      # Build and run with arguments
+chore build              # Build for current platform
+chore run -- status      # Build and run with arguments
 go run ./cmd/ddt -- status  # Run directly without building
-task test               # Run tests
-task lint               # Run linter
-task fmt                # Format code
+chore test               # Run tests
+chore lint               # Run linter
+chore fmt                # Format code
 ```
+
+### End-to-end test
+```bash
+chore e2e                # ddt starts the proxy, config-gen and a web container; checks HTTP, HTTPS and refusal of unknown names
+```
+It takes over ports 80 and 443 and replaces any running `ddt-proxy`, so it refuses to run where ddt's proxy already exists; CI runs it on every pull request, with the proxy and config-gen built from their main branches (`PROXY_IMAGE=` and `CONFIG_GEN_IMAGE=` choose other images).
 
 ### Cross-Compilation
 ```bash
-task build:all              # All platforms
-task build:darwin-arm64     # macOS Apple Silicon
-task build:linux-amd64      # Linux x86_64
+chore build:all              # All platforms
+chore build:darwin-arm64     # macOS Apple Silicon
+chore build:linux-amd64      # Linux x86_64
 ```
+
+CI runs the tests, lint, the builds and the end-to-end test; a pull request merges itself once CI passes. Releases are cut by pushing a version tag.
 
 ### Project Structure
 ```
