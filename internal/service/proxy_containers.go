@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	nat "github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
 )
@@ -50,16 +50,16 @@ func configGenSpec(cfg *config.SystemConfig, caDir string) (*container.Config, *
 func proxySpec(cfg *config.SystemConfig) (*container.Config, *container.HostConfig) {
 	return &container.Config{
 			Image: cfg.Proxy.DockerImage,
-			ExposedPorts: nat.PortSet{
-				"80/tcp":  struct{}{},
-				"443/tcp": struct{}{},
+			ExposedPorts: network.PortSet{
+				network.MustParsePort("80/tcp"):  struct{}{},
+				network.MustParsePort("443/tcp"): struct{}{},
 			},
 		},
 		&container.HostConfig{
 			RestartPolicy: container.RestartPolicy{Name: "always"},
-			PortBindings: nat.PortMap{
-				"80/tcp":  []nat.PortBinding{{HostPort: "80"}},
-				"443/tcp": []nat.PortBinding{{HostPort: "443"}},
+			PortBindings: network.PortMap{
+				network.MustParsePort("80/tcp"):  []network.PortBinding{{HostPort: "80"}},
+				network.MustParsePort("443/tcp"): []network.PortBinding{{HostPort: "443"}},
 			},
 			Mounts: []mount.Mount{
 				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
