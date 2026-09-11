@@ -59,6 +59,17 @@ func (a *Authority) Covers(domains []string) bool {
 	return slices.Equal(normalise(a.Cert.PermittedDNSDomains), normalise(domains))
 }
 
+// renewMargin is how long before expiry a CA stops being current. docker-config-gen
+// renews host certificates with 30 days to spare and cannot give them longer than the
+// CA has left, so a CA inside that window can no longer back a renewal.
+const renewMargin = 30 * 24 * time.Hour
+
+// Current reports whether the CA can still sign usable certificates: valid at now, and
+// not within renewMargin of expiring.
+func (a *Authority) Current(now time.Time) bool {
+	return !now.Before(a.Cert.NotBefore) && now.Add(renewMargin).Before(a.Cert.NotAfter)
+}
+
 // Load reads the CA in dir. The error wraps fs.ErrNotExist when there is none.
 func Load(dir string) (*Authority, error) {
 	certPEM, err := os.ReadFile(filepath.Join(dir, CertFile))

@@ -49,8 +49,10 @@ func TestConfigGenGetsTheCAReadOnlyWhenThereIsOne(t *testing.T) {
 	if _, err := ca.Create(caDir, []string{"localhost"}); err != nil {
 		t.Fatal(err)
 	}
+	cfg := testConfig()
+	cfg.DNS.TLDs = []string{"localhost"}
 
-	genCfg, genHost := configGenSpec(testConfig(), caDir)
+	genCfg, genHost := configGenSpec(cfg, caDir)
 	m, ok := mountAt(genHost.Mounts, configGenCADir)
 	if !ok || m.Type != mount.TypeBind || m.Source != caDir || !m.ReadOnly {
 		t.Errorf("CA mount = %+v, want %s bound read-only at %s", m, caDir, configGenCADir)

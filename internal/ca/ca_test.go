@@ -163,3 +163,26 @@ func TestFingerprintIsTheCertificatesSHA1(t *testing.T) {
 		t.Errorf("Fingerprint = %s, want %s", a.Fingerprint(), want)
 	}
 }
+
+// A CA outside its validity period makes every certificate it signed fail, so it must
+// be replaced rather than reused.
+func TestCurrent(t *testing.T) {
+	now := time.Now()
+	for _, c := range []struct {
+		name                string
+		notBefore, notAfter time.Time
+		want                bool
+	}{
+		{"valid for years", now.Add(-time.Hour), now.Add(5 * 365 * 24 * time.Hour), true},
+		{"expired", now.Add(-48 * time.Hour), now.Add(-time.Hour), false},
+		{"not yet valid", now.Add(time.Hour), now.Add(48 * time.Hour), false},
+		// docker-config-gen renews host certificates with 30 days to spare, and it cannot
+		// give them longer than the CA has left.
+		{"about to expire", now.Add(-time.Hour), now.Add(10 * 24 * time.Hour), false},
+	} {
+		a := &Authority{Cert: &x509.Certificate{NotBefore: c.notBefore, NotAfter: c.notAfter}}
+		if got := a.Current(now); got != c.want {
+			t.Errorf("%s: Current = %v, want %v", c.name, got, c.want)
+		}
+	}
+}

@@ -1,14 +1,10 @@
 package service
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	nat "github.com/docker/go-connections/nat"
 
-	"github.com/christhomas/docker-dev-tools/internal/ca"
 	"github.com/christhomas/docker-dev-tools/internal/config"
 )
 
@@ -21,16 +17,16 @@ const (
 	configGenCADir = "/etc/docker-config-gen/ca"
 )
 
-// configGenSpec is the config-gen container. When caDir holds ddt's CA, it is mounted
-// read-only, so config-gen can issue host certificates and the proxy serves HTTPS;
-// without one, every host stays HTTP-only.
+// configGenSpec is the config-gen container. When caDir holds a CA usable for the
+// configured TLDs (see usableCA), it is mounted read-only, so config-gen can issue host
+// certificates and the proxy serves HTTPS; otherwise every host stays HTTP-only.
 func configGenSpec(cfg *config.SystemConfig, caDir string) (*container.Config, *container.HostConfig) {
 	mounts := []mount.Mount{
 		{Type: mount.TypeBind, Source: "/var/run/docker.sock", Target: "/var/run/docker.sock", ReadOnly: true},
 		{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
 		{Type: mount.TypeVolume, Source: proxyCertsVol, Target: certsDir},
 	}
-	if hasCA(caDir) {
+	if usableCA(caDir, cfg.DNS.TLDs) {
 		mounts = append(mounts, mount.Mount{Type: mount.TypeBind, Source: caDir, Target: configGenCADir, ReadOnly: true})
 	}
 
@@ -72,16 +68,4 @@ func proxySpec(cfg *config.SystemConfig) (*container.Config, *container.HostConf
 				{Type: mount.TypeVolume, Source: proxyHTMLVol, Target: "/usr/share/nginx/html"},
 			},
 		}
-}
-
-// hasCA reports whether dir holds both halves of a CA. A bind mount of a path that
-// doesn't exist fails the container's creation outright, so the CA is only mounted
-// once there is one.
-func hasCA(dir string) bool {
-	for _, f := range []string{ca.CertFile, ca.KeyFile} {
-		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
-			return false
-		}
-	}
-	return true
 }

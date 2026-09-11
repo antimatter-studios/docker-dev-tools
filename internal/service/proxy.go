@@ -349,15 +349,19 @@ func (s *ProxyService) ConfigGenImage() string {
 	return s.config.ConfigGen.DockerImage
 }
 
-// SetImage updates the proxy Docker image in config.
+// SetImage updates the proxy Docker image in config, marked as the user's own
+// (custom_image): a release build otherwise puts its pinned image back on the next load.
 func (s *ProxyService) SetImage(img string) error {
 	s.config.Proxy.DockerImage = img
+	s.config.Proxy.CustomImage = true
 	return s.config.Save()
 }
 
-// SetConfigGenImage updates the config-gen Docker image in config.
+// SetConfigGenImage updates the config-gen Docker image in config, marked as the user's
+// own for the same reason as SetImage.
 func (s *ProxyService) SetConfigGenImage(img string) error {
 	s.config.ConfigGen.DockerImage = img
+	s.config.ConfigGen.CustomImage = true
 	return s.config.Save()
 }
 
