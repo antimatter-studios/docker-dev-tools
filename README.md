@@ -123,6 +123,16 @@ labels:
 
 Environment variables (`VIRTUAL_HOST`, `VIRTUAL_PORT`, `VIRTUAL_PROTO`, `VIRTUAL_PATH`) are also supported for backward compatibility, but they only allow a single route per container. Labels solve this limitation — by grouping fields under different tags, one container can serve multiple hostnames or path patterns. For example, a container running both a website and an API can expose each on its own hostname with independent port and path settings, which isn't possible with environment variables.
 
+### HTTPS
+Every proxied host is served over HTTPS as well as HTTP, with no label needed. When the proxy starts, ddt makes sure there is a local certificate authority in `~/.config/docker-dev-tools/ca/`, restricted by name constraints to the TLDs it resolves, and docker-config-gen issues each host a certificate from it. The proxy never sees the CA's key.
+
+ddt does not add the CA to this machine's trust store, on purpose: a development tool should not change which certificates your system accepts. Software that should verify the proxy trusts the CA itself, and browsers show a warning page you can click through:
+```bash
+curl --cacert "$(ddt ca path)" https://app.develop
+```
+
+Changing the TLDs replaces the CA on the next `ddt proxy start`, so anything pinned to the old one needs the new file.
+
 ### Project Management
 Register project directories and manage them as a group:
 ```bash

@@ -155,7 +155,23 @@ func newProxyCmd(a *app.App) *cobra.Command {
 				if err := a.Proxy.SetImage(args[0]); err != nil {
 					return err
 				}
-				fmt.Println(styles.SuccessStyle.Render(fmt.Sprintf("Docker image set to %q. Restart proxy to apply.", args[0])))
+				fmt.Println(styles.SuccessStyle.Render(fmt.Sprintf("Docker image set to %q, and kept across ddt upgrades until you set another. Restart proxy to apply.", args[0])))
+				return nil
+			},
+		},
+		&cobra.Command{
+			Use:   "config-gen-image [image]",
+			Short: "Get or set the config-gen Docker image",
+			Args:  cobra.MaximumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				if len(args) == 0 {
+					fmt.Println(a.Proxy.ConfigGenImage())
+					return nil
+				}
+				if err := a.Proxy.SetConfigGenImage(args[0]); err != nil {
+					return err
+				}
+				fmt.Println(styles.SuccessStyle.Render(fmt.Sprintf("Config-gen image set to %q, and kept across ddt upgrades until you set another. Restart proxy to apply.", args[0])))
 				return nil
 			},
 		},

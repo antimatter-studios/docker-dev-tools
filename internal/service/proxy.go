@@ -7,10 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	nat "github.com/docker/go-connections/nat"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
 	"github.com/christhomas/docker-dev-tools/internal/docker"
@@ -89,6 +86,12 @@ func (s *ProxyService) StartWithReport(ctx context.Context, pull bool) (ProxySta
 	// Clean up any existing containers so we get a fresh start.
 	s.cleanupConfigGen(ctx)
 	s.cleanupProxy(ctx)
+
+	// config-gen issues the host certificates from ddt's CA, and only finds it if it
+	// exists when the container starts. A CA problem costs HTTPS, not the proxy.
+	if _, err := ensureCA(config.CADir(), s.config.DNS.TLDs); err != nil {
+		fmt.Fprintf(os.Stderr, "HTTPS is off: %v\n", err)
+	}
 
 	// 1. Start config-gen (watches Docker socket, generates nginx configs).
 	_, err := s.startConfigGen(ctx)
@@ -369,9 +372,19 @@ func (s *ProxyService) ConfigGenImage() string {
 	return s.config.ConfigGen.DockerImage
 }
 
-// SetImage updates the proxy Docker image in config.
+// SetImage updates the proxy Docker image in config, marked as the user's own
+// (custom_image): a release build otherwise puts its pinned image back on the next load.
 func (s *ProxyService) SetImage(img string) error {
 	s.config.Proxy.DockerImage = img
+	s.config.Proxy.CustomImage = true
+	return s.config.Save()
+}
+
+// SetConfigGenImage updates the config-gen Docker image in config, marked as the user's
+// own for the same reason as SetImage.
+func (s *ProxyService) SetConfigGenImage(img string) error {
+	s.config.ConfigGen.DockerImage = img
+	s.config.ConfigGen.CustomImage = true
 	return s.config.Save()
 }
 
@@ -418,48 +431,11 @@ func (s *ProxyService) cleanupProxy(ctx context.Context) {
 }
 
 func (s *ProxyService) startConfigGen(ctx context.Context) (string, error) {
-	return s.docker.RunContainer(ctx, s.config.ConfigGen.ContainerName,
-		&container.Config{
-			Image: s.config.ConfigGen.DockerImage,
-			Env: []string{
-				"MANAGEMENT_SOCKET=" + managementSockPath,
-				"RENDERER=nginx",
-				"PROXY_CONTAINER=" + s.config.Proxy.ContainerName,
-			},
-		},
-		&container.HostConfig{
-			RestartPolicy: container.RestartPolicy{Name: "always"},
-			Mounts: []mount.Mount{
-				{Type: mount.TypeBind, Source: "/var/run/docker.sock", Target: "/var/run/docker.sock", ReadOnly: true},
-				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
-			},
-		},
-		nil,
-	)
+	cfg, hostCfg := configGenSpec(s.config, config.CADir())
+	return s.docker.RunContainer(ctx, s.config.ConfigGen.ContainerName, cfg, hostCfg, nil)
 }
 
 func (s *ProxyService) startProxy(ctx context.Context) (string, error) {
-	return s.docker.RunContainer(ctx, s.config.Proxy.ContainerName,
-		&container.Config{
-			Image: s.config.Proxy.DockerImage,
-			ExposedPorts: nat.PortSet{
-				"80/tcp":  struct{}{},
-				"443/tcp": struct{}{},
-			},
-		},
-		&container.HostConfig{
-			RestartPolicy: container.RestartPolicy{Name: "always"},
-			PortBindings: nat.PortMap{
-				"80/tcp":  []nat.PortBinding{{HostPort: "80"}},
-				"443/tcp": []nat.PortBinding{{HostPort: "443"}},
-			},
-			Mounts: []mount.Mount{
-				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
-				{Type: mount.TypeVolume, Source: proxyCertsVol, Target: "/etc/nginx/certs"},
-				{Type: mount.TypeVolume, Source: proxyVhostVol, Target: "/etc/nginx/vhost.d"},
-				{Type: mount.TypeVolume, Source: proxyHTMLVol, Target: "/usr/share/nginx/html"},
-			},
-		},
-		&network.NetworkingConfig{},
-	)
+	cfg, hostCfg := proxySpec(s.config)
+	return s.docker.RunContainer(ctx, s.config.Proxy.ContainerName, cfg, hostCfg, &network.NetworkingConfig{})
 }
