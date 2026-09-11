@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -218,50 +219,72 @@ func (s *ProxyService) Status(ctx context.Context) ([]ProxyStatusEntry, error) {
 			}
 
 			// Check docker-proxy.* labels (independent of VIRTUAL_HOST).
-			groups := make(map[string]map[string]string)
-			for key, val := range info.Labels {
-				if len(key) > 13 && key[:13] == "docker-proxy." {
-					rest := key[13:]
-					parts := splitLabelKey(rest)
-					if parts == nil {
-						continue
-					}
-					tag, field := parts[0], parts[1]
-					if groups[tag] == nil {
-						groups[tag] = make(map[string]string)
-					}
-					groups[tag][field] = val
-				}
-			}
-			for _, g := range groups {
-				if g["host"] == "" {
-					continue
-				}
-				p := g["port"]
-				if p == "" {
-					p = "80"
-				}
-				pr := g["proto"]
-				if pr == "" {
-					pr = "http"
-				}
-				pa := g["path"]
-				if pa == "" {
-					pa = "/"
-				}
+			for _, r := range labelRoutes(info.Labels) {
 				entries = append(entries, ProxyStatusEntry{
 					Network:   netName,
 					Container: cName,
-					Host:      g["host"],
-					Port:      p,
-					Proto:     pr,
-					Path:      pa,
+					Host:      r.Host,
+					Port:      r.Port,
+					Proto:     r.Proto,
+					Path:      r.Path,
 				})
 			}
 		}
 	}
 
 	return entries, nil
+}
+
+// labelRoute is one HTTP route declared with docker-proxy.<tag>.<field> labels.
+type labelRoute struct {
+	Host, Port, Proto, Path string
+}
+
+// labelRoutes reads a container's docker-proxy.<tag>.<field> labels into the
+// HTTP routes they declare, with the same defaults docker-config-gen applies.
+func labelRoutes(labels map[string]string) []labelRoute {
+	groups := make(map[string]map[string]string)
+	for key, val := range labels {
+		if len(key) > 13 && key[:13] == "docker-proxy." {
+			parts := splitLabelKey(key[13:])
+			if parts == nil {
+				continue
+			}
+			tag, field := parts[0], parts[1]
+			if groups[tag] == nil {
+				groups[tag] = make(map[string]string)
+			}
+			groups[tag][field] = val
+		}
+	}
+	var routes []labelRoute
+	for _, g := range groups {
+		// .proto=tcp|udp marks a raw stream, which docker-config-gen proxies
+		// separately; it is not an HTTP route.
+		if g["host"] == "" || isStreamProto(g["proto"]) {
+			continue
+		}
+		p := g["port"]
+		if p == "" {
+			p = "80"
+		}
+		// The upstream scheme is .protocol, the label docker-config-gen reads.
+		pr := g["protocol"]
+		if pr == "" {
+			pr = "http"
+		}
+		pa := g["path"]
+		if pa == "" {
+			pa = "/"
+		}
+		routes = append(routes, labelRoute{Host: g["host"], Port: p, Proto: pr, Path: pa})
+	}
+	return routes
+}
+
+func isStreamProto(proto string) bool {
+	p := strings.ToLower(proto)
+	return p == "tcp" || p == "udp"
 }
 
 // SidecarStatus discovers sidecar containers managed by docker-config-gen.
@@ -440,4 +463,3 @@ func (s *ProxyService) startProxy(ctx context.Context) (string, error) {
 		&network.NetworkingConfig{},
 	)
 }
-
