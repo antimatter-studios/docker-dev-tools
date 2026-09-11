@@ -36,6 +36,12 @@ func ConfigPath() string {
 	return filepath.Join(ConfigDir(), SystemConfigFilename)
 }
 
+// CADir returns the directory holding ddt's local certificate authority, which the
+// proxy's HTTPS certificates are issued with.
+func CADir() string {
+	return filepath.Join(ConfigDir(), "ca")
+}
+
 // LoadJSON reads a JSON file into the target struct.
 func LoadJSON(path string, target any) error {
 	data, err := os.ReadFile(path)

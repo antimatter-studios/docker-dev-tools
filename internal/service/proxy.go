@@ -6,10 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	nat "github.com/docker/go-connections/nat"
 
 	"github.com/christhomas/docker-dev-tools/internal/config"
 	"github.com/christhomas/docker-dev-tools/internal/docker"
@@ -352,6 +349,12 @@ func (s *ProxyService) SetImage(img string) error {
 	return s.config.Save()
 }
 
+// SetConfigGenImage updates the config-gen Docker image in config.
+func (s *ProxyService) SetConfigGenImage(img string) error {
+	s.config.ConfigGen.DockerImage = img
+	return s.config.Save()
+}
+
 // EnsureConfigGenImage ensures the config-gen Docker image exists locally.
 func (s *ProxyService) EnsureConfigGenImage(ctx context.Context, pull bool, w io.Writer) error {
 	return s.docker.EnsureImage(ctx, s.config.ConfigGen.DockerImage, pull, w)
@@ -395,49 +398,11 @@ func (s *ProxyService) cleanupProxy(ctx context.Context) {
 }
 
 func (s *ProxyService) startConfigGen(ctx context.Context) (string, error) {
-	return s.docker.RunContainer(ctx, s.config.ConfigGen.ContainerName,
-		&container.Config{
-			Image: s.config.ConfigGen.DockerImage,
-			Env: []string{
-				"MANAGEMENT_SOCKET=" + managementSockPath,
-				"RENDERER=nginx",
-				"PROXY_CONTAINER=" + s.config.Proxy.ContainerName,
-			},
-		},
-		&container.HostConfig{
-			RestartPolicy: container.RestartPolicy{Name: "always"},
-			Mounts: []mount.Mount{
-				{Type: mount.TypeBind, Source: "/var/run/docker.sock", Target: "/var/run/docker.sock", ReadOnly: true},
-				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
-			},
-		},
-		nil,
-	)
+	cfg, hostCfg := configGenSpec(s.config, config.CADir())
+	return s.docker.RunContainer(ctx, s.config.ConfigGen.ContainerName, cfg, hostCfg, nil)
 }
 
 func (s *ProxyService) startProxy(ctx context.Context) (string, error) {
-	return s.docker.RunContainer(ctx, s.config.Proxy.ContainerName,
-		&container.Config{
-			Image: s.config.Proxy.DockerImage,
-			ExposedPorts: nat.PortSet{
-				"80/tcp":  struct{}{},
-				"443/tcp": struct{}{},
-			},
-		},
-		&container.HostConfig{
-			RestartPolicy: container.RestartPolicy{Name: "always"},
-			PortBindings: nat.PortMap{
-				"80/tcp":  []nat.PortBinding{{HostPort: "80"}},
-				"443/tcp": []nat.PortBinding{{HostPort: "443"}},
-			},
-			Mounts: []mount.Mount{
-				{Type: mount.TypeVolume, Source: managementVol, Target: "/var/run/proxy"},
-				{Type: mount.TypeVolume, Source: proxyCertsVol, Target: "/etc/nginx/certs"},
-				{Type: mount.TypeVolume, Source: proxyVhostVol, Target: "/etc/nginx/vhost.d"},
-				{Type: mount.TypeVolume, Source: proxyHTMLVol, Target: "/usr/share/nginx/html"},
-			},
-		},
-		&network.NetworkingConfig{},
-	)
+	cfg, hostCfg := proxySpec(s.config)
+	return s.docker.RunContainer(ctx, s.config.Proxy.ContainerName, cfg, hostCfg, &network.NetworkingConfig{})
 }
-
