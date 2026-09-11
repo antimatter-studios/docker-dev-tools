@@ -19,7 +19,8 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.23"
+          # The Go that CI tests with, so a release is built with the same toolchain.
+          go-version-file: go.mod
           cache: true
 
       # Resolve the images this release is built against to immutable digests, so the
