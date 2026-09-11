@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/docker/docker/api/types/mount"
+	"github.com/moby/moby/api/types/mount"
 
 	"github.com/christhomas/docker-dev-tools/internal/ca"
 	"github.com/christhomas/docker-dev-tools/internal/config"

@@ -9,11 +9,9 @@ import (
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -32,7 +30,8 @@ func (c *Client) connect() (client.APIClient, error) {
 	if c.api != nil {
 		return c.api, nil
 	}
-	api, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	// The client negotiates the API version with the daemon on its first request.
+	api, err := client.New(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to docker: %w", err)
 	}
@@ -51,7 +50,7 @@ func (c *Client) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = api.Ping(ctx)
+	_, err = api.Ping(ctx, client.PingOptions{})
 	if err != nil {
 		return fmt.Errorf("docker daemon not reachable: %w", err)
 	}
@@ -127,7 +126,7 @@ func (c *Client) PullImage(ctx context.Context, ref string) error {
 	if err != nil {
 		return err
 	}
-	reader, err := api.ImagePull(ctx, ref, image.PullOptions{})
+	reader, err := api.ImagePull(ctx, ref, client.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("pulling image %s: %w", ref, err)
 	}
@@ -163,12 +162,18 @@ func (c *Client) RunContainer(ctx context.Context, name string, cfg *container.C
 		return "", err
 	}
 
-	resp, err := api.ContainerCreate(ctx, cfg, hostCfg, netCfg, &ocispec.Platform{}, name)
+	resp, err := api.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config:           cfg,
+		HostConfig:       hostCfg,
+		NetworkingConfig: netCfg,
+		Platform:         &ocispec.Platform{},
+		Name:             name,
+	})
 	if err != nil {
 		return "", fmt.Errorf("creating container %s: %w", name, err)
 	}
 
-	if err := api.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if _, err := api.ContainerStart(ctx, resp.ID, client.ContainerStartOptions{}); err != nil {
 		return "", fmt.Errorf("starting container %s: %w", name, err)
 	}
 
@@ -181,7 +186,7 @@ func (c *Client) StopContainer(ctx context.Context, nameOrID string) error {
 	if err != nil {
 		return err
 	}
-	if err := api.ContainerStop(ctx, nameOrID, container.StopOptions{}); err != nil {
+	if _, err := api.ContainerStop(ctx, nameOrID, client.ContainerStopOptions{}); err != nil {
 		return fmt.Errorf("stopping container %s: %w", nameOrID, err)
 	}
 	return nil
@@ -193,7 +198,8 @@ func (c *Client) RemoveContainer(ctx context.Context, nameOrID string, force boo
 	if err != nil {
 		return err
 	}
-	return api.ContainerRemove(ctx, nameOrID, container.RemoveOptions{Force: force})
+	_, err = api.ContainerRemove(ctx, nameOrID, client.ContainerRemoveOptions{Force: force})
+	return err
 }
 
 // StopAndRemoveContainer stops then removes a container, ignoring errors
@@ -219,7 +225,7 @@ func (c *Client) StopAndRemoveContainerWithReport(ctx context.Context, nameOrID 
 		return StopRemoveResult{}, err
 	}
 
-	info, err := api.ContainerInspect(ctx, nameOrID)
+	inspect, err := api.ContainerInspect(ctx, nameOrID, client.ContainerInspectOptions{})
 	if err != nil {
 		// Treat not-found as a non-error; caller can decide what to print.
 		if cerrdefs.IsNotFound(err) || strings.Contains(err.Error(), "No such container") {
@@ -228,6 +234,7 @@ func (c *Client) StopAndRemoveContainerWithReport(ctx context.Context, nameOrID 
 		return StopRemoveResult{}, fmt.Errorf("inspecting container %s: %w", nameOrID, err)
 	}
 
+	info := inspect.Container
 	res := StopRemoveResult{Found: true, WasRunning: info.State != nil && info.State.Running}
 
 	if res.WasRunning {
@@ -256,11 +263,11 @@ func (c *Client) IsContainerRunning(ctx context.Context, nameOrID string) (bool,
 	if err != nil {
 		return false, err
 	}
-	info, err := api.ContainerInspect(ctx, nameOrID)
+	inspect, err := api.ContainerInspect(ctx, nameOrID, client.ContainerInspectOptions{})
 	if err != nil {
 		return false, nil
 	}
-	return info.State.Running, nil
+	return inspect.Container.State.Running, nil
 }
 
 // ContainerLogs returns the logs of a container.
@@ -269,7 +276,7 @@ func (c *Client) ContainerLogs(ctx context.Context, nameOrID string, follow bool
 	if err != nil {
 		return nil, err
 	}
-	return api.ContainerLogs(ctx, nameOrID, container.LogsOptions{
+	return api.ContainerLogs(ctx, nameOrID, client.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     follow,
@@ -282,7 +289,11 @@ func (c *Client) CopyToContainer(ctx context.Context, containerID, destPath stri
 	if err != nil {
 		return err
 	}
-	return api.CopyToContainer(ctx, containerID, destPath, content, container.CopyToContainerOptions{})
+	_, err = api.CopyToContainer(ctx, containerID, client.CopyToContainerOptions{
+		DestinationPath: destPath,
+		Content:         content,
+	})
+	return err
 }
 
 // ExecInContainer runs a command inside a running container.
@@ -292,7 +303,7 @@ func (c *Client) ExecInContainer(ctx context.Context, containerID string, cmd []
 		return "", err
 	}
 
-	exec, err := api.ContainerExecCreate(ctx, containerID, container.ExecOptions{
+	exec, err := api.ExecCreate(ctx, containerID, client.ExecCreateOptions{
 		Cmd:          cmd,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -301,7 +312,7 @@ func (c *Client) ExecInContainer(ctx context.Context, containerID string, cmd []
 		return "", fmt.Errorf("creating exec: %w", err)
 	}
 
-	resp, err := api.ContainerExecAttach(ctx, exec.ID, container.ExecStartOptions{})
+	resp, err := api.ExecAttach(ctx, exec.ID, client.ExecAttachOptions{})
 	if err != nil {
 		return "", fmt.Errorf("attaching exec: %w", err)
 	}
@@ -318,7 +329,7 @@ func (c *Client) CreateNetwork(ctx context.Context, name string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	resp, err := api.NetworkCreate(ctx, name, network.CreateOptions{})
+	resp, err := api.NetworkCreate(ctx, name, client.NetworkCreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("creating network %s: %w", name, err)
 	}
@@ -331,11 +342,11 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	_, err = api.NetworkInspect(ctx, name, network.InspectOptions{})
+	_, err = api.NetworkInspect(ctx, name, client.NetworkInspectOptions{})
 	if err == nil {
 		return nil
 	}
-	_, err = api.NetworkCreate(ctx, name, network.CreateOptions{})
+	_, err = api.NetworkCreate(ctx, name, client.NetworkCreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating network %s: %w", name, err)
 	}
@@ -348,7 +359,8 @@ func (c *Client) ConnectNetwork(ctx context.Context, networkName, containerID st
 	if err != nil {
 		return err
 	}
-	return api.NetworkConnect(ctx, networkName, containerID, nil)
+	_, err = api.NetworkConnect(ctx, networkName, client.NetworkConnectOptions{Container: containerID})
+	return err
 }
 
 // DisconnectNetwork disconnects a container from a network.
@@ -357,7 +369,8 @@ func (c *Client) DisconnectNetwork(ctx context.Context, networkName, containerID
 	if err != nil {
 		return err
 	}
-	return api.NetworkDisconnect(ctx, networkName, containerID, false)
+	_, err = api.NetworkDisconnect(ctx, networkName, client.NetworkDisconnectOptions{Container: containerID})
+	return err
 }
 
 // SignalContainer sends a signal (e.g. "SIGHUP") to a running container.
@@ -366,7 +379,8 @@ func (c *Client) SignalContainer(ctx context.Context, nameOrID, signal string) e
 	if err != nil {
 		return err
 	}
-	return api.ContainerKill(ctx, nameOrID, signal)
+	_, err = api.ContainerKill(ctx, nameOrID, client.ContainerKillOptions{Signal: signal})
+	return err
 }
 
 // PortBinding represents a host-to-container port mapping.
@@ -406,10 +420,11 @@ func (c *Client) InspectContainer(ctx context.Context, nameOrID string) (*Contai
 	if err != nil {
 		return nil, err
 	}
-	info, err := api.ContainerInspect(ctx, nameOrID)
+	inspect, err := api.ContainerInspect(ctx, nameOrID, client.ContainerInspectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("inspecting container %s: %w", nameOrID, err)
 	}
+	info := inspect.Container
 
 	env := make(map[string]string)
 	for _, e := range info.Config.Env {
@@ -421,16 +436,21 @@ func (c *Client) InspectContainer(ctx context.Context, nameOrID string) (*Contai
 
 	var ports []string
 	for p := range info.Config.ExposedPorts {
-		ports = append(ports, string(p))
+		ports = append(ports, p.String())
 	}
 
 	var bindings []PortBinding
 	if info.NetworkSettings != nil {
 		for containerPort, hostBindings := range info.NetworkSettings.Ports {
 			for _, hb := range hostBindings {
+				// An unset address stays "", as the daemon sent it, not "invalid IP".
+				var hostIP string
+				if hb.HostIP.IsValid() {
+					hostIP = hb.HostIP.String()
+				}
 				bindings = append(bindings, PortBinding{
-					ContainerPort: string(containerPort),
-					HostIP:        hb.HostIP,
+					ContainerPort: containerPort.String(),
+					HostIP:        hostIP,
 					HostPort:      hb.HostPort,
 				})
 			}
@@ -474,13 +494,13 @@ func (c *Client) ListContainersOnNetwork(ctx context.Context, networkName string
 		return nil, err
 	}
 
-	netInfo, err := api.NetworkInspect(ctx, networkName, network.InspectOptions{})
+	netInfo, err := api.NetworkInspect(ctx, networkName, client.NetworkInspectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("inspecting network %s: %w", networkName, err)
 	}
 
 	var names []string
-	for _, ep := range netInfo.Containers {
+	for _, ep := range netInfo.Network.Containers {
 		names = append(names, ep.Name)
 	}
 	return names, nil
@@ -493,11 +513,14 @@ func (c *Client) ListRunningContainers(ctx context.Context, labelFilter ...strin
 		return nil, err
 	}
 
-	f := filters.NewArgs()
-	f.Add("status", "running")
+	f := make(client.Filters).Add("status", "running")
 	for _, l := range labelFilter {
 		f.Add("label", l)
 	}
 
-	return api.ContainerList(ctx, container.ListOptions{Filters: f})
+	list, err := api.ContainerList(ctx, client.ContainerListOptions{Filters: f})
+	if err != nil {
+		return nil, err
+	}
+	return list.Items, nil
 }
