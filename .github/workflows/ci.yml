@@ -162,7 +162,7 @@ jobs:
         working-directory: docker-dev-tools
         run: chore e2e PROXY_IMAGE=e2e/docker-proxy CONFIG_GEN_IMAGE=e2e/docker-config-gen
 
-  # The one check main requires (.githooks/required-checks). Jobs above can be renamed,
+  # The one check main requires (checks.required in .github-guard). Jobs above can be renamed,
   # added or split into a matrix without stranding a merge on a check that no longer
   # reports.
   ci:
